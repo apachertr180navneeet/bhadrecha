@@ -147,9 +147,14 @@ class Bulty extends Model
         return $this->hasMany(BultyItem::class);
     }
 
-    public function bultyDetail()
+    public function biltyDetail()
     {
         return $this->hasOne(BultyDetail::class);
+    }
+
+    public function biltyAdvanceDetails()
+    {
+        return $this->hasMany(BiltyAdvanceDetail::class, 'bulty_id');
     }
 
     public function trip()

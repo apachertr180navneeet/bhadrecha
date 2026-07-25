@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\CompanyController;
 use App\Http\Controllers\Admin\BranchController;
 use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\BiltyAdvanceDetailController;
 use App\Http\Controllers\Admin\DriverManagementController;
 
 use App\Http\Controllers\Admin\LetterheadController;
@@ -149,6 +150,12 @@ Route::name('admin.')->prefix('admin')->group(function () {
         Route::post('reports/sales-ledger/receive', [\App\Http\Controllers\Admin\SalesLedgerController::class, 'storeReceiving'])->name('reports.sales-ledger.receive');
         Route::get('reports/sales-ledger/invoice-details/{id}', [\App\Http\Controllers\Admin\SalesLedgerController::class, 'getInvoiceDetails'])->name('reports.sales-ledger.invoice-details');
         Route::get('reports/tds-report', [\App\Http\Controllers\Admin\SalesLedgerController::class, 'tdsReport'])->name('reports.tds-report');
+        Route::get('reports/bilty-advance-details', [BiltyAdvanceDetailController::class, 'index'])->name('reports.bilty-advance-details.index');
+        Route::post('reports/bilty-advance-details', [BiltyAdvanceDetailController::class, 'store'])->name('reports.bilty-advance-details.store');
+        Route::put('reports/bilty-advance-details/{id}', [BiltyAdvanceDetailController::class, 'update'])->name('reports.bilty-advance-details.update');
+        Route::delete('reports/bilty-advance-details/{id}', [BiltyAdvanceDetailController::class, 'destroy'])->name('reports.bilty-advance-details.destroy');
+        Route::get('reports/bilty-advance-details/export', [BiltyAdvanceDetailController::class, 'exportExcel'])->name('reports.bilty-advance-details.export');
+        Route::get('reports/bilty-advance-details/bulty-info/{id}', [BiltyAdvanceDetailController::class, 'getBultyInfo'])->name('reports.bilty-advance-details.bulty-info');
 
         Route::get('reports/vehicle/export/{format}', [ReportController::class, 'exportVehicle'])->name('reports.vehicle.export');
         Route::get('reports/trip/export/{format}', [ReportController::class, 'exportTrip'])->name('reports.trip.export');

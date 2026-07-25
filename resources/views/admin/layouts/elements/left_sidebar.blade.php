@@ -369,6 +369,12 @@
                             <div data-i18n="Trip Reports">Trip Reports</div>
                         </a>
                     </li>
+                    <li class="menu-item {{ request()->is('admin/reports/bilty-advance-details*') ? 'active' : '' }}">
+                        <a href="{{ route('admin.reports.bilty-advance-details.index') }}" class="menu-link">
+                            <i class="menu-icon tf-icons bx bx-money"></i>
+                            <div data-i18n="Bilty Advance Details">Bilty Advance Details</div>
+                        </a>
+                    </li>
                     <li class="menu-item {{ (request()->is('admin/reports/fuel') || request()->is('admin/reports/fuel/*')) && !request()->is('admin/reports/fuel-outstanding*') ? 'active' : '' }}">
                         <a href="{{ route('admin.reports.fuel') }}" class="menu-link">
                             <i class="menu-icon tf-icons bx bx-gas-pump"></i>
