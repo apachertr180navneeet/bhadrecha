@@ -182,20 +182,22 @@
 <script>
 $(document).ready(function() {
     var table = $('#documentsTable').DataTable({
+        destroy: true,
         processing: true,
         serverSide: true,
         ajax: {
-            url: "{{ route('admin.documents.index', [], false) }}",
+            url: "{{ route('admin.documents.index') }}",
+            type: "GET",
             data: function(d) {
-                d.search_term = $('#searchTerm').val();
+                d.search_term = $('#searchTerm').val() || '';
                 if ($('#filterCompany').length) {
-                    d.company_id = $('#filterCompany').val();
+                    d.company_id = $('#filterCompany').val() || '';
                 }
-                d.branch_id = $('#filterBranch').val();
-                d.category_id = $('#filterCategory').val();
-                d.folder_id = $('#filterFolder').val();
-                d.expiry_filter = $('#filterExpiry').val();
-                d.status = $('#filterStatus').val();
+                d.branch_id = $('#filterBranch').val() || '';
+                d.category_id = $('#filterCategory').val() || '';
+                d.folder_id = $('#filterFolder').val() || '';
+                d.expiry_filter = $('#filterExpiry').val() || '';
+                d.status = $('#filterStatus').val() || '';
             }
         },
         columns: [

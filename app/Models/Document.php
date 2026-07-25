@@ -134,7 +134,7 @@ class Document extends Model
 
     public function getIsExpiringSoonAttribute()
     {
-        if (!$this->expiry_date) {
+        if (!$this->expiry_date || !($this->expiry_date instanceof \DateTimeInterface)) {
             return false;
         }
         return $this->expiry_date->isFuture() && $this->expiry_date->diffInDays(now()) <= 30;
@@ -142,7 +142,7 @@ class Document extends Model
 
     public function getIsExpiredAttribute()
     {
-        if (!$this->expiry_date) {
+        if (!$this->expiry_date || !($this->expiry_date instanceof \DateTimeInterface)) {
             return false;
         }
         return $this->expiry_date->isPast();

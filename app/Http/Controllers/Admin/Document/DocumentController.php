@@ -29,7 +29,7 @@ class DocumentController extends Controller
     {
         $user = auth()->user();
 
-        if ($request->ajax() || $request->wantsJson() || $request->has('draw')) {
+        if ($request->ajax() || $request->wantsJson() || $request->has('draw') || strtolower($request->header('X-Requested-With', '')) === 'xmlhttprequest') {
             return $this->getDataTable($request);
         }
 
@@ -49,111 +49,142 @@ class DocumentController extends Controller
 
     protected function getDataTable(Request $request)
     {
-        $user = auth()->user();
-        $query = Document::query()->with(['category', 'folder', 'uploader', 'company', 'branch']);
+        try {
+            $user = auth()->user();
+            $query = Document::query()->with(['category', 'folder', 'uploader', 'company', 'branch']);
 
-        // Scope company
-        if ($request->filled('company_id')) {
-            $query->where('company_id', $request->company_id);
-        } elseif ($user && !$user->isAdmin()) {
-            if (!empty($user->company_id)) {
-                $query->where('company_id', $user->company_id);
+            // Scope company
+            if ($request->filled('company_id')) {
+                $query->where('company_id', $request->company_id);
+            } elseif ($user && !$user->isAdmin()) {
+                if (!empty($user->company_id)) {
+                    $query->where('company_id', $user->company_id);
+                }
             }
-        }
 
-        // Filters
-        if ($request->filled('category_id')) {
-            $query->where('category_id', $request->category_id);
-        }
-        if ($request->filled('folder_id')) {
-            $query->where('folder_id', $request->folder_id);
-        }
-        if ($request->filled('branch_id')) {
-            $query->where('branch_id', $request->branch_id);
-        }
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-        if ($request->filled('file_type')) {
-            $query->where('file_extension', strtolower($request->file_type));
-        }
-        if ($request->filled('user_id')) {
-            $query->where('uploaded_by', $request->user_id);
-        }
-        if ($request->filled('search_term')) {
-            $term = '%' . trim($request->search_term) . '%';
-            $query->where(function ($q) use ($term) {
-                $q->where('name', 'like', $term)
-                  ->orWhere('document_number', 'like', $term)
-                  ->orWhere('original_file_name', 'like', $term)
-                  ->orWhere('description', 'like', $term)
-                  ->orWhere('tags', 'like', $term);
-            });
-        }
-        if ($request->filled('expiry_filter')) {
-            switch ($request->expiry_filter) {
-                case 'today':
-                    $query->whereDate('expiry_date', today());
-                    break;
-                case '7_days':
-                    $query->whereBetween('expiry_date', [today(), today()->addDays(7)]);
-                    break;
-                case '15_days':
-                    $query->whereBetween('expiry_date', [today(), today()->addDays(15)]);
-                    break;
-                case '30_days':
-                    $query->whereBetween('expiry_date', [today(), today()->addDays(30)]);
-                    break;
-                case 'expired':
-                    $query->where('expiry_date', '<', today());
-                    break;
+            // Filters
+            if ($request->filled('category_id')) {
+                $query->where('category_id', $request->category_id);
             }
-        }
+            if ($request->filled('folder_id')) {
+                $query->where('folder_id', $request->folder_id);
+            }
+            if ($request->filled('branch_id')) {
+                $query->where('branch_id', $request->branch_id);
+            }
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
+            if ($request->filled('file_type')) {
+                $query->where('file_extension', strtolower($request->file_type));
+            }
+            if ($request->filled('user_id')) {
+                $query->where('uploaded_by', $request->user_id);
+            }
 
-        $recordsTotal = Document::count();
-        $recordsFiltered = (clone $query)->count();
-        $limit = max(1, intval($request->input('length', 10)));
-        $start = max(0, intval($request->input('start', 0)));
-        $orderColumnIndex = intval($request->input('order.0.column', 0));
-        $orderDir = strtolower($request->input('order.0.dir', 'desc')) === 'asc' ? 'asc' : 'desc';
+            $searchTerm = $request->input('search_term') ?: $request->input('search.value');
+            if (!empty($searchTerm)) {
+                $term = '%' . trim($searchTerm) . '%';
+                $query->where(function ($q) use ($term) {
+                    $q->where('name', 'like', $term)
+                      ->orWhere('document_number', 'like', $term)
+                      ->orWhere('original_file_name', 'like', $term)
+                      ->orWhere('description', 'like', $term)
+                      ->orWhere('tags', 'like', $term);
+                });
+            }
 
-        $columns = ['id', 'document_number', 'name', 'category_id', 'version', 'file_size', 'expiry_date', 'status', 'created_at'];
-        $orderBy = $columns[$orderColumnIndex] ?? 'created_at';
+            if ($request->filled('expiry_filter')) {
+                switch ($request->expiry_filter) {
+                    case 'today':
+                        $query->whereDate('expiry_date', today());
+                        break;
+                    case '7_days':
+                        $query->whereBetween('expiry_date', [today(), today()->addDays(7)]);
+                        break;
+                    case '15_days':
+                        $query->whereBetween('expiry_date', [today(), today()->addDays(15)]);
+                        break;
+                    case '30_days':
+                        $query->whereBetween('expiry_date', [today(), today()->addDays(30)]);
+                        break;
+                    case 'expired':
+                        $query->where('expiry_date', '<', today());
+                        break;
+                }
+            }
 
-        $documents = (clone $query)->orderBy($orderBy, $orderDir)
-            ->offset($start)
-            ->limit($limit)
-            ->get();
+            $recordsTotal = Document::count();
+            $recordsFiltered = (clone $query)->count();
+            $limit = max(1, intval($request->input('length', 10)));
+            $start = max(0, intval($request->input('start', 0)));
+            $orderColumnIndex = intval($request->input('order.0.column', 0));
+            $orderDir = strtolower($request->input('order.0.dir', 'desc')) === 'asc' ? 'asc' : 'desc';
 
-        $data = [];
-        foreach ($documents as $doc) {
-            $data[] = [
-                'id' => $doc->id,
-                'uuid' => $doc->uuid,
-                'document_number' => $doc->document_number,
-                'name' => $doc->name,
-                'category' => $doc->category?->name ?? 'N/A',
-                'folder' => $doc->folder?->name ?? 'Root',
-                'version' => 'v' . $doc->version,
-                'file_extension' => strtoupper($doc->file_extension ?? ''),
-                'file_size' => $doc->formatted_file_size,
-                'uploader' => $doc->uploader?->full_name ?? 'N/A',
-                'expiry_date' => $doc->expiry_date ? $doc->expiry_date->format('d M Y') : '-',
-                'is_expired' => $doc->is_expired,
-                'is_expiring_soon' => $doc->is_expiring_soon,
-                'status' => $doc->status,
-                'downloads' => $doc->downloads_count ?? 0,
-                'created_at' => $doc->created_at ? $doc->created_at->format('d M Y, h:i A') : '-',
-                'actions' => view('admin.documents.partials.actions', compact('doc'))->render(),
+            $columns = [
+                0 => 'id',
+                1 => 'document_number',
+                2 => 'name',
+                3 => 'category_id',
+                4 => 'folder_id',
+                5 => 'version',
+                6 => 'file_size',
+                7 => 'uploaded_by',
+                8 => 'expiry_date',
+                9 => 'status',
+                10 => 'created_at'
             ];
-        }
+            $orderBy = $columns[$orderColumnIndex] ?? 'created_at';
 
-        return response()->json([
-            'draw' => intval($request->input('draw')),
-            'recordsTotal' => $recordsTotal,
-            'recordsFiltered' => $recordsFiltered,
-            'data' => $data,
-        ]);
+            $documents = (clone $query)->orderBy($orderBy, $orderDir)
+                ->offset($start)
+                ->limit($limit)
+                ->get();
+
+            $data = [];
+            foreach ($documents as $doc) {
+                try {
+                    $actionsHtml = view('admin.documents.partials.actions', compact('doc'))->render();
+                } catch (\Throwable $e) {
+                    $actionsHtml = '';
+                }
+
+                $data[] = [
+                    'id' => $doc->id,
+                    'uuid' => $doc->uuid,
+                    'document_number' => $doc->document_number,
+                    'name' => $doc->name,
+                    'category' => $doc->category?->name ?? 'N/A',
+                    'folder' => $doc->folder?->name ?? 'Root',
+                    'version' => 'v' . $doc->version,
+                    'file_extension' => strtoupper($doc->file_extension ?? ''),
+                    'file_size' => $doc->formatted_file_size,
+                    'uploader' => $doc->uploader?->full_name ?? 'N/A',
+                    'expiry_date' => ($doc->expiry_date && $doc->expiry_date instanceof \DateTimeInterface) ? $doc->expiry_date->format('d M Y') : '-',
+                    'is_expired' => (bool)$doc->is_expired,
+                    'is_expiring_soon' => (bool)$doc->is_expiring_soon,
+                    'status' => $doc->status ?? 'active',
+                    'downloads' => $doc->downloads_count ?? 0,
+                    'created_at' => ($doc->created_at && $doc->created_at instanceof \DateTimeInterface) ? $doc->created_at->format('d M Y, h:i A') : '-',
+                    'actions' => $actionsHtml,
+                ];
+            }
+
+            return response()->json([
+                'draw' => intval($request->input('draw', 1)),
+                'recordsTotal' => $recordsTotal,
+                'recordsFiltered' => $recordsFiltered,
+                'data' => $data,
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'draw' => intval($request->input('draw', 1)),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => $th->getMessage(),
+            ], 200);
+        }
     }
 
     public function create(Request $request)
