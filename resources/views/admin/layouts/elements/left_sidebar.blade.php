@@ -556,24 +556,30 @@
                             </a>
                         </li>
                     @endcan
-                    <li class="menu-item {{ request()->is('admin/masters/tyre-brands*') ? 'active' : '' }}">
-                        <a href="{{ route('admin.masters.tyre-brands.index') }}" class="menu-link">
-                            <i class="menu-icon tf-icons bx bx-disc"></i>
-                            <div data-i18n="Tyre Brands">Tyre Brands</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->is('admin/masters/tyre-models*') ? 'active' : '' }}">
-                        <a href="{{ route('admin.masters.tyre-models.index') }}" class="menu-link">
-                            <i class="menu-icon tf-icons bx bx-layer"></i>
-                            <div data-i18n="Tyre Models">Tyre Models</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->is('admin/masters/tyre-sizes*') ? 'active' : '' }}">
-                        <a href="{{ route('admin.masters.tyre-sizes.index') }}" class="menu-link">
-                            <i class="menu-icon tf-icons bx bx-ruler"></i>
-                            <div data-i18n="Tyre Sizes">Tyre Sizes</div>
-                        </a>
-                    </li>
+                    @can('view tyre brands')
+                        <li class="menu-item {{ request()->is('admin/masters/tyre-brands*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.masters.tyre-brands.index') }}" class="menu-link">
+                                <i class="menu-icon tf-icons bx bx-disc"></i>
+                                <div data-i18n="Tyre Brands">Tyre Brands</div>
+                            </a>
+                        </li>
+                    @endcan
+                    @can('view tyre models')
+                        <li class="menu-item {{ request()->is('admin/masters/tyre-models*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.masters.tyre-models.index') }}" class="menu-link">
+                                <i class="menu-icon tf-icons bx bx-layer"></i>
+                                <div data-i18n="Tyre Models">Tyre Models</div>
+                            </a>
+                        </li>
+                    @endcan
+                    @can('view tyre sizes')
+                        <li class="menu-item {{ request()->is('admin/masters/tyre-sizes*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.masters.tyre-sizes.index') }}" class="menu-link">
+                                <i class="menu-icon tf-icons bx bx-ruler"></i>
+                                <div data-i18n="Tyre Sizes">Tyre Sizes</div>
+                            </a>
+                        </li>
+                    @endcan
                     @can('view items')
                         <li class="menu-item {{ request()->is('admin/masters/items*') ? 'active' : '' }}">
                             <a href="{{ route('admin.masters.items.index') }}" class="menu-link">
@@ -661,66 +667,69 @@
         @endcan
 
         <!-- Document Management Section -->
-        <li class="menu-divider"></li>
-        <li class="menu-header small text-uppercase">
-            <span class="menu-header-text">Document Management</span>
-        </li>
+        @canany(['view documents', 'upload documents', 'manage categories', 'manage folders'])
+            <li class="menu-divider"></li>
+            <li class="menu-header small text-uppercase">
+                <span class="menu-header-text">Document Management</span>
+            </li>
 
-        <li class="menu-item {{ request()->is('admin/documents/dashboard') ? 'active' : '' }}">
-            <a href="{{ route('admin.documents.dashboard') }}" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-grid-alt"></i>
-                <div data-i18n="Doc Dashboard">Doc Dashboard</div>
-            </a>
-        </li>
+            <li class="menu-item {{ request()->is('admin/documents/dashboard') ? 'active' : '' }}">
+                <a href="{{ route('admin.documents.dashboard') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-grid-alt"></i>
+                    <div data-i18n="Doc Dashboard">Doc Dashboard</div>
+                </a>
+            </li>
 
-        <li class="menu-item {{ request()->is('admin/documents') || request()->is('admin/documents/create') || (request()->is('admin/documents/*') && !request()->is('admin/documents/dashboard*') && !request()->is('admin/documents/categories*') && !request()->is('admin/documents/folders*') && !request()->is('admin/documents/trash*') && !request()->is('admin/documents/activity-logs*') && !request()->is('admin/documents/reports*')) ? 'active' : '' }}">
-            <a href="{{ route('admin.documents.index') }}" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-folder-open"></i>
-                <div data-i18n="Document Explorer">Document Explorer</div>
-            </a>
-        </li>
+            <li class="menu-item {{ request()->is('admin/documents') || request()->is('admin/documents/create') || (request()->is('admin/documents/*') && !request()->is('admin/documents/dashboard*') && !request()->is('admin/documents/categories*') && !request()->is('admin/documents/folders*') && !request()->is('admin/documents/trash*') && !request()->is('admin/documents/activity-logs*') && !request()->is('admin/documents/reports*')) ? 'active' : '' }}">
+                <a href="{{ route('admin.documents.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-folder-open"></i>
+                    <div data-i18n="Document Explorer">Document Explorer</div>
+                </a>
+            </li>
 
-        <li class="menu-item {{ request()->is('admin/documents/categories*') ? 'active' : '' }}">
-            <a href="{{ route('admin.documents.categories.index') }}" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-category"></i>
-                <div data-i18n="Doc Categories">Doc Categories</div>
-            </a>
-        </li>
+            <li class="menu-item {{ request()->is('admin/documents/categories*') ? 'active' : '' }}">
+                <a href="{{ route('admin.documents.categories.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-category"></i>
+                    <div data-i18n="Doc Categories">Doc Categories</div>
+                </a>
+            </li>
 
-        <li class="menu-item {{ request()->is('admin/documents/folders*') ? 'active' : '' }}">
-            <a href="{{ route('admin.documents.folders.index') }}" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-folder"></i>
-                <div data-i18n="Doc Folders">Doc Folders</div>
-            </a>
-        </li>
+            <li class="menu-item {{ request()->is('admin/documents/folders*') ? 'active' : '' }}">
+                <a href="{{ route('admin.documents.folders.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-folder"></i>
+                    <div data-i18n="Doc Folders">Doc Folders</div>
+                </a>
+            </li>
 
-        <li class="menu-item {{ request()->is('admin/documents/reports/expiry*') ? 'active' : '' }}">
-            <a href="{{ route('admin.documents.reports.expiry') }}" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-time-five"></i>
-                <div data-i18n="Expiry Alerts">Expiry Alerts</div>
-            </a>
-        </li>
+            <li class="menu-item {{ request()->is('admin/documents/reports/expiry*') ? 'active' : '' }}">
+                <a href="{{ route('admin.documents.reports.expiry') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-time-five"></i>
+                    <div data-i18n="Expiry Alerts">Expiry Alerts</div>
+                </a>
+            </li>
 
-        <li class="menu-item {{ request()->is('admin/documents/reports/storage*') ? 'active' : '' }}">
-            <a href="{{ route('admin.documents.reports.storage') }}" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-pie-chart-alt-2"></i>
-                <div data-i18n="Storage Usage">Storage Usage</div>
-            </a>
-        </li>
+            <li class="menu-item {{ request()->is('admin/documents/reports/storage*') ? 'active' : '' }}">
+                <a href="{{ route('admin.documents.reports.storage') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-pie-chart-alt-2"></i>
+                    <div data-i18n="Storage Usage">Storage Usage</div>
+                </a>
+            </li>
 
-        <li class="menu-item {{ request()->is('admin/documents/activity-logs*') ? 'active' : '' }}">
-            <a href="{{ route('admin.documents.activity-logs') }}" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-list-check"></i>
-                <div data-i18n="Doc Audit Logs">Doc Audit Trail</div>
-            </a>
-        </li>
+            <li class="menu-item {{ request()->is('admin/documents/activity-logs*') ? 'active' : '' }}">
+                <a href="{{ route('admin.documents.activity-logs') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-list-check"></i>
+                    <div data-i18n="Doc Audit Logs">Doc Audit Trail</div>
+                </a>
+            </li>
 
-        <li class="menu-item {{ request()->is('admin/documents/trash*') ? 'active' : '' }}">
-            <a href="{{ route('admin.documents.trash') }}" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-trash"></i>
-                <div data-i18n="Doc Trash">Doc Trash Bin</div>
-            </a>
-        </li>
+            <li class="menu-item {{ request()->is('admin/documents/trash*') ? 'active' : '' }}">
+                <a href="{{ route('admin.documents.trash') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-trash"></i>
+                    <div data-i18n="Doc Trash">Doc Trash Bin</div>
+                </a>
+            </li>
+        @endcanany
+
 
         @canany(['view activity logs', 'manage settings'])
             <li class="menu-divider"></li>

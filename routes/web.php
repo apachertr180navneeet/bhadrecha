@@ -544,10 +544,30 @@ Route::name('admin.')->prefix('admin')->group(function () {
 });
 
 Route::get('run-migration', function () {
-        try {
-            Artisan::call('migrate', ['--force' => true]);
-            return response(Artisan::output());
-        } catch (\Throwable $e) {
-            return response('Migration failed: ' . $e->getMessage(), 500);
-        }
-    })->name('run.migration');
+    try {
+        Artisan::call('migrate', ['--force' => true]);
+        return response(Artisan::output());
+    } catch (\Throwable $e) {
+        return response('Migration failed: ' . $e->getMessage(), 500);
+    }
+})->name('run.migration');
+
+Route::get('run-permission-seeder', function () {
+    try {
+        Artisan::call('db:seed', ['--class' => 'RolePermissionSeeder', '--force' => true]);
+        $output = Artisan::output();
+        return response("<pre style='background:#1e1e1e;color:#00ff00;padding:30px;font-family:monospace;border-radius:8px;'><b>Role Permission Seeder executed successfully!</b><br><br>" . ($output ?: 'Permissions synced to Super Admin and all roles successfully.') . "</pre>");
+    } catch (\Throwable $e) {
+        return response('Permission Seeder failed: ' . $e->getMessage(), 500);
+    }
+})->name('run.permission-seeder');
+
+Route::get('seed-role-permissions', function () {
+    try {
+        Artisan::call('db:seed', ['--class' => 'RolePermissionSeeder', '--force' => true]);
+        return response("<pre style='background:#1e1e1e;color:#00ff00;padding:30px;font-family:monospace;border-radius:8px;'><b>Role Permission Seeder executed successfully!</b><br><br>All module permissions synced and assigned to Super Admin.</pre>");
+    } catch (\Throwable $e) {
+        return response('Permission Seeder failed: ' . $e->getMessage(), 500);
+    }
+})->name('seed.role-permissions');
+

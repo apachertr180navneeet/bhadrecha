@@ -12,37 +12,41 @@ class RolePermissionSeeder extends Seeder
 {
     public function run(): void
     {
+        // Reset cached roles and permissions
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-$permissions = [
-            'companies' => ['view companies', 'create companies', 'edit companies', 'delete companies'],
-            'branches' => ['view branches', 'create branches', 'edit branches', 'delete branches'],
-            'users' => ['view users', 'create users', 'edit users', 'delete users'],
-            'roles' => ['view roles', 'create roles', 'edit roles', 'delete roles'],
-            'permissions' => ['view permissions', 'create permissions', 'edit permissions', 'delete permissions'],
-            'bulties' => ['create bulties', 'edit bulties', 'delete bulties', 'view bulties'],
-            'trips' => ['create trips', 'edit trips', 'delete trips', 'view trips'],
-            'vehicles' => ['create vehicles', 'edit vehicles', 'delete vehicles', 'view vehicles'],
-            'drivers' => ['create drivers', 'edit drivers', 'delete drivers', 'view drivers'],
-            'gst' => ['create gst', 'edit gst', 'delete gst', 'view gst'],
-            'cities' => ['create cities', 'edit cities', 'delete cities', 'view cities'],
-            'reports' => ['view reports', 'export reports'],
-            'settings' => ['manage settings'],
-            'activity_logs' => ['view activity logs'],
-            'consignors' => ['create consignors', 'edit consignors', 'delete consignors', 'view consignors'],
-            'consignees' => ['create consignees', 'edit consignees', 'delete consignees', 'view consignees'],
-            'packagings' => ['create packagings', 'edit packagings', 'delete packagings', 'view packagings'],
-            'units' => ['create units', 'edit units', 'delete units', 'view units'],
-            'fuel_pumps' => ['create fuel pumps', 'edit fuel pumps', 'delete fuel pumps', 'view fuel pumps'],
-            'items' => ['create items', 'edit items', 'delete items', 'view items'],
-            'banks' => ['create banks', 'edit banks', 'delete banks', 'view banks'],
-            'billing' => ['view billing'],
-            'bill_formats' => ['view bill formats', 'create bill formats', 'edit bill formats', 'delete bill formats'],
-            'bank_branches' => ['create bank branches', 'edit bank branches', 'delete bank branches', 'view bank branches'],
-            'fuel_companies' => ['view fuel companies', 'create fuel companies', 'edit fuel companies', 'delete fuel companies'],
-            'adblue_companies' => ['view adblue companies', 'create adblue companies', 'edit adblue companies', 'delete adblue companies'],
-            'suppliers' => ['view suppliers', 'create suppliers', 'edit suppliers', 'delete suppliers'],
-            'vendors' => ['view vendors', 'create vendors', 'edit vendors', 'delete vendors'],
+        // Complete list of permissions for all modules in the application
+        $permissions = [
+            'companies' => [
+                'view companies', 'create companies', 'edit companies', 'delete companies', 'restore companies', 'force delete companies'
+            ],
+            'branches' => [
+                'view branches', 'create branches', 'edit branches', 'delete branches', 'restore branches', 'force delete branches'
+            ],
+            'users' => [
+                'view users', 'create users', 'edit users', 'delete users'
+            ],
+            'roles' => [
+                'view roles', 'create roles', 'edit roles', 'delete roles'
+            ],
+            'permissions' => [
+                'view permissions', 'create permissions', 'edit permissions', 'delete permissions'
+            ],
+            'bulties' => [
+                'view bulties', 'create bulties', 'edit bulties', 'delete bulties', 'restore bulties', 'force delete bulties', 'cancel bulties', 'print bulties', 'approve bulty documents', 'approve bulty pod'
+            ],
+            'trips' => [
+                'view trips', 'create trips', 'edit trips', 'delete trips', 'close trips', 'import trip data'
+            ],
+            'billing' => [
+                'view billing', 'create billing', 'edit billing', 'delete billing', 'view invoices', 'create invoices', 'edit invoices', 'delete invoices', 'print invoices', 'export invoices'
+            ],
+            'toll_bills' => [
+                'view toll bills', 'create toll bills', 'edit toll bills', 'delete toll bills'
+            ],
+            'letterheads' => [
+                'view letterheads', 'create letterheads', 'edit letterheads', 'delete letterheads', 'send letterheads mail'
+            ],
             'driver_salary' => [
                 'view driver salary', 'create driver salary', 'edit driver salary', 'delete driver salary',
                 'view driver advances', 'create driver advances', 'edit driver advances', 'delete driver advances',
@@ -51,12 +55,12 @@ $permissions = [
             'employee_salary' => [
                 'view employee salary', 'create employee salary', 'edit employee salary', 'delete employee salary',
                 'view attendance', 'mark attendance',
-                'view leaves', 'create leaves', 'approve leaves', 'reject leaves',
-                'view employee advances', 'create employee advances', 'approve employee advances', 'reject employee advances', 'mark employee advances paid'
+                'view leaves', 'create leaves', 'approve leaves', 'reject leaves', 'delete leaves',
+                'view employee advances', 'create employee advances', 'approve employee advances', 'reject employee advances', 'mark employee advances paid', 'delete employee advances'
             ],
             'loans' => [
                 'view company loans', 'create company loans', 'edit company loans', 'delete company loans', 'record company loan payments',
-                'view vehicle loans'
+                'view vehicle loans', 'create vehicle loans', 'edit vehicle loans', 'delete vehicle loans'
             ],
             'maintenance' => [
                 'view service schedules', 'create service schedules', 'edit service schedules', 'delete service schedules', 'mark service schedules completed',
@@ -65,29 +69,112 @@ $permissions = [
                 'view breakdowns', 'create breakdowns', 'edit breakdowns', 'delete breakdowns', 'mark breakdowns resolved',
                 'view tyre management', 'create tyre management', 'edit tyre management', 'delete tyre management'
             ],
+            'reports' => [
+                'view reports', 'export reports',
+                'view vehicle report', 'view driver trip report', 'view customer ledger', 'view sales ledger', 'view tds report',
+                'view trip reports', 'view bilty advance details', 'view fuel report', 'view fuel outstanding', 'view adblue outstanding',
+                'view vehicle utilization', 'view mis report', 'view expense management', 'view vehicle document report',
+                'view gst tax report', 'view profit loss report'
+            ],
+            'consignors' => [
+                'view consignors', 'create consignors', 'edit consignors', 'delete consignors', 'restore consignors', 'force delete consignors', 'transfer consignors', 'import consignors'
+            ],
+            'consignees' => [
+                'view consignees', 'create consignees', 'edit consignees', 'delete consignees', 'restore consignees', 'force delete consignees', 'transfer consignees', 'import consignees'
+            ],
+            'vehicles' => [
+                'view vehicles', 'create vehicles', 'edit vehicles', 'delete vehicles', 'restore vehicles', 'force delete vehicles', 'import vehicles', 'export vehicles'
+            ],
+            'drivers' => [
+                'view drivers', 'create drivers', 'edit drivers', 'delete drivers', 'restore drivers', 'force delete drivers', 'import drivers', 'export drivers'
+            ],
+            'gst' => [
+                'view gst', 'create gst', 'edit gst', 'delete gst', 'restore gst', 'force delete gst', 'import gst'
+            ],
+            'cities' => [
+                'view cities', 'create cities', 'edit cities', 'delete cities', 'restore cities', 'force delete cities', 'import cities'
+            ],
+            'packagings' => [
+                'view packagings', 'create packagings', 'edit packagings', 'delete packagings', 'restore packagings', 'force delete packagings', 'import packagings'
+            ],
+            'units' => [
+                'view units', 'create units', 'edit units', 'delete units', 'restore units', 'force delete units', 'import units'
+            ],
+            'fuel_pumps' => [
+                'view fuel pumps', 'create fuel pumps', 'edit fuel pumps', 'delete fuel pumps', 'restore fuel pumps', 'force delete fuel pumps', 'import fuel pumps'
+            ],
+            'fuel_companies' => [
+                'view fuel companies', 'create fuel companies', 'edit fuel companies', 'delete fuel companies', 'restore fuel companies', 'force delete fuel companies', 'import fuel companies'
+            ],
+            'adblue_companies' => [
+                'view adblue companies', 'create adblue companies', 'edit adblue companies', 'delete adblue companies', 'restore adblue companies', 'force delete adblue companies', 'import adblue companies'
+            ],
+            'tyre_brands' => [
+                'view tyre brands', 'create tyre brands', 'edit tyre brands', 'delete tyre brands', 'restore tyre brands', 'force delete tyre brands'
+            ],
+            'tyre_models' => [
+                'view tyre models', 'create tyre models', 'edit tyre models', 'delete tyre models', 'restore tyre models', 'force delete tyre models'
+            ],
+            'tyre_sizes' => [
+                'view tyre sizes', 'create tyre sizes', 'edit tyre sizes', 'delete tyre sizes', 'restore tyre sizes', 'force delete tyre sizes'
+            ],
+            'items' => [
+                'view items', 'create items', 'edit items', 'delete items', 'restore items', 'force delete items', 'import items'
+            ],
+            'suppliers' => [
+                'view suppliers', 'create suppliers', 'edit suppliers', 'delete suppliers', 'restore suppliers', 'force delete suppliers', 'import suppliers'
+            ],
+            'vendors' => [
+                'view vendors', 'create vendors', 'edit vendors', 'delete vendors', 'restore vendors', 'force delete vendors', 'import vendors'
+            ],
+            'banks' => [
+                'view banks', 'create banks', 'edit banks', 'delete banks', 'restore banks', 'force delete banks', 'import banks'
+            ],
+            'bank_branches' => [
+                'view bank branches', 'create bank branches', 'edit bank branches', 'delete bank branches', 'restore bank branches', 'force delete bank branches', 'import bank branches'
+            ],
+            'bill_formats' => [
+                'view bill formats', 'create bill formats', 'edit bill formats', 'delete bill formats'
+            ],
+            'documents' => [
+                'view documents', 'upload documents', 'edit documents', 'delete documents', 'restore documents', 'download documents',
+                'view activity', 'manage categories', 'manage folders', 'view document reports', 'manage document trash'
+            ],
+            'settings' => [
+                'manage settings'
+            ],
+            'activity_logs' => [
+                'view activity logs'
+            ],
         ];
 
+        // Create all permissions
+        $allCreatedPermissions = [];
         foreach ($permissions as $group => $perms) {
             foreach ($perms as $perm) {
-                Permission::firstOrCreate(['name' => $perm]);
+                $p = Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'web']);
+                $allCreatedPermissions[] = $p;
             }
         }
 
-        $superAdmin = Role::firstOrCreate(['name' => 'Super Admin']);
+        // 1. Super Admin - Grant ALL permissions without exception
+        $superAdmin = Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'web']);
         $superAdmin->syncPermissions(Permission::all());
 
-        $companyAdmin = Role::firstOrCreate(['name' => 'Company Admin']);
+        // 2. Company Admin - Grant all operational & master permissions except system logs/settings
+        $companyAdmin = Role::firstOrCreate(['name' => 'Company Admin', 'guard_name' => 'web']);
         $companyAdminPermissions = Permission::whereNotIn('name', ['manage settings', 'view activity logs'])->get();
         $companyAdmin->syncPermissions($companyAdminPermissions);
 
-        $branchManager = Role::firstOrCreate(['name' => 'Branch Manager']);
+        // 3. Branch Manager
+        $branchManager = Role::firstOrCreate(['name' => 'Branch Manager', 'guard_name' => 'web']);
         $branchManagerPermissions = Permission::whereIn('name', [
             'view branches', 'view users', 'create users', 'edit users',
             'view bulties', 'create bulties', 'edit bulties',
             'view trips', 'create trips', 'edit trips',
             'view vehicles', 'view drivers',
-            'view reports',
-            'view billing',
+            'view reports', 'export reports',
+            'view billing', 'create billing', 'view invoices',
             'view driver salary', 'view driver salary slips',
             'view employee salary', 'view attendance', 'mark attendance',
             'view leaves', 'create leaves',
@@ -95,15 +182,17 @@ $permissions = [
             'view company loans', 'view vehicle loans',
             'view service schedules', 'view spare parts', 'view maintenance history',
             'view breakdowns', 'create breakdowns', 'mark breakdowns resolved',
-            'view tyre management'
+            'view tyre management',
+            'view consignors', 'view consignees', 'view items', 'view fuel pumps', 'view banks', 'view bank branches'
         ])->get();
         $branchManager->syncPermissions($branchManagerPermissions);
 
-        $accountant = Role::firstOrCreate(['name' => 'Accountant']);
+        // 4. Accountant
+        $accountant = Role::firstOrCreate(['name' => 'Accountant', 'guard_name' => 'web']);
         $accountantPermissions = Permission::whereIn('name', [
             'view bulties', 'view trips', 'view vehicles', 'view drivers',
             'view reports', 'export reports',
-            'view billing',
+            'view billing', 'create billing', 'edit billing', 'view invoices', 'print invoices', 'export invoices', 'view toll bills',
             'view driver salary', 'create driver salary', 'edit driver salary', 'delete driver salary',
             'view driver advances', 'create driver advances', 'edit driver advances', 'delete driver advances',
             'generate driver salary slips', 'view driver salary slips', 'delete driver salary slips',
@@ -112,49 +201,70 @@ $permissions = [
             'view company loans', 'create company loans', 'edit company loans', 'delete company loans', 'record company loan payments',
             'view vehicle loans',
             'view service schedules', 'view spare parts', 'view maintenance history', 'view breakdowns',
-            'view tyre management'
+            'view tyre management',
+            'view consignors', 'view consignees', 'view suppliers', 'view vendors', 'view banks', 'view bank branches', 'view gst'
         ])->get();
         $accountant->syncPermissions($accountantPermissions);
 
-        $dispatcher = Role::firstOrCreate(['name' => 'Dispatcher']);
+        // 5. Dispatcher
+        $dispatcher = Role::firstOrCreate(['name' => 'Dispatcher', 'guard_name' => 'web']);
         $dispatcherPermissions = Permission::whereIn('name', [
-            'view bulties', 'create bulties', 'edit bulties',
+            'view bulties', 'create bulties', 'edit bulties', 'print bulties',
             'view trips', 'create trips', 'edit trips',
-            'view vehicles', 'view drivers',
+            'view vehicles', 'view drivers', 'view consignors', 'view consignees'
         ])->get();
         $dispatcher->syncPermissions($dispatcherPermissions);
 
-        $driver = Role::firstOrCreate(['name' => 'Driver']);
+        // 6. Driver
+        $driver = Role::firstOrCreate(['name' => 'Driver', 'guard_name' => 'web']);
         $driverPermissions = Permission::whereIn('name', [
-            'view trips', 'view vehicles',
+            'view trips', 'view vehicles', 'view driver salary slips'
         ])->get();
         $driver->syncPermissions($driverPermissions);
 
-        $operator = Role::firstOrCreate(['name' => 'Operator']);
+        // 7. Operator
+        $operator = Role::firstOrCreate(['name' => 'Operator', 'guard_name' => 'web']);
         $operatorPermissions = Permission::whereIn('name', [
             'view bulties', 'create bulties', 'edit bulties',
             'view trips', 'create trips', 'edit trips',
+            'view vehicles', 'view drivers', 'view consignors', 'view consignees'
         ])->get();
         $operator->syncPermissions($operatorPermissions);
 
-        $superAdminUser = User::firstOrCreate(
-            ['email' => 'superadmin@mailinator.com'],
-            [
-                'first_name' => 'Super',
-                'last_name' => 'Admin',
-                'full_name' => 'Super Admin',
-                'slug' => 'super-admin',
-                'phone' => '9876543210',
-                'password' => Hash::make('password'),
-                'role' => 'admin',
-                'country' => 'Australia',
-                'country_code' => 61,
-                'status' => 'active',
-            ]
-        );
-        $superAdminUser->assignRole('Super Admin');
+        // 8. User
+        $userRole = Role::firstOrCreate(['name' => 'User', 'guard_name' => 'web']);
+        $userPermissions = Permission::whereIn('name', [
+            'view bulties', 'view trips'
+        ])->get();
+        $userRole->syncPermissions($userPermissions);
 
-        $this->command->info('Roles and permissions seeded successfully!');
-        $this->command->info('Super Admin: superadmin@mailinator.com / password');
+        // Assign Super Admin role to default admin users
+        $superAdminUsers = User::whereIn('email', ['superadmin@mailinator.com', 'admin@admin.com'])->get();
+        foreach ($superAdminUsers as $u) {
+            if (!$u->hasRole('Super Admin')) {
+                $u->assignRole('Super Admin');
+            }
+        }
+
+        // Create default Super Admin user if none exists
+        if (User::whereHas('roles', fn($q) => $q->where('name', 'Super Admin'))->count() === 0) {
+            $superAdminUser = User::firstOrCreate(
+                ['email' => 'superadmin@mailinator.com'],
+                [
+                    'first_name' => 'Super',
+                    'last_name' => 'Admin',
+                    'full_name' => 'Super Admin',
+                    'slug' => 'super-admin',
+                    'phone' => '9876543210',
+                    'password' => Hash::make('password'),
+                    'role' => 'admin',
+                    'country' => 'India',
+                    'country_code' => 91,
+                    'status' => 'active',
+                ]
+            );
+            $superAdminUser->assignRole('Super Admin');
+        }
     }
 }
+
