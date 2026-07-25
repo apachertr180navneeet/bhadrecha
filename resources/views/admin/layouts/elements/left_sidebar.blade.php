@@ -115,7 +115,7 @@
             </li>
             <li class="menu-item {{ request()->is('admin/transport/toll-bills*') ? 'active' : '' }}">
                 <a href="{{ route('admin.transport.toll-bills.index') }}" class="menu-link">
-                    <i class="menu-icon tf-icons bx bx-road"></i>
+                    <i class="menu-icon tf-icons bx bx-calculator"></i>
                     <div data-i18n="Toll Bills">Toll Bills</div>
                 </a>
             </li>
