@@ -143,12 +143,25 @@
 $(document).ready(function() {
     function loadBranches(companyId, selectedBranchId) {
         var $branchSelect = $('#branch_id');
-        if (!companyId) {
-            $branchSelect.html('<option value="">All Branches / Main Office</option>').trigger('change');
-            return;
+        if (!$branchSelect.length) return;
+
+        function refreshSelect2(optionsHtml) {
+            if ($branchSelect.data('select2')) {
+                $branchSelect.select2('destroy');
+            }
+            $branchSelect.html(optionsHtml);
+            if (typeof window.initGlobalSelect2 === 'function') {
+                window.initGlobalSelect2();
+            } else if ($.fn.select2) {
+                $branchSelect.select2();
+            }
+            $branchSelect.trigger('change');
         }
 
-        $branchSelect.html('<option value="">Loading branches...</option>').trigger('change');
+        if (!companyId) {
+            refreshSelect2('<option value="">All Branches / Main Office</option>');
+            return;
+        }
 
         $.ajax({
             url: '{{ url("admin/users/get-branches") }}/' + companyId,
@@ -156,21 +169,29 @@ $(document).ready(function() {
             dataType: 'json',
             success: function(data) {
                 var options = '<option value="">All Branches / Main Office</option>';
-                $.each(data, function(index, branch) {
-                    var selected = (selectedBranchId && selectedBranchId == branch.id) ? 'selected' : '';
-                    options += '<option value="' + branch.id + '" ' + selected + '>' + branch.name + '</option>';
-                });
-                $branchSelect.html(options).trigger('change');
+                if (data && data.length > 0) {
+                    $.each(data, function(index, branch) {
+                        var selected = (selectedBranchId && selectedBranchId == branch.id) ? 'selected' : '';
+                        options += '<option value="' + branch.id + '" ' + selected + '>' + branch.name + '</option>';
+                    });
+                }
+                refreshSelect2(options);
             },
             error: function() {
-                $branchSelect.html('<option value="">All Branches / Main Office</option>').trigger('change');
+                refreshSelect2('<option value="">All Branches / Main Office</option>');
             }
         });
     }
 
-    $(document).on('change', '#company_id', function() {
+    var initialCompanyId = $('#company_id').val();
+    var initialBranchId = "{{ old('branch_id', $document->branch_id) }}";
+    if (initialCompanyId) {
+        loadBranches(initialCompanyId, initialBranchId);
+    }
+
+    $(document).on('change select2:select', '#company_id', function() {
         var companyId = $(this).val();
-        loadBranches(companyId, "{{ old('branch_id', $document->branch_id) }}");
+        loadBranches(companyId, null);
     });
 });
 </script>

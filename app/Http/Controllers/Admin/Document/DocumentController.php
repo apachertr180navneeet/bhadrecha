@@ -34,14 +34,18 @@ class DocumentController extends Controller
             $companyId = $user->company_id;
         }
 
+        $companies = $user->isSuperAdmin() ? Company::where('status', 'active')->get() : collect();
+        if (!$companyId && $companies->isNotEmpty()) {
+            $companyId = $companies->first()->id;
+        }
+
         if ($request->ajax()) {
             return $this->getDataTable($request, $companyId);
         }
 
         $categories = DocumentCategory::forCompany($companyId)->active()->get();
         $folders = DocumentFolder::forCompany($companyId)->active()->get();
-        $branches = Branch::where('company_id', $companyId)->get();
-        $companies = $user->isSuperAdmin() ? Company::where('status', 'active')->get() : collect();
+        $branches = $companyId ? Branch::where('company_id', $companyId)->get() : Branch::all();
         $users = User::byCompany($companyId)->get();
 
         return view('admin.documents.index', compact('categories', 'folders', 'branches', 'companies', 'users', 'companyId'));
@@ -155,10 +159,14 @@ class DocumentController extends Controller
             $companyId = $user->company_id;
         }
 
+        $companies = $user->isSuperAdmin() ? Company::where('status', 'active')->get() : collect();
+        if (!$companyId && $companies->isNotEmpty()) {
+            $companyId = $companies->first()->id;
+        }
+
         $categories = DocumentCategory::forCompany($companyId)->active()->get();
         $folders = DocumentFolder::forCompany($companyId)->active()->get();
-        $branches = Branch::where('company_id', $companyId)->get();
-        $companies = $user->isSuperAdmin() ? Company::where('status', 'active')->get() : collect();
+        $branches = $companyId ? Branch::where('company_id', $companyId)->get() : Branch::all();
 
         return view('admin.documents.create', compact('categories', 'folders', 'branches', 'companies', 'companyId'));
     }
