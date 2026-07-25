@@ -274,7 +274,9 @@
     $sgstVal = ($gstType === 'CGST_SGST') ? (floatval($existingInvoice?->sgst_amount) > 0 ? floatval($existingInvoice->sgst_amount) : ($gstTotalVal / 2)) : 0;
     $igstVal = ($gstType === 'IGST') ? (floatval($existingInvoice?->igst_amount) > 0 ? floatval($existingInvoice->igst_amount) : $gstTotalVal) : 0;
     
-    $effectiveGrandTotal = floatval($grandTotal ?? 0) > 0 ? floatval($grandTotal) : ($freightTotal + $otherTotal + $gstTotalVal);
+    $damageTotal = isset($bulties) ? $bulties->sum(fn($b) => floatval($b->damage_amount ?? 0)) : 0;
+    $shortageTotal = isset($bulties) ? $bulties->sum(fn($b) => floatval($b->shortage_amount ?? 0)) : 0;
+    $effectiveGrandTotal = floatval($grandTotal ?? 0) > 0 ? floatval($grandTotal) : ($freightTotal + $otherTotal - $damageTotal - $shortageTotal + $gstTotalVal);
     $effectiveAmountInWords = !empty($amountInWords) ? $amountInWords : \App\Http\Controllers\Admin\Transport\BillingController::convertNumberToWords($effectiveGrandTotal);
 
     $comp = $invoiceCompany ?? ($existingInvoice?->company ?? null);
@@ -376,7 +378,7 @@
                 <table class="w-100" style="color: #000; font-size: 10px; border-collapse: collapse;">
                     <tr>
                         <td class="fw-bold p-1 text-end" style="border-bottom: 1px solid #000; border-left: 1px solid #000;">Total Freight:</td>
-                        <td class="p-1 text-end" style="border-bottom: 1px solid #000; border-left: 1px solid #000;">{{ number_format($freightTotal, 2) }}</td>
+                        <td class="p-1 text-end" style="border-bottom: 1px solid #000; border-left: 1px solid #000;">{{ number_format($netFreightTotal, 2) }}</td>
                     </tr>
                     @if($gstType === 'CGST_SGST')
                         @php $halfGstRate = $gstRate / 2; @endphp

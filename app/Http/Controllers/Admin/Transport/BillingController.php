@@ -167,13 +167,20 @@ class BillingController extends Controller
             $totalFreight = 0;
             $totalGst = 0;
             $totalOther = 0;
+            $totalDamage = 0;
+            $totalShortage = 0;
             $totalAmount = 0;
 
             $templateType = $request->input('template_type');
             foreach ($groupBulties as $bulty) {
+                $damage = floatval($bulty->damage_amount ?? 0);
+                $shortage = floatval($bulty->shortage_amount ?? 0);
+
                 if ($invoiceType === 'toll') {
                     $freight = $bulty->trip ? floatval($bulty->trip->fastTagDetails->sum('amount')) : 0;
                     $other = 0;
+                    $damage = 0;
+                    $shortage = 0;
                 } elseif ($templateType === 'gypsum') {
                     $finalWgt = $bulty->bultyDetail ? floatval($bulty->bultyDetail->final_wgt) : 0;
                     $rateMt = $bulty->bultyDetail ? floatval($bulty->bultyDetail->rate_mt) : 0;
@@ -189,7 +196,7 @@ class BillingController extends Controller
                     $freight = $weight * $ulRate;
                     $other = floatval($bulty->other_charges);
                 } else {
-                    $freight = floatval($bulty->total_amount);
+                    $freight = floatval($bulty->freight_charges) - floatval($bulty->advance_amount);
                     $other = floatval($bulty->other_charges);
                 }
 
@@ -199,11 +206,13 @@ class BillingController extends Controller
                     $gst = $freight * ($gstPercentage / 100);
                 }
 
-                $total = $freight + $other + $gst;
+                $total = $freight + $other - $damage - $shortage + $gst;
 
                 $totalFreight += $freight;
                 $totalGst += $gst;
                 $totalOther += $other;
+                $totalDamage += $damage;
+                $totalShortage += $shortage;
                 $totalAmount += $total;
             }
 
@@ -254,7 +263,11 @@ class BillingController extends Controller
                 $igstAmount = 0.00;
             }
 
-            $totalAmount = $totalFreight + $totalOther + $totalGst;
+            if ($request->filled('total_amount') && floatval($request->total_amount) > 0) {
+                $totalAmount = floatval($request->total_amount);
+            } else {
+                $totalAmount = $totalFreight + $totalOther - $totalDamage - $totalShortage + $totalGst;
+            }
             $amountInWords = self::convertNumberToWords($totalAmount);
 
             $invoice = DB::transaction(function () use ($firstBulty, $consignorId, $consignorName, $fromCityName, $toCityName, $totalFreight, $totalGst, $totalOther, $invoiceNo, $invoiceType, $totalAmount, $amountInWords, $format, $groupBulties, $request, $isMaiharUnloading, $companyName, $gstType, $cgstAmount, $sgstAmount, $igstAmount) {

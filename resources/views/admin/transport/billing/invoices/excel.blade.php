@@ -398,11 +398,16 @@
         </tr>
     @endforeach
 
+    @php
+        $damageTotal = $invoice->bulties ? $invoice->bulties->sum(fn($b) => floatval($b->damage_amount ?? 0)) : 0;
+        $shortageTotal = $invoice->bulties ? $invoice->bulties->sum(fn($b) => floatval($b->shortage_amount ?? 0)) : 0;
+        $netFreightTotal = $totalFreight - $damageTotal - $shortageTotal;
+    @endphp
     <!-- Totals Rows -->
     <tr>
         <td colspan="{{ max($colCount - 2, 1) }}" style="border-left: 2px solid #000; border-right: none; border-bottom: none;"></td>
         <td style="border: 2px solid #000; border-bottom: 1px solid #000; text-align: right; font-weight: bold; padding: 4px;">Total Freight:</td>
-        <td style="border: 2px solid #000; border-bottom: 1px solid #000; text-align: right; padding: 4px;">{{ number_format($totalFreight, 2) }}</td>
+        <td style="border: 2px solid #000; border-bottom: 1px solid #000; text-align: right; padding: 4px;">{{ number_format($netFreightTotal, 2) }}</td>
     </tr>
     @if($gstType === 'CGST_SGST')
         @php $halfGst = $gstRate / 2; @endphp

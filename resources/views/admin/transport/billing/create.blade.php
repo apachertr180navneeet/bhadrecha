@@ -1381,6 +1381,8 @@ document.addEventListener('DOMContentLoaded', function() {
             let freightSum = 0;
             let gstSum = 0;
             let otherSum = 0;
+            let damageSum = 0;
+            let shortageSum = 0;
             
             bulties.forEach((bulty, idx) => {
                 let freight = 0;
@@ -1420,6 +1422,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 freightSum += freight;
                 gstSum += bultyGst;
                 otherSum += other;
+                damageSum += damageAmount;
+                shortageSum += shortageAmount;
                 
                 // Update Selected LRs Table Row
                 const selectedTr = document.querySelector(`tr[data-bulty-id="${bulty.id}"]`);
@@ -1470,9 +1474,10 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             // Update Selected LRs table totals
+            const netFreightSum = freightSum - damageSum - shortageSum;
             const sumSelFreight = document.getElementById('sum-selected-freight');
             if (sumSelFreight) {
-                sumSelFreight.textContent = freightSum.toFixed(2);
+                sumSelFreight.textContent = netFreightSum.toFixed(2);
                 document.getElementById('sum-selected-gst').textContent = gstSum.toFixed(2);
                 document.getElementById('sum-selected-other').textContent = otherSum.toFixed(2);
                 document.getElementById('sum-selected-total').textContent = totalAmountSum.toFixed(2);
@@ -1481,7 +1486,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Update Bill Summary totals
             const sumTotalFreight = document.getElementById('summary-total-freight');
             if (sumTotalFreight) {
-                sumTotalFreight.textContent = '₹ ' + freightSum.toFixed(2);
+                sumTotalFreight.textContent = '₹ ' + netFreightSum.toFixed(2);
                 document.getElementById('summary-total-gst').textContent = '₹ ' + gstSum.toFixed(2);
                 document.getElementById('summary-total-other').textContent = '₹ ' + otherSum.toFixed(2);
                 document.getElementById('summary-grand-total').textContent = '₹ ' + totalAmountSum.toFixed(2);
@@ -1586,7 +1591,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 `;
             }
 
-            const grandTotalCalc = freightSum + otherSum + userTotalGst;
+            const grandTotalCalc = freightSum + otherSum - damageSum - shortageSum + userTotalGst;
             $('#total-amount-input').val(grandTotalCalc.toFixed(2));
 
             gstHtml += `
