@@ -51,4 +51,10 @@ class Company extends Model
     {
         return $this->hasMany(User::class);
     }
+
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
 }
+
