@@ -185,7 +185,7 @@ $(document).ready(function() {
         processing: true,
         serverSide: true,
         ajax: {
-            url: "{{ route('admin.documents.index') }}",
+            url: "{{ route('admin.documents.index', [], false) }}",
             data: function(d) {
                 d.search_term = $('#searchTerm').val();
                 if ($('#filterCompany').length) {
@@ -255,36 +255,58 @@ $(document).ready(function() {
     });
 
     // Dynamic branch loading when company filter changes
-    $(document).on('change', '#filterCompany', function() {
+    $(document).on('change select2:select', '#filterCompany', function() {
         var companyId = $(this).val();
         var $branchSelect = $('#filterBranch');
+
+        function updateBranchOptions(optionsHtml) {
+            if ($branchSelect.data('select2')) {
+                $branchSelect.select2('destroy');
+            }
+            $branchSelect.html(optionsHtml);
+            if (typeof window.initGlobalSelect2 === 'function') {
+                window.initGlobalSelect2();
+            } else if ($.fn.select2) {
+                $branchSelect.select2();
+            }
+            table.draw();
+        }
+
         if (companyId) {
             $.ajax({
-                url: '{{ url("admin/users/get-branches") }}/' + companyId,
+                url: '/admin/users/get-branches/' + companyId,
                 type: 'GET',
                 dataType: 'json',
                 success: function(data) {
                     var options = '<option value="">All Branches</option>';
-                    $.each(data, function(i, b) {
-                        options += '<option value="' + b.id + '">' + b.name + '</option>';
-                    });
-                    $branchSelect.html(options);
-                    table.draw();
+                    if (data && data.length > 0) {
+                        $.each(data, function(i, b) {
+                            options += '<option value="' + b.id + '">' + b.name + '</option>';
+                        });
+                    }
+                    updateBranchOptions(options);
+                },
+                error: function() {
+                    updateBranchOptions('<option value="">All Branches</option>');
                 }
             });
         } else {
-            $branchSelect.html('<option value="">All Branches</option>');
-            table.draw();
+            updateBranchOptions('<option value="">All Branches</option>');
         }
     });
 
-    // Real-time filter triggers
-    $('#searchTerm, #filterCompany, #filterCategory, #filterFolder, #filterBranch, #filterExpiry, #filterStatus').on('change keyup', function() {
+    // Real-time filter triggers for select & select2
+    $(document).on('change select2:select keyup', '#searchTerm, #filterCompany, #filterCategory, #filterFolder, #filterBranch, #filterExpiry, #filterStatus', function() {
         table.draw();
     });
 
     $('#btnResetFilters').on('click', function() {
         $('#filterForm')[0].reset();
+        $('#filterForm select').each(function() {
+            if ($(this).data('select2')) {
+                $(this).val('').trigger('change.select2');
+            }
+        });
         table.draw();
     });
 

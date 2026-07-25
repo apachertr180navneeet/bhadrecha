@@ -29,7 +29,7 @@ class DocumentController extends Controller
     {
         $user = auth()->user();
 
-        if ($request->ajax()) {
+        if ($request->ajax() || $request->wantsJson() || $request->has('draw')) {
             return $this->getDataTable($request);
         }
 
@@ -50,17 +50,14 @@ class DocumentController extends Controller
     protected function getDataTable(Request $request)
     {
         $user = auth()->user();
-        $query = Document::with(['category', 'folder', 'uploader', 'company', 'branch']);
+        $query = Document::query()->with(['category', 'folder', 'uploader', 'company', 'branch']);
 
         // Scope company
-        if ($user && !$user->isSuperAdmin()) {
-            $companyId = $user->company_id ?? session('active_company_id');
-            if ($companyId) {
-                $query->where('company_id', $companyId);
-            }
-        } else {
-            if ($request->filled('company_id')) {
-                $query->where('company_id', $request->company_id);
+        if ($request->filled('company_id')) {
+            $query->where('company_id', $request->company_id);
+        } elseif ($user && !$user->isAdmin()) {
+            if (!empty($user->company_id)) {
+                $query->where('company_id', $user->company_id);
             }
         }
 
@@ -84,7 +81,7 @@ class DocumentController extends Controller
             $query->where('uploaded_by', $request->user_id);
         }
         if ($request->filled('search_term')) {
-            $term = '%' . $request->search_term . '%';
+            $term = '%' . trim($request->search_term) . '%';
             $query->where(function ($q) use ($term) {
                 $q->where('name', 'like', $term)
                   ->orWhere('document_number', 'like', $term)
@@ -113,7 +110,8 @@ class DocumentController extends Controller
             }
         }
 
-        $totalRecords = (clone $query)->count();
+        $recordsTotal = Document::count();
+        $recordsFiltered = (clone $query)->count();
         $limit = max(1, intval($request->input('length', 10)));
         $start = max(0, intval($request->input('start', 0)));
         $orderColumnIndex = intval($request->input('order.0.column', 0));
@@ -152,8 +150,8 @@ class DocumentController extends Controller
 
         return response()->json([
             'draw' => intval($request->input('draw')),
-            'recordsTotal' => $totalRecords,
-            'recordsFiltered' => $totalRecords,
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
             'data' => $data,
         ]);
     }
