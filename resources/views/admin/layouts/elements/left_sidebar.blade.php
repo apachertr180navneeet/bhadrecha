@@ -217,12 +217,14 @@
                             </a>
                         </li>
                     @endcan
+                    @can('view employee advances')
                         <li class="menu-item {{ request()->is('admin/advances*') ? 'active' : '' }}">
                             <a href="{{ route('admin.advances.index') }}" class="menu-link">
                                 <i class="menu-icon tf-icons bx bx-money"></i>
                                 <div data-i18n="Advance">Advance</div>
                             </a>
                         </li>
+                    @endcan
                 </ul>
             </li>
         @endcanany
@@ -319,119 +321,148 @@
             </li>
         @endcanany
 
-        @canany(['view reports'])
+        @canany(['view reports', 'view vehicle report', 'view driver trip report', 'view customer ledger', 'view sales ledger', 'view tds report', 'view trip reports', 'view bilty advance details', 'view fuel report', 'view fuel outstanding', 'view adblue outstanding', 'view vehicle utilization', 'view mis report', 'view expense management', 'view vehicle document report', 'view gst tax report', 'view profit loss report'])
             <li class="menu-divider"></li>
             <li class="menu-header small text-uppercase">
                 <span class="menu-header-text">Reports</span>
             </li>
-        @endcanany
-
-        @can('view reports')
             <li class="menu-item {{ request()->is('admin/reports/*') ? 'active open' : '' }} has-sub">
                 <a href="javascript:void(0);" class="menu-link menu-toggle">
                     <i class="menu-icon tf-icons bx bx-bar-chart-alt-2"></i>
                     <div data-i18n="Reports">Reports</div>
                 </a>
                 <ul class="menu-sub">
-                    <li class="menu-item {{ request()->is('admin/reports/vehicle') ? 'active' : '' }}">
-                        <a href="{{ route('admin.reports.vehicle') }}" class="menu-link">
-                            <i class="menu-icon tf-icons bx bx-car"></i>
-                            <div data-i18n="Vehicle Report">Vehicle Performance</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->is('admin/reports/driver-trip*') ? 'active' : '' }}">
-                        <a href="{{ route('admin.reports.driver-trip') }}" class="menu-link">
-                            <i class="menu-icon tf-icons bx bx-user"></i>
-                            <div data-i18n="Driver Trip Report">Driver Trip Report</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->is('admin/reports/customer-ledger*') ? 'active' : '' }}">
-                        <a href="{{ route('admin.reports.customer-ledger') }}" class="menu-link">
-                            <i class="menu-icon tf-icons bx bx-book"></i>
-                            <div data-i18n="Customer Ledger">Customer Ledger</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->is('admin/reports/sales-ledger*') ? 'active' : '' }}">
-                        <a href="{{ route('admin.reports.sales-ledger') }}" class="menu-link">
-                            <i class="menu-icon tf-icons bx bx-rupee"></i>
-                            <div data-i18n="Sales Ledger">Sales Ledger</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->is('admin/reports/tds-report*') ? 'active' : '' }}">
-                        <a href="{{ route('admin.reports.tds-report') }}" class="menu-link">
-                            <i class="menu-icon tf-icons bx bx-receipt"></i>
-                            <div data-i18n="TDS Report">TDS Report</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->is('admin/reports/trip-reports*') ? 'active' : '' }}">
-                        <a href="{{ route('admin.reports.trip-reports') }}" class="menu-link">
-                            <i class="menu-icon tf-icons bx bx-detail"></i>
-                            <div data-i18n="Trip Reports">Trip Reports</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->is('admin/reports/bilty-advance-details*') ? 'active' : '' }}">
-                        <a href="{{ route('admin.reports.bilty-advance-details.index') }}" class="menu-link">
-                            <i class="menu-icon tf-icons bx bx-money"></i>
-                            <div data-i18n="Bilty Advance Details">Bilty Advance Details</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ (request()->is('admin/reports/fuel') || request()->is('admin/reports/fuel/*')) && !request()->is('admin/reports/fuel-outstanding*') ? 'active' : '' }}">
-                        <a href="{{ route('admin.reports.fuel') }}" class="menu-link">
-                            <i class="menu-icon tf-icons bx bx-gas-pump"></i>
-                            <div data-i18n="Fuel Report">Fuel Report</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->is('admin/reports/fuel-outstanding*') ? 'active' : '' }}">
-                        <a href="{{ route('admin.reports.fuel-outstanding') }}" class="menu-link">
-                            <i class="menu-icon tf-icons bx bx-wallet"></i>
-                            <div data-i18n="Fuel Outstanding">Fuel Outstanding</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->is('admin/reports/adblue-outstanding*') ? 'active' : '' }}">
-                        <a href="{{ route('admin.reports.adblue-outstanding') }}" class="menu-link">
-                            <i class="menu-icon tf-icons bx bx-water"></i>
-                            <div data-i18n="AdBlue Outstanding">AdBlue Outstanding</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->is('admin/reports/vehicle-utilization*') ? 'active' : '' }}">
-                        <a href="{{ route('admin.reports.vehicle-utilization') }}" class="menu-link">
-                            <i class="menu-icon tf-icons bx bx-line-chart"></i>
-                            <div data-i18n="Vehicle Utilization">Vehicle Utilization</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->is('admin/reports/mis*') ? 'active' : '' }}">
-                        <a href="{{ route('admin.reports.mis') }}" class="menu-link">
-                            <i class="menu-icon tf-icons bx bx-bar-chart-square"></i>
-                            <div data-i18n="MIS Report">MIS Report</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->is('admin/reports/expense-management*') ? 'active' : '' }}">
-                        <a href="{{ route('admin.reports.expense-management') }}" class="menu-link">
-                            <i class="menu-icon tf-icons bx bx-money"></i>
-                            <div data-i18n="Expense Management Report">Expense Management</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->is('admin/reports/vehicle-documents*') ? 'active' : '' }}">
-                        <a href="{{ route('admin.reports.vehicle-documents') }}" class="menu-link">
-                            <i class="menu-icon tf-icons bx bx-file-blank"></i>
-                            <div data-i18n="Vehicle Document Report">Vehicle Documents</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->is('admin/reports/gst-tax*') ? 'active' : '' }}">
-                        <a href="{{ route('admin.reports.gst-tax') }}" class="menu-link">
-                            <i class="menu-icon tf-icons bx bx-receipt"></i>
-                            <div data-i18n="GST & Tax Report">GST & Tax</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->is('admin/reports/profit-loss*') ? 'active' : '' }}">
-                        <a href="{{ route('admin.reports.profit-loss') }}" class="menu-link">
-                            <i class="menu-icon tf-icons bx bx-trending-up"></i>
-                            <div data-i18n="Profit & Loss Report">Profit & Loss</div>
-                        </a>
-                    </li>
+                    @can('view vehicle report')
+                        <li class="menu-item {{ request()->is('admin/reports/vehicle') ? 'active' : '' }}">
+                            <a href="{{ route('admin.reports.vehicle') }}" class="menu-link">
+                                <i class="menu-icon tf-icons bx bx-car"></i>
+                                <div data-i18n="Vehicle Report">Vehicle Performance</div>
+                            </a>
+                        </li>
+                    @endcan
+                    @can('view driver trip report')
+                        <li class="menu-item {{ request()->is('admin/reports/driver-trip*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.reports.driver-trip') }}" class="menu-link">
+                                <i class="menu-icon tf-icons bx bx-user"></i>
+                                <div data-i18n="Driver Trip Report">Driver Trip Report</div>
+                            </a>
+                        </li>
+                    @endcan
+                    @can('view customer ledger')
+                        <li class="menu-item {{ request()->is('admin/reports/customer-ledger*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.reports.customer-ledger') }}" class="menu-link">
+                                <i class="menu-icon tf-icons bx bx-book"></i>
+                                <div data-i18n="Customer Ledger">Customer Ledger</div>
+                            </a>
+                        </li>
+                    @endcan
+                    @can('view sales ledger')
+                        <li class="menu-item {{ request()->is('admin/reports/sales-ledger*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.reports.sales-ledger') }}" class="menu-link">
+                                <i class="menu-icon tf-icons bx bx-rupee"></i>
+                                <div data-i18n="Sales Ledger">Sales Ledger</div>
+                            </a>
+                        </li>
+                    @endcan
+                    @can('view tds report')
+                        <li class="menu-item {{ request()->is('admin/reports/tds-report*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.reports.tds-report') }}" class="menu-link">
+                                <i class="menu-icon tf-icons bx bx-receipt"></i>
+                                <div data-i18n="TDS Report">TDS Report</div>
+                            </a>
+                        </li>
+                    @endcan
+                    @can('view trip reports')
+                        <li class="menu-item {{ request()->is('admin/reports/trip-reports*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.reports.trip-reports') }}" class="menu-link">
+                                <i class="menu-icon tf-icons bx bx-detail"></i>
+                                <div data-i18n="Trip Reports">Trip Reports</div>
+                            </a>
+                        </li>
+                    @endcan
+                    @can('view bilty advance details')
+                        <li class="menu-item {{ request()->is('admin/reports/bilty-advance-details*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.reports.bilty-advance-details.index') }}" class="menu-link">
+                                <i class="menu-icon tf-icons bx bx-money"></i>
+                                <div data-i18n="Bilty Advance Details">Bilty Advance Details</div>
+                            </a>
+                        </li>
+                    @endcan
+                    @can('view fuel report')
+                        <li class="menu-item {{ (request()->is('admin/reports/fuel') || request()->is('admin/reports/fuel/*')) && !request()->is('admin/reports/fuel-outstanding*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.reports.fuel') }}" class="menu-link">
+                                <i class="menu-icon tf-icons bx bx-gas-pump"></i>
+                                <div data-i18n="Fuel Report">Fuel Report</div>
+                            </a>
+                        </li>
+                    @endcan
+                    @can('view fuel outstanding')
+                        <li class="menu-item {{ request()->is('admin/reports/fuel-outstanding*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.reports.fuel-outstanding') }}" class="menu-link">
+                                <i class="menu-icon tf-icons bx bx-wallet"></i>
+                                <div data-i18n="Fuel Outstanding">Fuel Outstanding</div>
+                            </a>
+                        </li>
+                    @endcan
+                    @can('view adblue outstanding')
+                        <li class="menu-item {{ request()->is('admin/reports/adblue-outstanding*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.reports.adblue-outstanding') }}" class="menu-link">
+                                <i class="menu-icon tf-icons bx bx-water"></i>
+                                <div data-i18n="AdBlue Outstanding">AdBlue Outstanding</div>
+                            </a>
+                        </li>
+                    @endcan
+                    @can('view vehicle utilization')
+                        <li class="menu-item {{ request()->is('admin/reports/vehicle-utilization*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.reports.vehicle-utilization') }}" class="menu-link">
+                                <i class="menu-icon tf-icons bx bx-line-chart"></i>
+                                <div data-i18n="Vehicle Utilization">Vehicle Utilization</div>
+                            </a>
+                        </li>
+                    @endcan
+                    @can('view mis report')
+                        <li class="menu-item {{ request()->is('admin/reports/mis*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.reports.mis') }}" class="menu-link">
+                                <i class="menu-icon tf-icons bx bx-bar-chart-square"></i>
+                                <div data-i18n="MIS Report">MIS Report</div>
+                            </a>
+                        </li>
+                    @endcan
+                    @can('view expense management')
+                        <li class="menu-item {{ request()->is('admin/reports/expense-management*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.reports.expense-management') }}" class="menu-link">
+                                <i class="menu-icon tf-icons bx bx-money"></i>
+                                <div data-i18n="Expense Management Report">Expense Management</div>
+                            </a>
+                        </li>
+                    @endcan
+                    @can('view vehicle document report')
+                        <li class="menu-item {{ request()->is('admin/reports/vehicle-documents*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.reports.vehicle-documents') }}" class="menu-link">
+                                <i class="menu-icon tf-icons bx bx-file-blank"></i>
+                                <div data-i18n="Vehicle Document Report">Vehicle Documents</div>
+                            </a>
+                        </li>
+                    @endcan
+                    @can('view gst tax report')
+                        <li class="menu-item {{ request()->is('admin/reports/gst-tax*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.reports.gst-tax') }}" class="menu-link">
+                                <i class="menu-icon tf-icons bx bx-receipt"></i>
+                                <div data-i18n="GST & Tax Report">GST & Tax</div>
+                            </a>
+                        </li>
+                    @endcan
+                    @can('view profit loss report')
+                        <li class="menu-item {{ request()->is('admin/reports/profit-loss*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.reports.profit-loss') }}" class="menu-link">
+                                <i class="menu-icon tf-icons bx bx-trending-up"></i>
+                                <div data-i18n="Profit & Loss Report">Profit & Loss</div>
+                            </a>
+                        </li>
+                    @endcan
                 </ul>
             </li>
-        @endcan
+        @endcanany
 
         @canany(['view consignors', 'view consignees', 'view vehicles', 'view drivers', 'view companies', 'view
             branches', 'view gst', 'view cities', 'view packagings', 'view units', 'view fuel pumps', 'view items', 'view
@@ -667,67 +698,79 @@
         @endcan
 
         <!-- Document Management Section -->
-        @canany(['view documents', 'upload documents', 'manage categories', 'manage folders'])
+        @canany(['view documents', 'upload documents', 'manage categories', 'manage folders', 'view document reports', 'view activity', 'manage document trash'])
             <li class="menu-divider"></li>
             <li class="menu-header small text-uppercase">
                 <span class="menu-header-text">Document Management</span>
             </li>
 
-            <li class="menu-item {{ request()->is('admin/documents/dashboard') ? 'active' : '' }}">
-                <a href="{{ route('admin.documents.dashboard') }}" class="menu-link">
-                    <i class="menu-icon tf-icons bx bx-grid-alt"></i>
-                    <div data-i18n="Doc Dashboard">Doc Dashboard</div>
-                </a>
-            </li>
+            @can('view documents')
+                <li class="menu-item {{ request()->is('admin/documents/dashboard') ? 'active' : '' }}">
+                    <a href="{{ route('admin.documents.dashboard') }}" class="menu-link">
+                        <i class="menu-icon tf-icons bx bx-grid-alt"></i>
+                        <div data-i18n="Doc Dashboard">Doc Dashboard</div>
+                    </a>
+                </li>
 
-            <li class="menu-item {{ request()->is('admin/documents') || request()->is('admin/documents/create') || (request()->is('admin/documents/*') && !request()->is('admin/documents/dashboard*') && !request()->is('admin/documents/categories*') && !request()->is('admin/documents/folders*') && !request()->is('admin/documents/trash*') && !request()->is('admin/documents/activity-logs*') && !request()->is('admin/documents/reports*')) ? 'active' : '' }}">
-                <a href="{{ route('admin.documents.index') }}" class="menu-link">
-                    <i class="menu-icon tf-icons bx bx-folder-open"></i>
-                    <div data-i18n="Document Explorer">Document Explorer</div>
-                </a>
-            </li>
+                <li class="menu-item {{ request()->is('admin/documents') || request()->is('admin/documents/create') || (request()->is('admin/documents/*') && !request()->is('admin/documents/dashboard*') && !request()->is('admin/documents/categories*') && !request()->is('admin/documents/folders*') && !request()->is('admin/documents/trash*') && !request()->is('admin/documents/activity-logs*') && !request()->is('admin/documents/reports*')) ? 'active' : '' }}">
+                    <a href="{{ route('admin.documents.index') }}" class="menu-link">
+                        <i class="menu-icon tf-icons bx bx-folder-open"></i>
+                        <div data-i18n="Document Explorer">Document Explorer</div>
+                    </a>
+                </li>
+            @endcan
 
-            <li class="menu-item {{ request()->is('admin/documents/categories*') ? 'active' : '' }}">
-                <a href="{{ route('admin.documents.categories.index') }}" class="menu-link">
-                    <i class="menu-icon tf-icons bx bx-category"></i>
-                    <div data-i18n="Doc Categories">Doc Categories</div>
-                </a>
-            </li>
+            @can('manage categories')
+                <li class="menu-item {{ request()->is('admin/documents/categories*') ? 'active' : '' }}">
+                    <a href="{{ route('admin.documents.categories.index') }}" class="menu-link">
+                        <i class="menu-icon tf-icons bx bx-category"></i>
+                        <div data-i18n="Doc Categories">Doc Categories</div>
+                    </a>
+                </li>
+            @endcan
 
-            <li class="menu-item {{ request()->is('admin/documents/folders*') ? 'active' : '' }}">
-                <a href="{{ route('admin.documents.folders.index') }}" class="menu-link">
-                    <i class="menu-icon tf-icons bx bx-folder"></i>
-                    <div data-i18n="Doc Folders">Doc Folders</div>
-                </a>
-            </li>
+            @can('manage folders')
+                <li class="menu-item {{ request()->is('admin/documents/folders*') ? 'active' : '' }}">
+                    <a href="{{ route('admin.documents.folders.index') }}" class="menu-link">
+                        <i class="menu-icon tf-icons bx bx-folder"></i>
+                        <div data-i18n="Doc Folders">Doc Folders</div>
+                    </a>
+                </li>
+            @endcan
 
-            <li class="menu-item {{ request()->is('admin/documents/reports/expiry*') ? 'active' : '' }}">
-                <a href="{{ route('admin.documents.reports.expiry') }}" class="menu-link">
-                    <i class="menu-icon tf-icons bx bx-time-five"></i>
-                    <div data-i18n="Expiry Alerts">Expiry Alerts</div>
-                </a>
-            </li>
+            @canany(['view document reports', 'view documents'])
+                <li class="menu-item {{ request()->is('admin/documents/reports/expiry*') ? 'active' : '' }}">
+                    <a href="{{ route('admin.documents.reports.expiry') }}" class="menu-link">
+                        <i class="menu-icon tf-icons bx bx-time-five"></i>
+                        <div data-i18n="Expiry Alerts">Expiry Alerts</div>
+                    </a>
+                </li>
 
-            <li class="menu-item {{ request()->is('admin/documents/reports/storage*') ? 'active' : '' }}">
-                <a href="{{ route('admin.documents.reports.storage') }}" class="menu-link">
-                    <i class="menu-icon tf-icons bx bx-pie-chart-alt-2"></i>
-                    <div data-i18n="Storage Usage">Storage Usage</div>
-                </a>
-            </li>
+                <li class="menu-item {{ request()->is('admin/documents/reports/storage*') ? 'active' : '' }}">
+                    <a href="{{ route('admin.documents.reports.storage') }}" class="menu-link">
+                        <i class="menu-icon tf-icons bx bx-pie-chart-alt-2"></i>
+                        <div data-i18n="Storage Usage">Storage Usage</div>
+                    </a>
+                </li>
+            @endcanany
 
-            <li class="menu-item {{ request()->is('admin/documents/activity-logs*') ? 'active' : '' }}">
-                <a href="{{ route('admin.documents.activity-logs') }}" class="menu-link">
-                    <i class="menu-icon tf-icons bx bx-list-check"></i>
-                    <div data-i18n="Doc Audit Logs">Doc Audit Trail</div>
-                </a>
-            </li>
+            @canany(['view activity', 'view activity logs'])
+                <li class="menu-item {{ request()->is('admin/documents/activity-logs*') ? 'active' : '' }}">
+                    <a href="{{ route('admin.documents.activity-logs') }}" class="menu-link">
+                        <i class="menu-icon tf-icons bx bx-list-check"></i>
+                        <div data-i18n="Doc Audit Logs">Doc Audit Trail</div>
+                    </a>
+                </li>
+            @endcanany
 
-            <li class="menu-item {{ request()->is('admin/documents/trash*') ? 'active' : '' }}">
-                <a href="{{ route('admin.documents.trash') }}" class="menu-link">
-                    <i class="menu-icon tf-icons bx bx-trash"></i>
-                    <div data-i18n="Doc Trash">Doc Trash Bin</div>
-                </a>
-            </li>
+            @canany(['manage document trash', 'delete documents'])
+                <li class="menu-item {{ request()->is('admin/documents/trash*') ? 'active' : '' }}">
+                    <a href="{{ route('admin.documents.trash') }}" class="menu-link">
+                        <i class="menu-icon tf-icons bx bx-trash"></i>
+                        <div data-i18n="Doc Trash">Doc Trash Bin</div>
+                    </a>
+                </li>
+            @endcanany
         @endcanany
 
 

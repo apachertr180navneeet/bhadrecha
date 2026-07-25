@@ -19,14 +19,15 @@ class CompanyAccessMiddleware
             return $next($request);
         }
 
-        $companyId = $request->route('company') ?? $request->input('company_id') ?? session('current_company_id');
-
-        if (!$companyId) {
-            $companyId = $user->company_id;
-            session(['current_company_id' => $companyId]);
+        // Direct company and branch strictly from auth user for non-Super Admin
+        session(['current_company_id' => $user->company_id]);
+        if ($user->branch_id) {
+            session(['current_branch_id' => $user->branch_id]);
         }
 
-        if (!$user->canAccessCompany($companyId)) {
+        $companyId = $request->route('company') ?? $request->input('company_id') ?? $user->company_id;
+
+        if ($companyId && !$user->canAccessCompany($companyId)) {
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json(['message' => 'Unauthorized access to this company.'], 403);
             }
@@ -34,8 +35,7 @@ class CompanyAccessMiddleware
             abort(403, 'You do not have access to this company.');
         }
 
-        session(['current_company_id' => $companyId]);
-
         return $next($request);
     }
 }
+
