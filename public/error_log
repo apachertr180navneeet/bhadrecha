@@ -1,0 +1,2 @@
+[30-Jun-2026 07:28:06 UTC] PHP Fatal error:  Trait "App\Traits\CompanyScope" not found in /home3/gsgwevi6/bhadrecha.co/app/Models/Consignor.php on line 10
+[30-Jun-2026 07:28:19 UTC] PHP Fatal error:  Trait "App\Traits\CompanyScope" not found in /home3/gsgwevi6/bhadrecha.co/app/Models/Bulty.php on line 10

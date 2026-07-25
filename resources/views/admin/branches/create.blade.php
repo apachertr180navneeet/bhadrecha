@@ -1,0 +1,226 @@
+@extends('admin.layouts.app')
+
+@section('content')
+    <div class="container-fluid flex-grow-1 container-p-y">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <div>
+                <h5 class="mb-0">Add Branch</h5>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb breadcrumb-style1 mb-0 mt-1">
+                        <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Home</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('admin.branches.index') }}">Branches</a></li>
+                        <li class="breadcrumb-item active">Add</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <form action="{{ route('admin.branches.store') }}" method="POST" id="branchForm">
+                    @csrf
+                    <div class="row g-3">
+                        <div class="col-md-6"><label class="form-label">Company *</label><select name="company_id"
+                                class="form-select @error('company_id') is-invalid @enderror" required>
+                                <option value="">Select Company</option>
+                                @foreach ($companies as $company)
+                                    <option value="{{ $company->id }}"
+                                        {{ old('company_id', request('company_id')) == $company->id ? 'selected' : '' }}>
+                                        {{ $company->name }}</option>
+                                @endforeach
+                            </select>
+                            @error('company_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="col-md-6"><label class="form-label">Name *</label><input type="text" name="name"
+                                class="form-control @error('name') is-invalid @enderror" value="{{ old('name') }}"
+                                required>
+                            @error('name')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="col-md-6"><label class="form-label">Email</label><input type="email" name="email"
+                                class="form-control @error('email') is-invalid @enderror" value="{{ old('email') }}">
+                            @error('email')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="col-md-6"><label class="form-label">Phone</label><input type="text" name="phone"
+                                class="form-control @error('phone') is-invalid @enderror" value="{{ old('phone') }}">
+                            @error('phone')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="col-md-6"><label class="form-label">State *</label><select name="state" id="state"
+                                class="form-select select2 @error('state') is-invalid @enderror" required>
+                                <option value="">Select State</option>
+                                @foreach (array_keys($states) as $stateName)
+                                    <option value="{{ $stateName }}"
+                                        {{ old('state') == $stateName ? 'selected' : '' }}>{{ $stateName }}</option>
+                                @endforeach
+                            </select>
+                            @error('state')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="col-md-6"><label class="form-label">City *</label><select name="city" id="city"
+                                class="form-select select2 @error('city') is-invalid @enderror" required>
+                                <option value="">Select City</option>
+                            </select>
+                            @error('city')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="col-12"><label class="form-label">Address</label>
+                            <textarea name="address" class="form-control @error('address') is-invalid @enderror" rows="3">{{ old('address') }}</textarea>
+                            @error('address')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+                    <div class="mt-4 d-grid gap-2 d-md-flex"><button type="submit" class="btn btn-primary"><i
+                                class="bx bx-save me-1"></i> Save</button> <a href="{{ route('admin.branches.index') }}"
+                            class="btn btn-secondary">Cancel</a></div>
+                </form>
+            </div>
+        </div>
+    </div>
+@endsection
+
+@section('script')
+    <script>
+        const statesCitiesData = @json($cities);
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+    <style>
+        .select2-container .select2-selection--single {
+            height: 38px;
+            border: 1px solid #d9dee3;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 36px;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 36px;
+        }
+
+        .select2-dropdown {
+            border: 1px solid #d9dee3;
+            border-radius: 0.375rem;
+        }
+
+        .select2-search__field {
+            border: 1px solid #d9dee3;
+            border-radius: 0.375rem;
+            padding: 0.375rem 0.75rem;
+            margin: 8px;
+            width: calc(100% - 22px) !important;
+        }
+
+        .select2-results__option {
+            padding: 8px 16px;
+        }
+
+        .select2-results__option--highlighted {
+            background-color: rgba(67, 89, 113, 0.1) !important;
+            color: #696cff !important;
+        }
+
+        .is-invalid+.select2-container .select2-selection--single {
+            border-color: #ff3e1d !important;
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const stateSelect = document.getElementById('state');
+            const citySelect = document.getElementById('city');
+            const oldState = "{{ old('state') }}";
+            const oldCity = "{{ old('city') }}";
+
+            $('#state, #city').select2({
+                placeholder: 'Search & Select',
+                width: '100%'
+            });
+
+            function loadCities() {
+                const selectedState = stateSelect.value;
+                citySelect.innerHTML = '<option value="">Select City</option>';
+                if (selectedState && statesCitiesData[selectedState]) {
+                    statesCitiesData[selectedState].forEach(city => {
+                        const option = document.createElement('option');
+                        option.value = city;
+                        option.textContent = city;
+                        if (city === oldCity) option.selected = true;
+                        citySelect.appendChild(option);
+                    });
+                    $('#city').trigger('change');
+                }
+            }
+
+            $('#state').on('change', function() {
+                loadCities();
+            });
+            if (oldState) {
+                loadCities();
+            }
+
+            $('#branchForm').validate({
+                rules: {
+                    name: {
+                        required: true,
+                        maxlength: 255
+                    },
+                    email: {
+                        email: true
+                    },
+                    phone: {
+                        digits: true,
+                        minlength: 10,
+                        maxlength: 15
+                    },
+                    state: {
+                        required: true
+                    },
+                    city: {
+                        required: true
+                    }
+                },
+                messages: {
+                    name: {
+                        required: "Branch name is required",
+                        maxlength: "Branch name cannot exceed 255 characters"
+                    },
+                    email: {
+                        email: "Please enter a valid email address"
+                    },
+                    phone: {
+                        digits: "Phone number must contain digits only",
+                        minlength: "Phone number must be at least 10 digits",
+                        maxlength: "Phone number cannot exceed 15 digits"
+                    },
+                    state: {
+                        required: "State is required"
+                    },
+                    city: {
+                        required: "City is required"
+                    }
+                },
+                errorPlacement: function(error, element) {
+                    error.addClass('invalid-feedback');
+                    error.insertAfter(element.next('.select2-container'));
+                    element.addClass('is-invalid');
+                },
+                highlight: function(element) {
+                    $(element).addClass('is-invalid').removeClass('is-valid');
+                },
+                unhighlight: function(element) {
+                    $(element).removeClass('is-invalid').addClass('is-valid');
+                }
+            });
+        });
+    </script>
+@endsection

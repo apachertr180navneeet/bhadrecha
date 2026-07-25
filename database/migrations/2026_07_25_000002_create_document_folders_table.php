@@ -1,0 +1,40 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        if (!Schema::hasTable('document_folders')) {
+            Schema::create('document_folders', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('company_id')->nullable()->constrained('companies')->onDelete('cascade');
+                $table->foreignId('branch_id')->nullable()->constrained('branches')->onDelete('set null');
+                $table->foreignId('category_id')->nullable()->constrained('document_categories')->onDelete('set null');
+                $table->string('name');
+                $table->string('slug')->nullable();
+                $table->foreignId('parent_id')->nullable()->constrained('document_folders')->onDelete('cascade');
+                $table->text('description')->nullable();
+                $table->enum('status', ['active', 'inactive'])->default('active');
+                $table->timestamps();
+                $table->softDeletes();
+
+                $table->index(['company_id', 'branch_id', 'parent_id', 'status']);
+            });
+        }
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('document_folders');
+    }
+};

@@ -1,0 +1,262 @@
+<?php
+
+namespace App\Http\Controllers\Admin\Masters;
+
+use App\Http\Controllers\Controller;
+use App\Models\Driver;
+use App\Models\ActivityLog;
+use App\Imports\DriverImport;
+use App\Exports\DriverTemplateExport;
+use App\Exports\DriversExport;
+use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Storage;
+
+class DriverController extends Controller
+{
+    public function index(Request $request)
+    {
+        $query = Driver::query();
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('phone', 'like', "%{$search}%")
+                  ->orWhere('license_number', 'like', "%{$search}%")
+                  ->orWhere('driver_id', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $drivers = $query->orderBy('created_at', 'desc')->paginate(15);
+        return view('admin.masters.drivers.index', compact('drivers'));
+    }
+
+    public function create()
+    {
+        return view('admin.masters.drivers.create');
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'driver_id' => 'nullable|string|max:50|unique:drivers,driver_id',
+            'name' => 'required|string|max:255',
+            'phone' => ['required', 'string', 'max:10', Rule::unique('drivers', 'phone')],
+            'license_number' => 'required|string|max:50|unique:drivers,license_number',
+            'license_expiry' => "nullable|date|before_or_equal:9999-12-31",
+            'address' => 'nullable|string',
+            'city' => 'nullable|string|max:100',
+            'state' => 'nullable|string|max:100',
+            'emergency_contact' => 'nullable|string|max:20',
+            'license_front' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'license_back' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'aadhar_front' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'aadhar_back' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'pan_front' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'pan_back' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
+
+        $validated['status'] = 'active';
+
+        $documentFields = ['license_front', 'license_back', 'aadhar_front', 'aadhar_back', 'pan_front', 'pan_back'];
+        $driver = Driver::create(array_diff_key($validated, array_flip($documentFields)));
+
+        $this->uploadDocuments($request, $driver);
+        $driver->refresh();
+
+        ActivityLog::log('driver_created', "Created driver: {$driver->name}", $driver);
+
+        return redirect()->route('admin.masters.drivers.index')->with('success', 'Driver created successfully.');
+    }
+
+    public function edit(Driver $driver)
+    {
+        return view('admin.masters.drivers.edit', compact('driver'));
+    }
+
+    public function update(Request $request, Driver $driver)
+    {
+        $validated = $request->validate([
+            'driver_id' => ['nullable', 'string', 'max:50', Rule::unique('drivers', 'driver_id')->ignore($driver->id)],
+            'name' => 'required|string|max:255',
+            'phone' => ['required', 'string', 'max:10', Rule::unique('drivers', 'phone')->ignore($driver->id)],
+            'license_number' => 'required|string|max:50|unique:drivers,license_number,' . $driver->id,
+            'license_expiry' => "nullable|date|before_or_equal:9999-12-31",
+            'address' => 'nullable|string',
+            'city' => 'nullable|string|max:100',
+            'state' => 'nullable|string|max:100',
+            'emergency_contact' => 'nullable|string|max:20',
+            'license_front' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'license_back' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'aadhar_front' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'aadhar_back' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'pan_front' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'pan_back' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
+
+        $documentFields = ['license_front', 'license_back', 'aadhar_front', 'aadhar_back', 'pan_front', 'pan_back'];
+        $this->uploadDocuments($request, $driver);
+
+        $driver->update(array_diff_key($validated, array_flip($documentFields)));
+        $driver->refresh();
+        ActivityLog::log('driver_updated', "Updated driver: {$driver->name}", $driver);
+
+        return redirect()->route('admin.masters.drivers.index')->with('success', 'Driver updated successfully.');
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate(['file' => 'required|mimes:xlsx,xls,csv']);
+
+        $import = new DriverImport;
+        try {
+            Excel::import($import, $request->file('file'));
+            $imported = $import->getImportedCount();
+            $skipped = $import->getSkippedCount();
+            $failures = $import->getFailures();
+            $headings = $import->getHeadings();
+
+            $message = "{$imported} driver(s) imported successfully.";
+            if ($skipped > 0) $message .= " {$skipped} row(s) skipped (duplicate phone or license).";
+            if (!empty($failures)) {
+                $errs = [];
+                foreach ($failures as $f) $errs[] = "Row {$f->row()}: " . implode(', ', $f->errors());
+                $message .= ' Errors: ' . implode(' | ', array_slice($errs, 0, 5));
+                if (count($errs) > 5) $message .= ' ... and ' . (count($errs) - 5) . ' more.';
+            }
+            if ($imported === 0 && $skipped === 0 && empty($failures))
+                $message .= ' No data found. Detected headers: ' . (!empty($headings) ? implode(', ', $headings) : 'none');
+
+            ActivityLog::log('drivers_imported', "Imported {$imported} drivers from Excel, {$skipped} skipped");
+            return redirect()->route('admin.masters.drivers.index')->with('success', $message);
+        } catch (\Exception $e) {
+            return redirect()->route('admin.masters.drivers.index')->with('error', 'Import failed: ' . $e->getMessage());
+        }
+    }
+
+    public function downloadTemplate()
+    {
+        ActivityLog::log('driver_template_downloaded', 'Downloaded driver import template');
+        return Excel::download(new DriverTemplateExport, 'driver_import_template.xlsx');
+    }
+
+    public function export()
+    {
+        ActivityLog::log('drivers_exported', 'Exported drivers to Excel');
+        return Excel::download(new DriversExport, 'drivers_export.xlsx');
+    }
+
+    public function trashed()
+    {
+        $drivers = Driver::onlyTrashed()->paginate(15);
+        return view('admin.masters.drivers.trashed', compact('drivers'));
+    }
+
+    public function restore($id)
+    {
+        $driver = Driver::withTrashed()->findOrFail($id);
+        $driver->restore();
+        ActivityLog::log('driver_restored', "Restored driver: {$driver->name}");
+        return redirect()->route('admin.masters.drivers.trashed')->with('success', 'Driver restored successfully.');
+    }
+
+    public function forceDelete($id)
+    {
+        $driver = Driver::withTrashed()->findOrFail($id);
+        ActivityLog::log('driver_force_deleted', "Force deleted driver: {$driver->name}");
+        $driver->forceDelete();
+        return redirect()->route('admin.masters.drivers.trashed')->with('success', 'Driver permanently deleted.');
+    }
+
+    public function getDetailsByName(Request $request)
+    {
+        $driver = Driver::where('name', $request->driver_name)
+            ->orWhere('phone', $request->driver_name)
+            ->orWhere('driver_id', $request->driver_name)
+            ->first();
+        if ($driver) {
+            return response()->json([
+                'success' => true,
+                'driver' => $driver
+            ]);
+        }
+        return response()->json(['success' => false]);
+    }
+
+    public function search(Request $request)
+    {
+        $term = $request->term;
+        $drivers = Driver::where('name', 'like', "%{$term}%")
+            ->orWhere('phone', 'like', "%{$term}%")
+            ->orWhere('license_number', 'like', "%{$term}%")
+            ->orWhere('driver_id', 'like', "%{$term}%")
+            ->limit(10)
+            ->get();
+
+        return response()->json($drivers);
+    }
+
+    public function quickStore(Request $request)
+    {
+        $validated = $request->validate([
+            'driver_id' => 'nullable|string|max:50',
+            'name' => 'required|string|max:255',
+            'phone' => ['required', 'string', 'max:10', Rule::unique('drivers', 'phone')],
+            'license_number' => 'nullable|string|max:50',
+            'license_expiry' => "nullable|date|before_or_equal:9999-12-31",
+            'address' => 'nullable|string',
+            'city' => 'nullable|string|max:100',
+            'state' => 'nullable|string|max:100',
+            'emergency_contact' => 'nullable|string|max:20',
+        ]);
+
+        $validated['status'] = 'active';
+
+        $driver = Driver::create($validated);
+        ActivityLog::log('driver_created', "Quick created driver: {$driver->name}", $driver);
+
+        return response()->json([
+            'success' => true,
+            'driver' => $driver
+        ]);
+    }
+
+    public function destroy(Driver $driver)
+    {
+        $driver->delete();
+        ActivityLog::log('driver_deleted', "Deleted driver: {$driver->name}");
+        return redirect()->route('admin.masters.drivers.index')->with('success', 'Driver deleted successfully.');
+    }
+
+    public function toggleStatus(Driver $driver)
+    {
+        $driver->status = $driver->status === 'active' ? 'inactive' : 'active';
+        $driver->save();
+        ActivityLog::log('driver_status_changed', "Changed status of driver: {$driver->name}", $driver);
+        return back()->with('success', 'Driver status updated.');
+    }
+
+    private function uploadDocuments(Request $request, Driver $driver)
+    {
+        $documentFields = ['license_front', 'license_back', 'aadhar_front', 'aadhar_back', 'pan_front', 'pan_back'];
+        $uploadPath = 'uploads/drivers/' . $driver->id;
+
+        foreach ($documentFields as $field) {
+            if ($request->hasFile($field)) {
+                if ($driver->{$field}) {
+                    $oldPath = str_replace(asset('uploads/'), '', $driver->{$field});
+                    Storage::disk('uploads')->delete($oldPath);
+                }
+                $path = $request->file($field)->store($uploadPath, 'uploads');
+                $fullUrl = asset('uploads/' . $path);
+                $driver->update([$field => $fullUrl]);
+            }
+        }
+    }
+}
