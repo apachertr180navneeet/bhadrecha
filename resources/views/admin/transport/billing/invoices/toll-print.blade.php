@@ -21,6 +21,7 @@
 
     $comp = $invoice->company;
     $compSigUrl = $comp?->digital_signature_url;
+    $compOwner = $comp && $comp->owner_name ? strtoupper($comp->owner_name) : '';
     $rcmPayableVal = $invoice->rcm_payable ?? 0;
     if ($rcmPayableVal == 1) {
         $compDeclaration = ($comp && !empty($comp->declaration))
@@ -392,9 +393,13 @@
                                     <img src="{{ $compSigUrl }}" alt="Signature" style="max-height: 45px; max-width: 140px; object-fit: contain;">
                                 </div>
                             @else
-                                <div style="height: 40px;"></div>
+                                <div style="height: 25px;"></div>
                             @endif
-                            <div class="fw-bold" style="font-size: 11px; border-top: 1px solid #000; width: 80%; margin: 0 auto; padding-top: 4px;">Authorized Signatory</div>
+                            @if(!empty($compOwner))
+                                <div style="font-size: 8px; color: #333; font-weight: bold; line-height: 1.2;">Digitally signed by {{ $compOwner }}</div>
+                            @endif
+                            <div style="font-size: 8px; color: #555; line-height: 1.2;">Date: {{ date('d-m-Y H:i:s') }}</div>
+                            <div class="fw-bold" style="font-size: 11px; border-top: 1px solid #000; width: 80%; margin: 4px auto 0; padding-top: 4px;">Authorized Signatory</div>
                         </div>
                     </div>
 

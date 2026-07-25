@@ -267,12 +267,16 @@
             </div>
             <div class="col-4 d-flex flex-column justify-content-between text-center" style="padding: 0;">
                 <div style="padding: 4px; font-weight: bold; border-bottom: 1px solid #000;">For {{ $companyName }}</div>
-                <div style="padding: 8px 4px; text-align: center;">
+                <div style="padding: 4px; text-align: center;">
                     @if(!empty($companySignatureUrl))
                         <img src="{{ $companySignatureUrl }}" alt="Signature" style="max-height: 45px; max-width: 140px; object-fit: contain;">
                     @else
-                        <div style="height: 45px;"></div>
+                        <div style="height: 30px;"></div>
                     @endif
+                    @if(!empty($companyOwner))
+                        <div style="font-size: 8px; color: #333; font-weight: bold; line-height: 1.2;">Digitally signed by {{ $companyOwner }}</div>
+                    @endif
+                    <div style="font-size: 8px; color: #555; line-height: 1.2;">Date: {{ date('d-m-Y H:i:s') }}</div>
                 </div>
                 <div style="padding: 4px; font-weight: bold; border-top: 1px solid #000;">Authorized Signatory</div>
             </div>

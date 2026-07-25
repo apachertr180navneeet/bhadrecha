@@ -286,12 +286,16 @@
                 </div>
                 <div class="col-5 p-2 d-flex flex-column text-end position-relative">
                     <div class="fw-bold">For <span>{{ $compName }}</span></div>
-                    <div style="padding: 8px 0;" class="text-end">
+                    <div style="padding: 4px 0;" class="text-end">
                         @if(!empty($compSigUrl))
                             <img src="{{ $compSigUrl }}" alt="Signature" style="max-height: 45px; max-width: 140px; object-fit: contain;">
                         @else
-                            <div style="height: 45px;"></div>
+                            <div style="height: 30px;"></div>
                         @endif
+                        @if(!empty($compOwner))
+                            <div style="font-size: 8px; color: #333; font-weight: bold; line-height: 1.2;">Digitally signed by {{ $compOwner }}</div>
+                        @endif
+                        <div style="font-size: 8px; color: #555; line-height: 1.2;">Date: {{ date('d-m-Y H:i:s') }}</div>
                     </div>
                     <div style="margin-top: auto;" class="fw-bold">Authorized Signatory</div>
                 </div>

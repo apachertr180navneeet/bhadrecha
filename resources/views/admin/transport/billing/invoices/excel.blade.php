@@ -485,6 +485,10 @@
         <td colspan="{{ ceil((ceil($colCount * 2 / 3)) / 2) }}" style="border-bottom: 2px solid #000; border: 1px solid #ddd; font-weight: bold; padding: 10px;">{{ $bankHolder }}</td>
         <td colspan="{{ $colCount - ceil($colCount * 2 / 3) }}" style="border-bottom: 2px solid #000; border-right: 2px solid #000; text-align: right; vertical-align: bottom; padding: 10px;">
             <div style="font-weight: bold; text-align: right;">
+                @if(!empty($companyOwner))
+                    <div style="font-size: 8px; color: #333; font-weight: bold; line-height: 1.2; text-align: center; display: inline-block;">Digitally signed by {{ $companyOwner }}</div><br/>
+                @endif
+                <div style="font-size: 8px; color: #555; line-height: 1.2; text-align: center; display: inline-block; margin-bottom: 4px;">Date: {{ date('d-m-Y H:i:s') }}</div><br/>
                 <span style="border-top: 1px solid #000; padding-top: 3px; display: inline-block; width: 150px; text-align: center;">Authorized Signatory</span>
             </div>
         </td>

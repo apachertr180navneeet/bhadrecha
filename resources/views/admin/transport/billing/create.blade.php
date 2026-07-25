@@ -178,9 +178,12 @@
                                 <div class="fw-bold" style="font-size: 10px;">For <span id="preview-footer-company-1"></span></div>
                                 <div class="my-1 text-end preview-signature-container">
                                     <img src="{{ $defaultCompanySignatureUrl ?? '' }}" alt="Signature" class="preview-signature-img" style="max-height: 45px; max-width: 140px; object-fit: contain; {{ empty($defaultCompanySignatureUrl) ? 'display: none;' : '' }}">
-                                </div>
-                                <div style="font-size: 8px; color: #555; margin-bottom: 12px;">
-                                    Print Date: {{ date('d-m-Y H:i:s') }}
+                                    <div style="font-size: 8px; color: #333; font-weight: bold; line-height: 1.2;" class="preview-digitally-signed-by">
+                                        Digitally signed by <span class="preview-company-owner-name">{{ strtoupper($defaultCompany->owner_name ?? '') }}</span>
+                                    </div>
+                                    <div style="font-size: 8px; color: #555; line-height: 1.2;">
+                                        Date: {{ date('d-m-Y H:i:s') }}
+                                    </div>
                                 </div>
                                 <div style="font-size: 10px;">
                                     <span style="border-top: 1px solid #000; padding-top: 3px; display: inline-block; width: 150px; text-align: center; font-weight: bold;">Authorized Signatory</span>
@@ -349,6 +352,12 @@
                                 <div class="fw-bold">For <span id="nath-footer-company"></span></div>
                                 <div class="my-1 text-end preview-signature-container">
                                     <img src="{{ $defaultCompanySignatureUrl ?? '' }}" alt="Signature" class="preview-signature-img" style="max-height: 45px; max-width: 140px; object-fit: contain; {{ empty($defaultCompanySignatureUrl) ? 'display: none;' : '' }}">
+                                    <div style="font-size: 8px; color: #333; font-weight: bold; line-height: 1.2;" class="preview-digitally-signed-by">
+                                        Digitally signed by <span class="preview-company-owner-name">{{ strtoupper($defaultCompany->owner_name ?? '') }}</span>
+                                    </div>
+                                    <div style="font-size: 8px; color: #555; line-height: 1.2;">
+                                        Date: {{ date('d-m-Y H:i:s') }}
+                                    </div>
                                 </div>
                                 <div style="margin-top: auto;" class="fw-bold">Authorized Signatory</div>
                             </div>
@@ -464,6 +473,12 @@
                                 <div class="fw-bold" style="font-size: 12px;">For <span id="nath-s2-footer-company"></span></div>
                                 <div class="my-1 text-end preview-signature-container">
                                     <img src="{{ $defaultCompanySignatureUrl ?? '' }}" alt="Signature" class="preview-signature-img" style="max-height: 45px; max-width: 140px; object-fit: contain; {{ empty($defaultCompanySignatureUrl) ? 'display: none;' : '' }}">
+                                    <div style="font-size: 8px; color: #333; font-weight: bold; line-height: 1.2;" class="preview-digitally-signed-by">
+                                        Digitally signed by <span class="preview-company-owner-name">{{ strtoupper($defaultCompany->owner_name ?? '') }}</span>
+                                    </div>
+                                    <div style="font-size: 8px; color: #555; line-height: 1.2;">
+                                        Date: {{ date('d-m-Y H:i:s') }}
+                                    </div>
                                 </div>
                             </div>
                             <div class="text-end">
@@ -1262,6 +1277,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 safeSetText('preview-company-pan', compPan);
                 safeSetText('preview-company-phone', compPh);
                 safeSetText('preview-company-owner', compOwner);
+                $('.preview-company-owner-name').text(compOwner);
                 const customHsn = $('input[name="custom_hsn_code"]').val();
                 safeSetText('preview-company-hsn', customHsn || (b.company ? (b.company.hsn_code || '996511') : '996511'));
                 safeSetText('preview-footer-company-1', compName);

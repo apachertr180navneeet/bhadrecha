@@ -438,10 +438,19 @@
                 @if(!empty($companySignatureUrl))
                     <div class="my-1 text-end">
                         <img src="{{ $companySignatureUrl }}" alt="Signature" style="max-height: 45px; max-width: 140px; object-fit: contain;">
+                        @if(!empty($companyOwner))
+                            <div style="font-size: 8px; color: #333; font-weight: bold; line-height: 1.2;">Digitally signed by {{ $companyOwner }}</div>
+                        @endif
+                        <div style="font-size: 8px; color: #555; line-height: 1.2;">Date: {{ date('d-m-Y H:i:s') }}</div>
                     </div>
                 @else
-                    <div style="font-size: 8px; color: #555; margin-bottom: 12px;">
-                        Print Date: {{ date('d-m-Y H:i:s') }}
+                    <div class="my-1 text-end">
+                        @if(!empty($companyOwner))
+                            <div style="font-size: 8px; color: #333; font-weight: bold; line-height: 1.2;">Digitally signed by {{ $companyOwner }}</div>
+                        @endif
+                        <div style="font-size: 8px; color: #555; margin-bottom: 12px; line-height: 1.2;">
+                            Print Date: {{ date('d-m-Y H:i:s') }}
+                        </div>
                     </div>
                 @endif
                 <div style="font-size: 10px;">

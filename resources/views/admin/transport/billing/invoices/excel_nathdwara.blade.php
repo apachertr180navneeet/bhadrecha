@@ -223,7 +223,12 @@
         </td>
         <td colspan="5" style="border: 2px solid #000; padding: 4px; text-align: right; vertical-align: top;">
             <div style="font-weight: bold;">For {{ $compName }}</div>
-            <br/><br/><br/>
+            <br/>
+            @if(!empty($compOwner))
+                <div style="font-size: 8px; color: #333; font-weight: bold; line-height: 1.2;">Digitally signed by {{ $compOwner }}</div>
+            @endif
+            <div style="font-size: 8px; color: #555; line-height: 1.2;">Date: {{ date('d-m-Y H:i:s') }}</div>
+            <br/>
             <div style="font-weight: bold;">Authorized Signatory</div>
         </td>
     </tr>
@@ -377,8 +382,13 @@
             <div>We hereby declare that we have not availed GST credit paid on input or capital goods used for providing services under GST rules 2017.GST service file under RCM & GST liabilities is of service recipient.</div>
             <br/><br/>
             <div style="text-align: right; font-weight: bold;">For {{ $compName }}</div>
-            <br/><br/>
-            <div style="text-align: right;">Authorized Signatory</div>
+            <br/>
+            @if(!empty($compOwner))
+                <div style="text-align: right; font-size: 8px; color: #333; font-weight: bold; line-height: 1.2;">Digitally signed by {{ $compOwner }}</div>
+            @endif
+            <div style="text-align: right; font-size: 8px; color: #555; line-height: 1.2;">Date: {{ date('d-m-Y H:i:s') }}</div>
+            <br/>
+            <div style="text-align: right; font-weight: bold;">Authorized Signatory</div>
         </td>
     </tr>
 </table>

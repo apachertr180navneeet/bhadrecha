@@ -229,7 +229,12 @@
         </td>
         <td colspan="5" style="border: 2px solid #000; padding: 4px; text-align: right; vertical-align: top;">
             <div style="font-weight: bold;">For {{ $compName }}</div>
-            <br/><br/><br/>
+            <br/>
+            @if(!empty($compOwner))
+                <div style="font-size: 8px; color: #333; font-weight: bold; line-height: 1.2;">Digitally signed by {{ $compOwner }}</div>
+            @endif
+            <div style="font-size: 8px; color: #555; line-height: 1.2;">Date: {{ date('d-m-Y H:i:s') }}</div>
+            <br/>
             <div style="font-weight: bold;">Authorized Signatory</div>
         </td>
     </tr>
