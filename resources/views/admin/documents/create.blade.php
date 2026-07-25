@@ -35,22 +35,23 @@
                     @if(auth()->user()->isSuperAdmin())
                     <div class="col-md-6">
                         <label class="form-label required fw-semibold">Company</label>
-                        <select name="company_id" class="form-select select2" required>
+                        <select name="company_id" id="company_id" class="form-select select2" required>
+                            <option value="">Select Company</option>
                             @foreach($companies as $comp)
                             <option value="{{ $comp->id }}" {{ $companyId == $comp->id ? 'selected' : '' }}>{{ $comp->name }}</option>
                             @endforeach
                         </select>
                     </div>
                     @else
-                    <input type="hidden" name="company_id" value="{{ auth()->user()->company_id }}">
+                    <input type="hidden" name="company_id" id="company_id" value="{{ auth()->user()->company_id }}">
                     @endif
 
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Branch</label>
-                        <select name="branch_id" class="form-select select2">
+                        <select name="branch_id" id="branch_id" class="form-select select2">
                             <option value="">All Branches / Main Office</option>
                             @foreach($branches as $branch)
-                            <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+                            <option value="{{ $branch->id }}" {{ old('branch_id') == $branch->id ? 'selected' : '' }}>{{ $branch->name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -157,6 +158,40 @@ function detectFileName(input) {
         }
     }
 }
+
+$(document).ready(function() {
+    function loadBranches(companyId, selectedBranchId) {
+        var $branchSelect = $('#branch_id');
+        if (!companyId) {
+            $branchSelect.html('<option value="">All Branches / Main Office</option>').trigger('change');
+            return;
+        }
+
+        $branchSelect.html('<option value="">Loading branches...</option>').trigger('change');
+
+        $.ajax({
+            url: '{{ url("admin/users/get-branches") }}/' + companyId,
+            type: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                var options = '<option value="">All Branches / Main Office</option>';
+                $.each(data, function(index, branch) {
+                    var selected = (selectedBranchId && selectedBranchId == branch.id) ? 'selected' : '';
+                    options += '<option value="' + branch.id + '" ' + selected + '>' + branch.name + '</option>';
+                });
+                $branchSelect.html(options).trigger('change');
+            },
+            error: function() {
+                $branchSelect.html('<option value="">All Branches / Main Office</option>').trigger('change');
+            }
+        });
+    }
+
+    $(document).on('change', '#company_id', function() {
+        var companyId = $(this).val();
+        loadBranches(companyId);
+    });
+});
 </script>
 @endpush
 @endsection

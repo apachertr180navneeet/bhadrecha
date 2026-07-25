@@ -40,6 +40,16 @@
                 </div>
 
                 <div class="col-md-2">
+                    <label class="form-label fw-semibold">Branch</label>
+                    <select id="filterBranch" class="form-select">
+                        <option value="">All Branches</option>
+                        @foreach($branches as $branch)
+                        <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="col-md-2">
                     <label class="form-label fw-semibold">Category</label>
                     <select id="filterCategory" class="form-select">
                         <option value="">All Categories</option>
@@ -176,6 +186,7 @@ $(document.body).ready(function() {
                 d.search_term = $('#searchTerm').val();
                 d.category_id = $('#filterCategory').val();
                 d.folder_id = $('#filterFolder').val();
+                d.branch_id = $('#filterBranch').val();
                 d.expiry_filter = $('#filterExpiry').val();
                 d.status = $('#filterStatus').val();
             }
@@ -233,7 +244,7 @@ $(document.body).ready(function() {
     });
 
     // Real-time filter triggers
-    $('#searchTerm, #filterCategory, #filterFolder, #filterExpiry, #filterStatus').on('change keyup', function() {
+    $('#searchTerm, #filterCategory, #filterFolder, #filterBranch, #filterExpiry, #filterStatus').on('change keyup', function() {
         table.draw();
     });
 
