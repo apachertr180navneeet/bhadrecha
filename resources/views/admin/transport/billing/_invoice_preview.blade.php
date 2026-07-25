@@ -276,7 +276,8 @@
     
     $damageTotal = isset($bulties) ? $bulties->sum(fn($b) => floatval($b->damage_amount ?? 0)) : 0;
     $shortageTotal = isset($bulties) ? $bulties->sum(fn($b) => floatval($b->shortage_amount ?? 0)) : 0;
-    $effectiveGrandTotal = floatval($grandTotal ?? 0) > 0 ? floatval($grandTotal) : ($freightTotal + $otherTotal - $damageTotal - $shortageTotal + $gstTotalVal);
+    $netFreightTotal = floatval($freightTotal ?? 0) - $damageTotal - $shortageTotal;
+    $effectiveGrandTotal = floatval($grandTotal ?? 0) > 0 ? floatval($grandTotal) : ($netFreightTotal + floatval($otherTotal ?? 0) + $gstTotalVal);
     $effectiveAmountInWords = !empty($amountInWords) ? $amountInWords : \App\Http\Controllers\Admin\Transport\BillingController::convertNumberToWords($effectiveGrandTotal);
 
     $comp = $invoiceCompany ?? ($existingInvoice?->company ?? null);
