@@ -1,19 +1,19 @@
 @php
     $firstBulty = $bulties->first();
-    $companyName = $invoiceCompany ? $invoiceCompany->name : '';
-    $companyAddress = $invoiceCompany ? $invoiceCompany->address : '';
-    $companyGst = $invoiceCompany ? $invoiceCompany->gst_number : '';
-    $companyPan = $invoiceCompany && $invoiceCompany->pan_number ? $invoiceCompany->pan_number : '';
-    $companyPhone = $invoiceCompany ? $invoiceCompany->phone : '';
-    $companyOwner = $invoiceCompany && $invoiceCompany->owner_name ? strtoupper($invoiceCompany->owner_name) : '';
-    $companyHsn = !empty($existingInvoice?->custom_hsn_code) ? $existingInvoice->custom_hsn_code : ($invoiceCompany && $invoiceCompany->hsn_code ? $invoiceCompany->hsn_code : '996511');
-
-    $bankAccountNo = $invoiceCompany && $invoiceCompany->bank_account_no ? $invoiceCompany->bank_account_no : '';
-    $bankIfsc = $invoiceCompany && $invoiceCompany->bank_ifsc ? $invoiceCompany->bank_ifsc : '';
-    $bankHolder = $invoiceCompany && $invoiceCompany->bank_holder_name ? strtoupper($invoiceCompany->bank_holder_name) : '';
-
-    $comp = $invoiceCompany ?? ($existingInvoice?->company ?? null);
+    $comp = $invoiceCompany ?? ($existingInvoice?->company ?? ($invoice?->company ?? ($firstBulty?->company ?? null)));
+    $companyName = !empty($existingInvoice?->company_name) ? $existingInvoice->company_name : ($comp ? $comp->name : '');
+    $companyAddress = $comp ? $comp->address : '';
+    $companyGst = $comp ? $comp->gst_number : '';
+    $companyPan = $comp && $comp->pan_number ? $comp->pan_number : '';
+    $companyPhone = $comp ? $comp->phone : '';
+    $companyOwner = $comp && $comp->owner_name ? strtoupper($comp->owner_name) : '';
     $companySignatureUrl = $comp?->digital_signature_url;
+    $companyHsn = !empty($existingInvoice?->custom_hsn_code) ? $existingInvoice->custom_hsn_code : ($comp && $comp->hsn_code ? $comp->hsn_code : '996511');
+
+    $bankAccountNo = $comp && $comp->bank_account_no ? $comp->bank_account_no : '';
+    $bankIfsc = $comp && $comp->bank_ifsc ? $comp->bank_ifsc : '';
+    $bankHolder = $comp && $comp->bank_holder_name ? strtoupper($comp->bank_holder_name) : '';
+
     $rcmPayableVal = isset($rcmPayable) ? $rcmPayable : ($existingInvoice?->rcm_payable ?? 1);
 
     if ($rcmPayableVal == 1) {

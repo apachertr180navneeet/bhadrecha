@@ -3,12 +3,13 @@
 @section('content')
 @php
     $firstBulty = $invoice->bulties->first();
-    $companyName = !empty($invoice->company_name) ? $invoice->company_name : ($invoice->company ? $invoice->company->name : '');
-    $companyAddress = $invoice->company ? $invoice->company->address : '';
-    $companyGst = $invoice->company ? $invoice->company->gst_number : '';
-    $companyPan = $invoice->company && $invoice->company->pan_number ? $invoice->company->pan_number : '';
-    $companyPhone = $invoice->company ? $invoice->company->phone : '';
-    $companyHsn = !empty($invoice->custom_hsn_code) ? $invoice->custom_hsn_code : ($invoice->company && $invoice->company->hsn_code ? $invoice->company->hsn_code : '');
+    $comp = $invoice->company ?? ($firstBulty?->company ?? null);
+    $companyName = !empty($invoice->company_name) ? $invoice->company_name : ($comp ? $comp->name : '');
+    $companyAddress = $comp ? $comp->address : '';
+    $companyGst = $comp ? $comp->gst_number : '';
+    $companyPan = $comp && $comp->pan_number ? $comp->pan_number : '';
+    $companyPhone = $comp ? $comp->phone : '';
+    $companyHsn = !empty($invoice->custom_hsn_code) ? $invoice->custom_hsn_code : ($comp && $comp->hsn_code ? $comp->hsn_code : '');
 
     $partyName = $invoice->consignor_name ?? ($invoice->consignor->name ?? '-');
     $partyAddress = !empty($invoice->billing_address) ? str_replace("\n", "<br>", $invoice->billing_address) : ($invoice->consignor ? str_replace("\n", "<br>", $invoice->consignor->address ?? '') : '');
@@ -19,7 +20,6 @@
     $placeOfSupply = !empty($invoice->custom_place_of_supply) ? $invoice->custom_place_of_supply : $partyState;
     $stateCode = !empty($invoice->custom_state_code) ? $invoice->custom_state_code : (substr($partyGst, 0, 2) ?: '');
 
-    $comp = $invoice->company;
     $compSigUrl = $comp?->digital_signature_url;
     $compOwner = $comp && $comp->owner_name ? strtoupper($comp->owner_name) : '';
     $rcmPayableVal = $invoice->rcm_payable ?? 0;

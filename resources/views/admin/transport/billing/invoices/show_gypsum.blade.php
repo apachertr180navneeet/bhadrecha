@@ -8,17 +8,17 @@
         $bulties = $invoice->bulties;
     }
     
-    $compName = !empty($invoice->company_name) ? $invoice->company_name : ($invoice->company ? $invoice->company->name : '');
-    $compAdd = $invoice->company ? $invoice->company->address : '';
-    $compGst = $invoice->company ? $invoice->company->gst_number : '';
-    $compPan = $invoice->company && $invoice->company->pan_number ? $invoice->company->pan_number : '';
-    $compPh = $invoice->company ? $invoice->company->phone : '';
-    $compOwner = $invoice->company && $invoice->company->owner_name ? strtoupper($invoice->company->owner_name) : '';
-    $bankAccountNo = $invoice->company && $invoice->company->bank_account_no ? $invoice->company->bank_account_no : '';
-    $bankIfsc = $invoice->company && $invoice->company->bank_ifsc ? $invoice->company->bank_ifsc : '';
-    $bankHolder = $invoice->company && $invoice->company->bank_holder_name ? strtoupper($invoice->company->bank_holder_name) : '';
+    $comp = $invoice->company ?? ($bulties->first()?->company ?? null);
+    $compName = !empty($invoice->company_name) ? $invoice->company_name : ($comp ? $comp->name : '');
+    $compAdd = $comp ? $comp->address : '';
+    $compGst = $comp ? $comp->gst_number : '';
+    $compPan = $comp && $comp->pan_number ? $comp->pan_number : '';
+    $compPh = $comp ? $comp->phone : '';
+    $compOwner = $comp && $comp->owner_name ? strtoupper($comp->owner_name) : '';
+    $bankAccountNo = $comp && $comp->bank_account_no ? $comp->bank_account_no : '';
+    $bankIfsc = $comp && $comp->bank_ifsc ? $comp->bank_ifsc : '';
+    $bankHolder = $comp && $comp->bank_holder_name ? strtoupper($comp->bank_holder_name) : '';
 
-    $comp = $invoice->company;
     $compSigUrl = $comp?->digital_signature_url;
     $rcmPayableVal = $invoice->rcm_payable ?? 1;
     if ($rcmPayableVal == 1) {
