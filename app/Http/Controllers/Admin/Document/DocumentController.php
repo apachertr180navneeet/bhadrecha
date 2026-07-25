@@ -54,12 +54,20 @@ class DocumentController extends Controller
             $query = Document::query()->with(['category', 'folder', 'uploader', 'company', 'branch']);
 
             // Scope company
+            $totalCountQuery = Document::query();
+
             if ($request->filled('company_id')) {
                 $query->where('company_id', $request->company_id);
-            } elseif ($user && !$user->isAdmin()) {
+            } elseif ($user && !$user->isSuperAdmin()) {
                 if (!empty($user->company_id)) {
                     $query->where('company_id', $user->company_id);
+                    $totalCountQuery->where('company_id', $user->company_id);
                 }
+            }
+
+            if ($user && $user->isBranchManager() && !empty($user->branch_id) && !$request->filled('branch_id')) {
+                $query->where('branch_id', $user->branch_id);
+                $totalCountQuery->where('branch_id', $user->branch_id);
             }
 
             // Filters
@@ -114,7 +122,7 @@ class DocumentController extends Controller
                 }
             }
 
-            $recordsTotal = Document::count();
+            $recordsTotal = $totalCountQuery->count();
             $recordsFiltered = (clone $query)->count();
             $limit = max(1, intval($request->input('length', 10)));
             $start = max(0, intval($request->input('start', 0)));

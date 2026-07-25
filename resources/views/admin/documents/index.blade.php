@@ -31,10 +31,15 @@
     <div class="card mb-4 border-0 shadow-sm">
         <div class="card-body">
             <form id="filterForm" class="row g-3 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Search</label>
+                    <input type="text" id="searchTerm" class="form-control" placeholder="Search document...">
+                </div>
+
                 @if(auth()->user()->isSuperAdmin())
                 <div class="col-md-2">
                     <label class="form-label fw-semibold">Company</label>
-                    <select id="filterCompany" class="form-select">
+                    <select id="filterCompany" class="form-select select2">
                         <option value="">All Companies</option>
                         @foreach($companies as $comp)
                         <option value="{{ $comp->id }}">{{ $comp->name }}</option>
@@ -45,7 +50,7 @@
 
                 <div class="col-md-2">
                     <label class="form-label fw-semibold">Branch</label>
-                    <select id="filterBranch" class="form-select">
+                    <select id="filterBranch" class="form-select select2">
                         <option value="">All Branches</option>
                         @foreach($branches as $branch)
                         <option value="{{ $branch->id }}">{{ $branch->name }}</option>
@@ -55,7 +60,7 @@
 
                 <div class="col-md-2">
                     <label class="form-label fw-semibold">Category</label>
-                    <select id="filterCategory" class="form-select">
+                    <select id="filterCategory" class="form-select select2">
                         <option value="">All Categories</option>
                         @foreach($categories as $cat)
                         <option value="{{ $cat->id }}">{{ $cat->name }}</option>
@@ -65,7 +70,7 @@
 
                 <div class="col-md-2">
                     <label class="form-label fw-semibold">Folder</label>
-                    <select id="filterFolder" class="form-select">
+                    <select id="filterFolder" class="form-select select2">
                         <option value="">All Folders</option>
                         @foreach($folders as $f)
                         <option value="{{ $f->id }}">{{ $f->name }}</option>
@@ -75,7 +80,7 @@
 
                 <div class="col-md-2">
                     <label class="form-label fw-semibold">Expiry Filter</label>
-                    <select id="filterExpiry" class="form-select">
+                    <select id="filterExpiry" class="form-select select2">
                         <option value="">Any Expiry Date</option>
                         <option value="today">Expiring Today</option>
                         <option value="7_days">Expiring in 7 Days</option>
@@ -87,7 +92,7 @@
 
                 <div class="col-md-2">
                     <label class="form-label fw-semibold">File Status</label>
-                    <select id="filterStatus" class="form-select">
+                    <select id="filterStatus" class="form-select select2">
                         <option value="">All Statuses</option>
                         <option value="active">Active</option>
                         <option value="archived">Archived</option>
@@ -177,8 +182,8 @@
     </form>
 
 </div>
-
-@push('scripts')
+@endsection
+@section('script')
 <script>
 $(document).ready(function() {
     var table = $('#documentsTable').DataTable({
@@ -297,8 +302,8 @@ $(document).ready(function() {
         }
     });
 
-    // Real-time filter triggers for select & select2
-    $(document).on('change select2:select keyup', '#searchTerm, #filterCompany, #filterCategory, #filterFolder, #filterBranch, #filterExpiry, #filterStatus', function() {
+    // Real-time filter triggers for input, select & select2
+    $(document).on('change select2:select keyup input', '#searchTerm, #filterCompany, #filterCategory, #filterFolder, #filterBranch, #filterExpiry, #filterStatus', function() {
         table.draw();
     });
 
@@ -337,5 +342,4 @@ $(document).ready(function() {
     });
 });
 </script>
-@endpush
 @endsection
