@@ -9,14 +9,40 @@
             </h4>
             <p class="text-muted mb-0">Create unlimited nested folder hierarchies for structured document organization.</p>
         </div>
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createFolderModal">
-            <i class="bx bx-folder-plus me-1"></i> Create Folder
-        </button>
+        <div class="d-flex align-items-center gap-2">
+            @if(auth()->user()->isSuperAdmin() && $companies->count() > 0)
+            <form action="{{ route('admin.documents.folders.index') }}" method="GET" id="companySelectForm" class="d-flex align-items-center me-2">
+                <label class="form-label mb-0 me-2 fw-semibold text-nowrap">Company:</label>
+                <select name="company_id" class="form-select form-select-sm" onchange="document.getElementById('companySelectForm').submit();">
+                    <option value="">All Companies</option>
+                    @foreach($companies as $comp)
+                        <option value="{{ $comp->id }}" {{ $companyId == $comp->id ? 'selected' : '' }}>
+                            {{ $comp->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </form>
+            @endif
+            <button type="button" class="btn btn-primary text-nowrap" data-bs-toggle="modal" data-bs-target="#createFolderModal">
+                <i class="bx bx-folder-plus me-1"></i> Create Folder
+            </button>
+        </div>
     </div>
 
     @if(session('success'))
     <div class="alert alert-success alert-dismissible fade show" role="alert">
         {{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    @endif
+
+    @if($errors->any())
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <ul class="mb-0">
+            @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
     @endif
@@ -81,6 +107,20 @@
                                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
+                                        @if(auth()->user()->isSuperAdmin())
+                                        <div class="mb-3">
+                                            <label class="form-label required">Company</label>
+                                            <select name="company_id" class="form-select company-select" data-branch-target="#edit_folder_branch_{{ $folder->id }}" required>
+                                                <option value="">Select Company</option>
+                                                @foreach($companies as $comp)
+                                                <option value="{{ $comp->id }}" {{ $folder->company_id == $comp->id ? 'selected' : '' }}>{{ $comp->name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        @else
+                                        <input type="hidden" name="company_id" value="{{ $folder->company_id ?? auth()->user()->company_id }}">
+                                        @endif
+
                                         <div class="mb-3">
                                             <label class="form-label required">Folder Name</label>
                                             <input type="text" name="name" class="form-control" value="{{ $folder->name }}" required>
@@ -109,12 +149,16 @@
                                         </div>
                                         <div class="mb-3">
                                             <label class="form-label">Branch</label>
-                                            <select name="branch_id" class="form-select">
+                                            <select name="branch_id" id="edit_folder_branch_{{ $folder->id }}" class="form-select">
                                                 <option value="">All Branches</option>
                                                 @foreach($branches as $branch)
                                                 <option value="{{ $branch->id }}" {{ $folder->branch_id == $branch->id ? 'selected' : '' }}>{{ $branch->name }}</option>
                                                 @endforeach
                                             </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Description</label>
+                                            <textarea name="description" class="form-control" rows="2">{{ $folder->description }}</textarea>
                                         </div>
                                         <div class="mb-3">
                                             <label class="form-label">Status</label>
@@ -154,6 +198,20 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    @if(auth()->user()->isSuperAdmin())
+                    <div class="mb-3">
+                        <label class="form-label required">Company</label>
+                        <select name="company_id" id="create_folder_company_id" class="form-select company-select" data-branch-target="#create_folder_branch_id" required>
+                            <option value="">Select Company</option>
+                            @foreach($companies as $comp)
+                            <option value="{{ $comp->id }}" {{ $companyId == $comp->id ? 'selected' : '' }}>{{ $comp->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @else
+                    <input type="hidden" name="company_id" value="{{ $companyId ?? auth()->user()->company_id }}">
+                    @endif
+
                     <div class="mb-3">
                         <label class="form-label required">Folder Name</label>
                         <input type="text" name="name" class="form-control" placeholder="e.g. Accounts, HR, Employees, RC, Insurance" required>
@@ -178,7 +236,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Branch</label>
-                        <select name="branch_id" class="form-select">
+                        <select name="branch_id" id="create_folder_branch_id" class="form-select">
                             <option value="">All Branches</option>
                             @foreach($branches as $branch)
                             <option value="{{ $branch->id }}">{{ $branch->name }}</option>
@@ -205,4 +263,40 @@
         </div>
     </div>
 </div>
+@endsection
+
+@section('script')
+<script>
+$(document).ready(function() {
+    $(document).on('change', '.company-select', function() {
+        var companyId = $(this).val();
+        var branchTarget = $(this).data('branch-target');
+        var $branchSelect = $(branchTarget);
+
+        if (!$branchSelect.length) return;
+
+        $branchSelect.html('<option value="">Loading branches...</option>');
+
+        if (companyId) {
+            $.ajax({
+                url: '{{ url("admin/users/get-branches") }}/' + companyId,
+                type: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    var options = '<option value="">All Branches</option>';
+                    $.each(data, function(index, branch) {
+                        options += '<option value="' + branch.id + '">' + branch.name + '</option>';
+                    });
+                    $branchSelect.html(options);
+                },
+                error: function() {
+                    $branchSelect.html('<option value="">All Branches</option>');
+                }
+            });
+        } else {
+            $branchSelect.html('<option value="">All Branches</option>');
+        }
+    });
+});
+</script>
 @endsection

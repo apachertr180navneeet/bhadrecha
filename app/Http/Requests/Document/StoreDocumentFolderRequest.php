@@ -11,6 +11,15 @@ class StoreDocumentFolderRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if (!auth()->user()->isSuperAdmin() && !$this->has('company_id')) {
+            $this->merge([
+                'company_id' => auth()->user()->company_id,
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         return [

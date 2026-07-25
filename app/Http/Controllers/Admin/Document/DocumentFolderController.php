@@ -30,15 +30,20 @@ class DocumentFolderController extends Controller
             $companyId = $user->company_id;
         }
 
-        $folders = DocumentFolder::forCompany($companyId)
+        $foldersQuery = DocumentFolder::query();
+        if ($companyId) {
+            $foldersQuery->forCompany($companyId);
+        }
+
+        $folders = $foldersQuery
             ->with(['parent', 'category', 'company', 'branch'])
             ->withCount('documents')
             ->orderBy('name', 'asc')
             ->get();
 
-        $allFolders = DocumentFolder::forCompany($companyId)->get();
-        $categories = DocumentCategory::forCompany($companyId)->get();
-        $branches = Branch::where('company_id', $companyId)->get();
+        $allFolders = DocumentFolder::when($companyId, fn($q) => $q->forCompany($companyId))->get();
+        $categories = DocumentCategory::when($companyId, fn($q) => $q->forCompany($companyId))->get();
+        $branches = $companyId ? Branch::where('company_id', $companyId)->get() : Branch::all();
         $companies = $user->isSuperAdmin() ? Company::where('status', 'active')->get() : collect();
 
         return view('admin.documents.folders.index', compact('folders', 'allFolders', 'categories', 'branches', 'companies', 'companyId'));
@@ -48,7 +53,7 @@ class DocumentFolderController extends Controller
     {
         $user = auth()->user();
         $data = $request->validated();
-        if (!$user->isSuperAdmin()) {
+        if (!$user->isSuperAdmin() || empty($data['company_id'])) {
             $data['company_id'] = $user->company_id;
         }
         $data['slug'] = Str::slug($data['name']);
@@ -69,7 +74,11 @@ class DocumentFolderController extends Controller
 
     public function update(StoreDocumentFolderRequest $request, DocumentFolder $folder)
     {
+        $user = auth()->user();
         $data = $request->validated();
+        if (!$user->isSuperAdmin() || empty($data['company_id'])) {
+            $data['company_id'] = $folder->company_id ?? $user->company_id;
+        }
         $data['slug'] = Str::slug($data['name']);
 
         $folder->update($data);
