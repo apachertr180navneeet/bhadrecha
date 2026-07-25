@@ -442,7 +442,7 @@ class BillingController extends Controller
     {
         $bultyRelation = $invoice->invoice_type === 'toll' ? 'tollBulties' : 'freightBulties';
         if (!method_exists($invoice, $bultyRelation)) {
-            dd("Error: Method $bultyRelation does not exist on Invoice model. Available methods:", get_class_methods($invoice), "File path of Invoice class:", (new \ReflectionClass($invoice))->getFileName());
+            abort(404, "Invalid invoice type: {$invoice->invoice_type}");
         }
         $invoice->load([
             'consignor', 

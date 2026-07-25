@@ -942,7 +942,7 @@ class ReportController extends Controller
         return response()->download($filePath)->deleteFileAfterSend(true);
     }
 
-    private function exportCompanies(Request $request)
+    public function exportCompanies(Request $request)
     {
         $query = Company::withCount(['branches', 'users']);
 
@@ -983,7 +983,7 @@ class ReportController extends Controller
         return response()->download($filePath)->deleteFileAfterSend(true);
     }
 
-    private function exportActivity(Request $request)
+    public function exportActivity(Request $request)
     {
         $query = ActivityLog::with(['user', 'company'])->select('id', 'user_id', 'action', 'description', 'company_id', 'ip_address', 'created_at');
 

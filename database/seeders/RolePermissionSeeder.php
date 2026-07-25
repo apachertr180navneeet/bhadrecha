@@ -170,12 +170,14 @@ class RolePermissionSeeder extends Seeder
         $branchManager = Role::firstOrCreate(['name' => 'Branch Manager', 'guard_name' => 'web']);
         $branchManagerPermissions = Permission::whereIn('name', [
             'view branches', 'view users', 'create users', 'edit users',
-            'view bulties', 'create bulties', 'edit bulties',
+            'view bulties', 'create bulties', 'edit bulties', 'cancel bulties', 'print bulties',
             'view trips', 'create trips', 'edit trips',
             'view vehicles', 'view drivers',
             'view reports', 'export reports',
-            'view billing', 'create billing', 'view invoices',
-            'view driver salary', 'view driver salary slips',
+            'view billing', 'create billing', 'view invoices', 'print invoices',
+            'view toll bills',
+            'view letterheads',
+            'view driver salary', 'view driver salary slips', 'generate driver salary slips',
             'view employee salary', 'view attendance', 'mark attendance',
             'view leaves', 'create leaves',
             'view employee advances', 'create employee advances',
@@ -183,7 +185,19 @@ class RolePermissionSeeder extends Seeder
             'view service schedules', 'view spare parts', 'view maintenance history',
             'view breakdowns', 'create breakdowns', 'mark breakdowns resolved',
             'view tyre management',
-            'view consignors', 'view consignees', 'view items', 'view fuel pumps', 'view banks', 'view bank branches'
+            'view consignors', 'view consignees', 'view vehicles', 'view drivers',
+            'view companies', 'view branches',
+            'view items', 'view fuel pumps', 'view banks', 'view bank branches',
+            'view suppliers', 'view vendors', 'view bill formats',
+            'view cities', 'view packagings', 'view units',
+            'view fuel companies', 'view adblue companies',
+            'view tyre brands', 'view tyre models', 'view tyre sizes',
+            'view documents', 'upload documents', 'download documents',
+            'manage categories', 'manage folders', 'view document reports', 'view activity', 'manage document trash',
+            'view customer ledger', 'view sales ledger', 'view tds report',
+            'view trip reports', 'view bilty advance details',
+            'view fuel report', 'view fuel outstanding', 'view adblue outstanding',
+            'view vehicle report', 'view driver trip report',
         ])->get();
         $branchManager->syncPermissions($branchManagerPermissions);
 
@@ -192,17 +206,35 @@ class RolePermissionSeeder extends Seeder
         $accountantPermissions = Permission::whereIn('name', [
             'view bulties', 'view trips', 'view vehicles', 'view drivers',
             'view reports', 'export reports',
-            'view billing', 'create billing', 'edit billing', 'view invoices', 'print invoices', 'export invoices', 'view toll bills',
+            'view billing', 'create billing', 'edit billing', 'view invoices', 'print invoices', 'export invoices',
+            'view toll bills', 'create toll bills', 'edit toll bills',
+            'view letterheads',
             'view driver salary', 'create driver salary', 'edit driver salary', 'delete driver salary',
             'view driver advances', 'create driver advances', 'edit driver advances', 'delete driver advances',
             'generate driver salary slips', 'view driver salary slips', 'delete driver salary slips',
             'view employee salary', 'create employee salary', 'edit employee salary', 'delete employee salary',
+            'view attendance', 'mark attendance',
+            'view leaves', 'create leaves', 'approve leaves', 'reject leaves',
             'view employee advances', 'create employee advances', 'approve employee advances', 'reject employee advances', 'mark employee advances paid',
             'view company loans', 'create company loans', 'edit company loans', 'delete company loans', 'record company loan payments',
-            'view vehicle loans',
+            'view vehicle loans', 'create vehicle loans',
             'view service schedules', 'view spare parts', 'view maintenance history', 'view breakdowns',
             'view tyre management',
-            'view consignors', 'view consignees', 'view suppliers', 'view vendors', 'view banks', 'view bank branches', 'view gst'
+            'view consignors', 'view consignees', 'view suppliers', 'view vendors', 'view banks', 'view bank branches', 'view gst',
+            'view cities', 'view packagings', 'view units', 'view items',
+            'view fuel pumps', 'view fuel companies', 'view adblue companies',
+            'view tyre brands', 'view tyre models', 'view tyre sizes',
+            'view bill formats',
+            'view vehicles', 'view drivers',
+            'view companies', 'view branches',
+            'view documents', 'upload documents', 'download documents',
+            'manage categories', 'manage folders', 'view document reports', 'view activity', 'manage document trash',
+            'view customer ledger', 'view sales ledger', 'view tds report',
+            'view trip reports', 'view bilty advance details',
+            'view fuel report', 'view fuel outstanding', 'view adblue outstanding',
+            'view vehicle report', 'view driver trip report',
+            'view vehicle utilization', 'view mis report', 'view expense management',
+            'view vehicle document report', 'view gst tax report', 'view profit loss report',
         ])->get();
         $accountant->syncPermissions($accountantPermissions);
 
@@ -211,23 +243,27 @@ class RolePermissionSeeder extends Seeder
         $dispatcherPermissions = Permission::whereIn('name', [
             'view bulties', 'create bulties', 'edit bulties', 'print bulties',
             'view trips', 'create trips', 'edit trips',
-            'view vehicles', 'view drivers', 'view consignors', 'view consignees'
+            'view vehicles', 'view drivers', 'view consignors', 'view consignees',
+            'view letterheads',
+            'view documents',
         ])->get();
         $dispatcher->syncPermissions($dispatcherPermissions);
 
         // 6. Driver
         $driver = Role::firstOrCreate(['name' => 'Driver', 'guard_name' => 'web']);
         $driverPermissions = Permission::whereIn('name', [
-            'view trips', 'view vehicles', 'view driver salary slips'
+            'view trips', 'view vehicles', 'view driver salary slips',
         ])->get();
         $driver->syncPermissions($driverPermissions);
 
         // 7. Operator
         $operator = Role::firstOrCreate(['name' => 'Operator', 'guard_name' => 'web']);
         $operatorPermissions = Permission::whereIn('name', [
-            'view bulties', 'create bulties', 'edit bulties',
+            'view bulties', 'create bulties', 'edit bulties', 'print bulties',
             'view trips', 'create trips', 'edit trips',
-            'view vehicles', 'view drivers', 'view consignors', 'view consignees'
+            'view vehicles', 'view drivers', 'view consignors', 'view consignees',
+            'view letterheads',
+            'view documents',
         ])->get();
         $operator->syncPermissions($operatorPermissions);
 

@@ -247,15 +247,5 @@ class AdminAuthController extends Controller
         }
     }
 
-    public function adminDashboard()
-    {
-        $kpi = [
-            'total_trips' => 0,
-            'revenue' => 0,
-            'expenses' => 0,
-        ];
-        return view("admin.dashboard.index", compact('kpi'));
-    }
-
 
 }

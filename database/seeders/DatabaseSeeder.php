@@ -24,7 +24,9 @@ class DatabaseSeeder extends Seeder
             TyreBrandSeeder::class,
             TyreModelSeeder::class,
             TyreSizeSeeder::class,
+            DocumentCategorySeeder::class,
             MenuSeeder::class,
+            PageSeeder::class,
         ]);
     }
 }

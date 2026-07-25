@@ -53,7 +53,7 @@ use App\Http\Controllers\Front\WebsiteController;
 */
 
 Route::get('/', [WebsiteController::class, 'landing'])->name('landing');
-Route::get('/home', [WebsiteController::class, 'home'])->name('home');
+Route::get('/home', [WebsiteController::class, 'home']);
 Route::get('/login', [AdminAuthController::class, 'login'])->name('front.login');
 Route::post('/login', [AdminAuthController::class, 'postLogin'])->name('front.login.post');
 Route::get('/about', [WebsiteController::class, 'about'])->name('about');
@@ -543,31 +543,44 @@ Route::name('admin.')->prefix('admin')->group(function () {
     });
 });
 
-Route::get('run-migration', function () {
-    try {
-        Artisan::call('migrate', ['--force' => true]);
-        return response(Artisan::output());
-    } catch (\Throwable $e) {
-        return response('Migration failed: ' . $e->getMessage(), 500);
-    }
-})->name('run.migration');
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('run-migration', function () {
+        try {
+            Artisan::call('migrate', ['--force' => true]);
+            return response(Artisan::output());
+        } catch (\Throwable $e) {
+            return response('Migration failed: ' . $e->getMessage(), 500);
+        }
+    })->name('run.migration');
 
-Route::get('run-permission-seeder', function () {
-    try {
-        Artisan::call('db:seed', ['--class' => 'RolePermissionSeeder', '--force' => true]);
-        $output = Artisan::output();
-        return response("<pre style='background:#1e1e1e;color:#00ff00;padding:30px;font-family:monospace;border-radius:8px;'><b>Role Permission Seeder executed successfully!</b><br><br>" . ($output ?: 'Permissions synced to Super Admin and all roles successfully.') . "</pre>");
-    } catch (\Throwable $e) {
-        return response('Permission Seeder failed: ' . $e->getMessage(), 500);
-    }
-})->name('run.permission-seeder');
+    Route::get('seed-roles-permissions', function () {
+        try {
+            Artisan::call('db:seed', ['--class' => 'RolePermissionSeeder', '--force' => true]);
+            $output = Artisan::output();
+            return response("<pre style='background:#1e1e1e;color:#00ff00;padding:30px;font-family:monospace;border-radius:8px;'><b>Roles &amp; Permissions Seeder executed successfully!</b><br><br>" . ($output ?: 'All roles and permissions synced.') . "</pre>");
+        } catch (\Throwable $e) {
+            return response('Seeder failed: ' . $e->getMessage(), 500);
+        }
+    })->name('seed.roles-permissions');
 
-Route::get('seed-role-permissions', function () {
-    try {
-        Artisan::call('db:seed', ['--class' => 'RolePermissionSeeder', '--force' => true]);
-        return response("<pre style='background:#1e1e1e;color:#00ff00;padding:30px;font-family:monospace;border-radius:8px;'><b>Role Permission Seeder executed successfully!</b><br><br>All module permissions synced and assigned to Super Admin.</pre>");
-    } catch (\Throwable $e) {
-        return response('Permission Seeder failed: ' . $e->getMessage(), 500);
-    }
-})->name('seed.role-permissions');
+    Route::get('seed-menu', function () {
+        try {
+            Artisan::call('db:seed', ['--class' => 'MenuSeeder', '--force' => true]);
+            $output = Artisan::output();
+            return response("<pre style='background:#1e1e1e;color:#00ff00;padding:30px;font-family:monospace;border-radius:8px;'><b>Menu Seeder executed successfully!</b><br><br>" . ($output ?: 'Menu structure seeded.') . "</pre>");
+        } catch (\Throwable $e) {
+            return response('Seeder failed: ' . $e->getMessage(), 500);
+        }
+    })->name('seed.menu');
+
+    Route::get('seed-all', function () {
+        try {
+            Artisan::call('db:seed', ['--force' => true]);
+            $output = Artisan::output();
+            return response("<pre style='background:#1e1e1e;color:#00ff00;padding:30px;font-family:monospace;border-radius:8px;'><b>Full Database Seeder executed successfully!</b><br><br>" . ($output ?: 'All seeders completed.') . "</pre>");
+        } catch (\Throwable $e) {
+            return response('Seeder failed: ' . $e->getMessage(), 500);
+        }
+    })->name('seed.all');
+});
 

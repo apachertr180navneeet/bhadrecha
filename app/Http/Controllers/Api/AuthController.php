@@ -121,9 +121,9 @@ class AuthController extends Controller
                     ],200);
                 }else{
                     return response()->json([
-                        'status' => true,
+                        'status' => false,
                         'message' =>  'Verification code is expired.',
-                    ],200);
+                    ],400);
                 }
             }else{
                 return response()->json([
