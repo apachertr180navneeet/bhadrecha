@@ -395,25 +395,9 @@
                             <td class="fw-bold" style="padding: 4px; font-size: 11px;">{{ number_format($totalFinalWgt, 3, '.', '') }}</td>
                         </tr>
                     </tfoot>
+                </table>
             </div>
-
-            <div class="p-2" style="font-size: 10px;">
-                <div class="text-center mt-2 fw-bold">DECLARATION</div>
-                <div>{{ $compDeclaration }}</div>
-                
-                <div class="text-end mt-3 mb-1">
-                    <div class="fw-bold" style="font-size: 12px;">For <span>{{ $compName }}</span></div>
-                    <div style="padding: 4px 0;" class="text-end">
-                        @if(!empty($compSigUrl))
-                            <img src="{{ $compSigUrl }}" alt="Signature" style="max-height: 45px; max-width: 140px; object-fit: contain;">
-                        @else
-                            <div style="height: 35px;"></div>
-                        @endif
-                    </div>
-                    <div style="font-size: 10px; font-weight: bold;">Authorized Signatory</div>
-                </div>
-            </div>
-
+        </div>
     </div>
 </div>
 

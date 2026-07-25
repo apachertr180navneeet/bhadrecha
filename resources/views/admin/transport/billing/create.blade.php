@@ -517,21 +517,6 @@
                                 </tfoot>
                             </table>
                         </div>
-
-                        <div class="p-2" style="font-size: 10px;">
-                            <div class="text-center mt-2 fw-bold">DECLARATION</div>
-                            <div class="preview-declaration-text">Declaration : {{ $defaultCompanyDeclaration ?? 'GST payable by recipient under Reverse Charge (RCM) on GTA services.' }}</div>
-                            
-                            <div class="text-end mt-3 mb-1">
-                                <div class="fw-bold" style="font-size: 12px;">For <span id="gypsum-s2-footer-company"></span></div>
-                                <div class="my-1 text-end preview-signature-container">
-                                    <img src="{{ $defaultCompanySignatureUrl ?? '' }}" alt="Signature" class="preview-signature-img" style="max-height: 45px; max-width: 140px; object-fit: contain; {{ empty($defaultCompanySignatureUrl) ? 'display: none;' : '' }}">
-                                </div>
-                            </div>
-                            <div class="text-end">
-                                <div style="font-size: 10px; font-weight: bold;">Authorized Signatory</div>
-                            </div>
-                        </div>
                     </div>
 
                 </div>

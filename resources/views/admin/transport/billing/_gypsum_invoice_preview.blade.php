@@ -410,26 +410,6 @@
         <div style="padding: 4px 8px; font-size: 10px;">
             In words : {{ $amountInWords ?? ucwords((new NumberFormatter("en_IN", NumberFormatter::SPELLOUT))->format($netTotal)) . ' Only' }}
         </div>
-        
-        <div style="padding: 8px; text-align: center; font-size: 9px;">
-            DECLARATION<br>
-            {{ $companyDeclaration }}
-        </div>
-        
-        <div class="row g-0 mt-3" style="min-height: 80px;">
-            <div class="col-6"></div>
-            <div class="col-6 text-end pe-3">
-                <div style="font-weight: bold; font-size: 11px;">For {{ $companyName }}</div>
-                <div style="padding: 4px 0;" class="text-end">
-                    @if(!empty($companySignatureUrl))
-                        <img src="{{ $companySignatureUrl }}" alt="Signature" style="max-height: 45px; max-width: 140px; object-fit: contain;">
-                    @else
-                        <div style="height: 40px;"></div>
-                    @endif
-                </div>
-                <div style="font-size: 9px; font-weight: bold;">Authorized Signature</div>
-            </div>
-        </div>
 
     </div>
 
