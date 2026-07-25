@@ -28,33 +28,36 @@ class DocumentController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $companyId = $request->get('company_id', session('active_company_id', $user->company_id));
 
+        if ($request->ajax()) {
+            return $this->getDataTable($request);
+        }
+
+        $companyId = $request->get('company_id', session('active_company_id', $user->company_id));
         if (!$user->isSuperAdmin()) {
             $companyId = $user->company_id;
         }
 
         $companies = $user->isSuperAdmin() ? Company::where('status', 'active')->get() : collect();
-        if (!$companyId && $companies->isNotEmpty()) {
-            $companyId = $companies->first()->id;
-        }
-
-        if ($request->ajax()) {
-            return $this->getDataTable($request, $companyId);
-        }
-
-        $categories = DocumentCategory::forCompany($companyId)->active()->get();
-        $folders = DocumentFolder::forCompany($companyId)->active()->get();
+        $categories = $companyId ? DocumentCategory::forCompany($companyId)->active()->get() : DocumentCategory::active()->get();
+        $folders = $companyId ? DocumentFolder::forCompany($companyId)->active()->get() : DocumentFolder::active()->get();
         $branches = $companyId ? Branch::where('company_id', $companyId)->get() : Branch::all();
-        $users = User::byCompany($companyId)->get();
+        $users = $companyId ? User::byCompany($companyId)->get() : User::all();
 
         return view('admin.documents.index', compact('categories', 'folders', 'branches', 'companies', 'users', 'companyId'));
     }
 
-    protected function getDataTable(Request $request, $companyId)
+    protected function getDataTable(Request $request)
     {
-        $query = Document::forCompany($companyId)
-            ->with(['category', 'folder', 'uploader', 'company', 'branch']);
+        $user = auth()->user();
+        $query = Document::with(['category', 'folder', 'uploader', 'company', 'branch']);
+
+        // Scope company
+        if (!$user->isSuperAdmin()) {
+            $query->where('company_id', $user->company_id);
+        } elseif ($request->filled('company_id')) {
+            $query->where('company_id', $request->company_id);
+        }
 
         // Filters
         if ($request->filled('category_id')) {

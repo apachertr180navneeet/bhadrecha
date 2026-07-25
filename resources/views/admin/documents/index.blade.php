@@ -31,13 +31,17 @@
     <div class="card mb-4 border-0 shadow-sm">
         <div class="card-body">
             <form id="filterForm" class="row g-3 align-items-end">
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Global Search</label>
-                    <div class="input-group input-group-merge">
-                        <span class="input-group-text"><i class="bx bx-search"></i></span>
-                        <input type="text" id="searchTerm" class="form-control" placeholder="Doc name, number, tags, content...">
-                    </div>
+                @if(auth()->user()->isSuperAdmin())
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Company</label>
+                    <select id="filterCompany" class="form-select">
+                        <option value="">All Companies</option>
+                        @foreach($companies as $comp)
+                        <option value="{{ $comp->id }}">{{ $comp->name }}</option>
+                        @endforeach
+                    </select>
                 </div>
+                @endif
 
                 <div class="col-md-2">
                     <label class="form-label fw-semibold">Branch</label>
@@ -176,7 +180,7 @@
 
 @push('scripts')
 <script>
-$(document.body).ready(function() {
+$(document).ready(function() {
     var table = $('#documentsTable').DataTable({
         processing: true,
         serverSide: true,
@@ -184,9 +188,12 @@ $(document.body).ready(function() {
             url: "{{ route('admin.documents.index') }}",
             data: function(d) {
                 d.search_term = $('#searchTerm').val();
+                if ($('#filterCompany').length) {
+                    d.company_id = $('#filterCompany').val();
+                }
+                d.branch_id = $('#filterBranch').val();
                 d.category_id = $('#filterCategory').val();
                 d.folder_id = $('#filterFolder').val();
-                d.branch_id = $('#filterBranch').val();
                 d.expiry_filter = $('#filterExpiry').val();
                 d.status = $('#filterStatus').val();
             }
@@ -205,7 +212,8 @@ $(document.body).ready(function() {
                 data: 'name', 
                 name: 'name',
                 render: function(data, type, row) {
-                    return '<div><strong class="text-dark">' + data + '</strong><br><small class="text-muted">' + row.file_extension + '</small></div>';
+                    var ext = row.file_extension ? row.file_extension : '';
+                    return '<div><strong class="text-dark">' + (data || '') + '</strong><br><small class="text-muted">' + ext + '</small></div>';
                 }
             },
             { data: 'category', name: 'category' },
@@ -217,6 +225,7 @@ $(document.body).ready(function() {
                 data: 'expiry_date', 
                 name: 'expiry_date',
                 render: function(data, type, row) {
+                    if(!data || data === '-') return '-';
                     if(row.is_expired) {
                         return '<span class="badge bg-danger">' + data + ' (Expired)</span>';
                     } else if(row.is_expiring_soon) {
@@ -229,12 +238,14 @@ $(document.body).ready(function() {
                 data: 'status', 
                 name: 'status',
                 render: function(data) {
+                    if(!data) return '<span class="badge bg-secondary">-</span>';
                     var badge = 'bg-secondary';
-                    if(data === 'active') badge = 'bg-success';
-                    if(data === 'archived') badge = 'bg-info';
-                    if(data === 'expired') badge = 'bg-danger';
-                    if(data === 'draft') badge = 'bg-warning';
-                    return '<span class="badge ' + badge + '">' + data.toUpperCase() + '</span>';
+                    var statusStr = String(data).toLowerCase();
+                    if(statusStr === 'active') badge = 'bg-success';
+                    if(statusStr === 'archived') badge = 'bg-info';
+                    if(statusStr === 'expired') badge = 'bg-danger';
+                    if(statusStr === 'draft') badge = 'bg-warning';
+                    return '<span class="badge ' + badge + '">' + statusStr.toUpperCase() + '</span>';
                 }
             },
             { data: 'actions', orderable: false, searchable: false }
@@ -243,8 +254,32 @@ $(document.body).ready(function() {
         pageLength: 25
     });
 
+    // Dynamic branch loading when company filter changes
+    $(document).on('change', '#filterCompany', function() {
+        var companyId = $(this).val();
+        var $branchSelect = $('#filterBranch');
+        if (companyId) {
+            $.ajax({
+                url: '{{ url("admin/users/get-branches") }}/' + companyId,
+                type: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    var options = '<option value="">All Branches</option>';
+                    $.each(data, function(i, b) {
+                        options += '<option value="' + b.id + '">' + b.name + '</option>';
+                    });
+                    $branchSelect.html(options);
+                    table.draw();
+                }
+            });
+        } else {
+            $branchSelect.html('<option value="">All Branches</option>');
+            table.draw();
+        }
+    });
+
     // Real-time filter triggers
-    $('#searchTerm, #filterCategory, #filterFolder, #filterBranch, #filterExpiry, #filterStatus').on('change keyup', function() {
+    $('#searchTerm, #filterCompany, #filterCategory, #filterFolder, #filterBranch, #filterExpiry, #filterStatus').on('change keyup', function() {
         table.draw();
     });
 
