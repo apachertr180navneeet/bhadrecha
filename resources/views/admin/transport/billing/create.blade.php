@@ -538,170 +538,198 @@
             </div>
         </div>
 
-        <!-- Bill Summary removed -->
+        <!-- Bill Summary / Generation Panel -->
         <div class="col-md-4">
-
-            <div class="card">
-                <div class="card-body">
-                    <form method="POST" action="{{ route('admin.transport.billing.generate') }}">
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-header bg-primary bg-gradient text-white d-flex align-items-center justify-content-between py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bx bx-receipt fs-4"></i>
+                        <h5 class="card-title mb-0 text-white fw-bold fs-6">Generate Invoice</h5>
+                    </div>
+                    <span class="badge bg-white text-primary rounded-pill px-3">{{ $bulties->count() }} LR{{ $bulties->count() > 1 ? 's' : '' }}</span>
+                </div>
+                <div class="card-body p-3">
+                    <form method="POST" action="{{ route('admin.transport.billing.generate') }}" id="generate-bill-form">
                         @csrf
                         <input type="hidden" name="ids" value="{{ $bulties->pluck('id')->join(',') }}">
                         <input type="hidden" name="invoice_type" value="freight">
 
-                        <div class="mb-3">
-                            <label class="form-label">Bill Number</label>
-                            <input type="text" name="bill_number" class="form-control" id="bill-number-input" value="{{ $nextFreightInvoiceNo }}" placeholder="Enter bill number">
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Company Name</label>
-                            @php
-                                $defaultCompany = $bulties->count() > 0 ? $bulties->first()->company : null;
-                                $defaultCompName = $defaultCompany ? $defaultCompany->name : '';
-                                $defaultCompanySignatureUrl = $defaultCompany ? $defaultCompany->digital_signature_url : null;
-                                $defaultCompanyDeclaration = $defaultCompany && !empty($defaultCompany->declaration)
-                                    ? $defaultCompany->declaration
-                                    : 'GST payable by recipient under Reverse Charge (RCM) on GTA services.';
-                            @endphp
-                            <input type="text" name="company_name" id="company-name-input" class="form-control" value="{{ $defaultCompName }}" placeholder="Enter Company Name">
+                        <!-- Section: Invoice Header & Amount -->
+                        <div class="bg-light p-3 rounded mb-3 border">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-bold text-uppercase text-muted small"><i class="bx bx-info-circle me-1"></i>Basic Info</span>
+                                <span class="badge bg-label-success fw-bold">Freight Invoice</span>
+                            </div>
+                            <div class="row g-2 mb-2">
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold mb-1">Bill Number</label>
+                                    <input type="text" name="bill_number" class="form-control form-control-sm fw-bold text-primary" id="bill-number-input" value="{{ $nextFreightInvoiceNo }}" placeholder="Enter bill number">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold mb-1">No. of LRs</label>
+                                    <input type="number" name="no_of_lrs" class="form-control form-control-sm text-center fw-bold" id="no-of-lrs-input" value="{{ $bulties->count() }}" placeholder="No of LRs">
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold mb-1">Company Name</label>
+                                @php
+                                    $defaultCompany = $bulties->count() > 0 ? $bulties->first()->company : null;
+                                    $defaultCompName = $defaultCompany ? $defaultCompany->name : '';
+                                    $defaultCompanySignatureUrl = $defaultCompany ? $defaultCompany->digital_signature_url : null;
+                                    $defaultCompanyDeclaration = $defaultCompany && !empty($defaultCompany->declaration)
+                                        ? $defaultCompany->declaration
+                                        : 'GST payable by recipient under Reverse Charge (RCM) on GTA services.';
+                                @endphp
+                                <input type="text" name="company_name" id="company-name-input" class="form-control form-control-sm" value="{{ $defaultCompName }}" placeholder="Enter Company Name">
+                            </div>
+                            <div>
+                                <label class="form-label small fw-semibold mb-1 text-success">Total Bill Amount (₹)</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-success text-white fw-bold">₹</span>
+                                    <input type="text" name="total_amount" class="form-control form-control-sm fw-bold text-success fs-6 bg-white" id="total-amount-input" value="{{ number_format($totals['grand'], 2) }}" placeholder="0.00" readonly>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">Tax Payable Under Reverse Charge (RCM)?</label>
-                            <select name="rcm_payable" id="rcm-payable-select" class="form-select">
-                                <option value="1" selected>YES (Recipient pays GST under RCM)</option>
-                                <option value="0">NO (Tax payable under Forward Charge)</option>
-                            </select>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">GST Type</label>
-                                <select name="gst_type" id="gst-type-select" class="form-select">
-                                    <option value="CGST_SGST" selected>CGST + SGST</option>
-                                    <option value="IGST">IGST</option>
+                        <!-- Section: Taxation & GST -->
+                        <div class="border rounded p-3 mb-3">
+                            <div class="fw-bold text-uppercase text-muted small mb-2"><i class="bx bx-calculator me-1"></i>Taxation & GST</div>
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold mb-1">Tax Payable Under Reverse Charge (RCM)?</label>
+                                <select name="rcm_payable" id="rcm-payable-select" class="form-select form-select-sm">
+                                    <option value="1" selected>YES (Recipient pays GST under RCM)</option>
+                                    <option value="0">NO (Tax payable under Forward Charge)</option>
                                 </select>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Total GST (₹)</label>
-                                <input type="number" step="any" name="total_gst" id="total-gst-input" class="form-control" value="{{ number_format($totals['gst'], 2, '.', '') }}" placeholder="0.00">
+                            <div class="row g-2 mb-2">
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold mb-1">GST Type</label>
+                                    <select name="gst_type" id="gst-type-select" class="form-select form-select-sm">
+                                        <option value="CGST_SGST" selected>CGST + SGST</option>
+                                        <option value="IGST">IGST</option>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold mb-1">Total GST (₹)</label>
+                                    <input type="number" step="any" name="total_gst" id="total-gst-input" class="form-control form-control-sm text-end" value="{{ number_format($totals['gst'], 2, '.', '') }}" placeholder="0.00">
+                                </div>
+                            </div>
+                            <div class="row g-2" id="cgst-sgst-row">
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold mb-1">CGST (₹)</label>
+                                    <input type="number" step="any" name="cgst_amount" id="cgst-amount-input" class="form-control form-control-sm text-end" value="{{ number_format($totals['gst'] / 2, 2, '.', '') }}" placeholder="0.00">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold mb-1">SGST (₹)</label>
+                                    <input type="number" step="any" name="sgst_amount" id="sgst-amount-input" class="form-control form-control-sm text-end" value="{{ number_format($totals['gst'] / 2, 2, '.', '') }}" placeholder="0.00">
+                                </div>
+                            </div>
+                            <div class="mb-2 d-none" id="igst-row">
+                                <label class="form-label small fw-semibold mb-1">IGST (₹)</label>
+                                <input type="number" step="any" name="igst_amount" id="igst-amount-input" class="form-control form-control-sm text-end" value="{{ number_format($totals['gst'], 2, '.', '') }}" placeholder="0.00">
                             </div>
                         </div>
 
-                        <div class="row" id="cgst-sgst-row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">CGST (₹)</label>
-                                <input type="number" step="any" name="cgst_amount" id="cgst-amount-input" class="form-control" value="{{ number_format($totals['gst'] / 2, 2, '.', '') }}" placeholder="0.00">
+                        <!-- Section: Vendor & EPOD Details -->
+                        <div class="border rounded p-3 mb-3">
+                            <div class="fw-bold text-uppercase text-muted small mb-2"><i class="bx bx-store me-1"></i>Vendor & EPOD Details</div>
+                            <div class="row g-2 mb-2">
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold mb-1">State Vendor Code</label>
+                                    <input type="text" name="state_vendor_code" class="form-control form-control-sm" id="state-vendor-code-input" placeholder="State Vendor Code">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold mb-1">Vendor Code</label>
+                                    <input type="text" name="vendor_code" class="form-control form-control-sm" id="vendor-code-input" placeholder="Vendor Code">
+                                </div>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">SGST (₹)</label>
-                                <input type="number" step="any" name="sgst_amount" id="sgst-amount-input" class="form-control" value="{{ number_format($totals['gst'] / 2, 2, '.', '') }}" placeholder="0.00">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold mb-1">Vendor Name</label>
+                                    <input type="text" name="vendor_name" class="form-control form-control-sm" id="vendor-name-input" placeholder="Vendor Name">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold mb-1">EPOD Status</label>
+                                    <select name="epod_status" class="form-select form-select-sm" id="epod-status-input">
+                                        <option value="N">N</option>
+                                        <option value="Y">Y</option>
+                                        <option value="Pending">Pending</option>
+                                        <option value="Completed">Completed</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="mb-3 d-none" id="igst-row">
-                            <label class="form-label">IGST (₹)</label>
-                            <input type="number" step="any" name="igst_amount" id="igst-amount-input" class="form-control" value="{{ number_format($totals['gst'], 2, '.', '') }}" placeholder="0.00">
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">State Vendor Code</label>
-                                <input type="text" name="state_vendor_code" class="form-control" id="state-vendor-code-input" placeholder="Enter State Vendor Code">
+                        <!-- Section: Optional Details -->
+                        <div class="border rounded p-3 mb-3">
+                            <div class="fw-bold text-uppercase text-muted small mb-2"><i class="bx bx-map me-1"></i>Billing & Taxes (Optional)</div>
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold mb-1">Billing Address</label>
+                                @php
+                                    $defaultAddress = $bulties->count() > 0 && $bulties->first()->consignor ? ($bulties->first()->consignor->name . "\n" . $bulties->first()->consignor->address) : '';
+                                @endphp
+                                <textarea name="billing_address" class="form-control form-control-sm" rows="2" placeholder="Custom billing address">{{ $defaultAddress }}</textarea>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Vendor Code</label>
-                                <input type="text" name="vendor_code" class="form-control" id="vendor-code-input" placeholder="Enter Vendor Code">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold mb-1">Place of Supply</label>
+                                    @php
+                                        $defaultPlaceOfSupply = $bulties->count() > 0 && $bulties->first()->destinationCity ? $bulties->first()->destinationCity->state : 'RAJASTHAN';
+                                    @endphp
+                                    <input type="text" name="custom_place_of_supply" id="place-of-supply-input" class="form-control form-control-sm" placeholder="Place of Supply" value="{{ $defaultPlaceOfSupply }}">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold mb-1">HSN/SAC Code</label>
+                                    @php
+                                        $defaultHsn = $bulties->count() > 0 && $bulties->first()->company ? $bulties->first()->company->hsn_code : '996511';
+                                    @endphp
+                                    <input type="text" name="custom_hsn_code" class="form-control form-control-sm" placeholder="HSN Code" value="{{ $defaultHsn }}">
+                                </div>
                             </div>
                         </div>
 
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Vendor Name</label>
-                                <input type="text" name="vendor_name" class="form-control" id="vendor-name-input" placeholder="Enter Vendor Name">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">EPOD Status</label>
-                                <select name="epod_status" class="form-select" id="epod-status-input">
-                                    <option value="N">N</option>
-                                    <option value="Y">Y</option>
-                                    <option value="Pending">Pending</option>
-                                    <option value="Completed">Completed</option>
+                        <!-- Section: Format & Print Settings -->
+                        <div class="border rounded p-3 mb-4 bg-light">
+                            <div class="fw-bold text-uppercase text-muted small mb-2"><i class="bx bx-cog me-1"></i>Print & Format Settings</div>
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold mb-1">Print Template Type</label>
+                                <select name="template_type" id="template-type-select" class="form-select form-select-sm">
+                                    <option value="dynamic">Dynamic Format (From DB)</option>
+                                    <option value="nathdwara">Nathdwara Format</option>
+                                    <option value="gypsum">Gypsum Format</option>
                                 </select>
                             </div>
-                        </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">No. of LRs</label>
-                            <input type="number" name="no_of_lrs" class="form-control" id="no-of-lrs-input" value="{{ $bulties->count() }}" placeholder="Enter No of LRs">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Total Amount (₹)</label>
-                            <input type="text" name="total_amount" class="form-control" id="total-amount-input" value="{{ number_format($totals['grand'], 2) }}" placeholder="0.00" readonly>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Billing Address (Optional)</label>
-                            @php
-                                $defaultAddress = $bulties->count() > 0 && $bulties->first()->consignor ? ($bulties->first()->consignor->name . "\n" . $bulties->first()->consignor->address) : '';
-                            @endphp
-                            <textarea name="billing_address" class="form-control" rows="3" placeholder="Enter custom billing address. If left blank, the consignor's address will be used.">{{ $defaultAddress }}</textarea>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Place of Supply (Optional)</label>
-                            @php
-                                $defaultPlaceOfSupply = $bulties->count() > 0 && $bulties->first()->destinationCity ? $bulties->first()->destinationCity->state : 'RAJASTHAN';
-                            @endphp
-                            <input type="text" name="custom_place_of_supply" id="place-of-supply-input" class="form-control" placeholder="Enter Place of Supply (e.g. RAJASTHAN)" value="{{ $defaultPlaceOfSupply }}">
-                        </div>
+                            <div id="dynamic-format-container">
+                                <div class="mb-0">
+                                    <label class="form-label small fw-semibold mb-1">Bill Format</label>
+                                    <select name="bill_format_id" id="bill-format-select" class="form-select form-select-sm">
+                                        <option value="">Select Bill Format</option>
+                                        @foreach($billFormats as $format)
+                                            <option value="{{ $format->id }}">{{ $format->format_name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">HSN/SAC CODE (Optional)</label>
-                            @php
-                                $defaultHsn = $bulties->count() > 0 && $bulties->first()->company ? $bulties->first()->company->hsn_code : '996511';
-                            @endphp
-                            <input type="text" name="custom_hsn_code" class="form-control" placeholder="Enter custom HSN code" value="{{ $defaultHsn }}">
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Print Template Type</label>
-                            <select name="template_type" id="template-type-select" class="form-select">
-                                <option value="dynamic">Dynamic Format (From DB)</option>
-                                <option value="nathdwara">Nathdwara Format</option>
-                                <option value="gypsum">Gypsum Format</option>
-                            </select>
-                        </div>
-
-                        <div id="dynamic-format-container">
-                            <div class="mb-3">
-                                <label class="form-label">Bill Format</label>
-                                <select name="bill_format_id" id="bill-format-select" class="form-select">
-                                    <option value="">Select Bill Format</option>
-                                    @foreach($billFormats as $format)
-                                        <option value="{{ $format->id }}">{{ $format->format_name }}</option>
-                                    @endforeach
-                                </select>
+                            <div id="nathdwara-fields-container" class="d-none">
+                                <div class="mb-2">
+                                    <label class="form-label small fw-semibold mb-1">MN NO</label>
+                                    <input type="text" name="mn_number" id="nathdwara-mn-no" class="form-control form-control-sm" placeholder="Enter MN NO">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label small fw-semibold mb-1">Description</label>
+                                    <input type="text" name="nathdwara_description" id="nathdwara-description" class="form-control form-control-sm" value="WALL PUTTY TRANSPORATION" placeholder="Enter Description">
+                                </div>
+                                <div class="mb-0 d-none" id="nathdwara-rate-container">
+                                    <label class="form-label small fw-semibold mb-1">Rate (per MT)</label>
+                                    <input type="number" step="any" name="nathdwara_rate" id="nathdwara-rate" class="form-control form-control-sm" placeholder="Enter Rate">
+                                </div>
                             </div>
                         </div>
 
-                        <div id="nathdwara-fields-container" class="d-none">
-                            <div class="mb-3">
-                                <label class="form-label">MN NO</label>
-                                <input type="text" name="mn_number" id="nathdwara-mn-no" class="form-control" placeholder="Enter MN NO">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Description</label>
-                                <input type="text" name="nathdwara_description" id="nathdwara-description" class="form-control" value="WALL PUTTY TRANSPORATION" placeholder="Enter Description">
-                            </div>
-                            <div class="mb-3 d-none" id="nathdwara-rate-container">
-                                <label class="form-label">Rate (per MT)</label>
-                                <input type="number" step="any" name="nathdwara_rate" id="nathdwara-rate" class="form-control" placeholder="Enter Rate">
-                            </div>
-
-                        </div>
-
-                        <button type="submit" name="action" value="generate_print" class="btn btn-success w-100">
-                            <i class="bx bx-receipt me-1"></i> Generate & Print
+                        <button type="submit" name="action" value="generate_print" class="btn btn-success btn-lg w-100 shadow-sm py-2 fw-bold">
+                            <i class="bx bx-printer me-2 fs-5"></i> Generate & Print Invoice
                         </button>
                     </form>
                 </div>
