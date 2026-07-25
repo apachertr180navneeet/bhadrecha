@@ -585,7 +585,7 @@
                             <div>
                                 <label class="form-label small fw-semibold mb-1 text-success">Total Bill Amount (₹)</label>
                                 <div class="input-group input-group-sm">
-                                    <span class="input-group-text bg-success text-white fw-bold">₹</span>
+                                    <span class="input-group-text bg-success text-white fw-bold" style="background-color: #28a745 !important; color: #ffffff !important;">₹</span>
                                     <input type="text" name="total_amount" class="form-control form-control-sm fw-bold text-success fs-6 bg-white" id="total-amount-input" value="{{ number_format($totals['grand'], 2) }}" placeholder="0.00" readonly>
                                 </div>
                             </div>
