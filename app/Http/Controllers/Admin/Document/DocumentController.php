@@ -53,10 +53,15 @@ class DocumentController extends Controller
         $query = Document::with(['category', 'folder', 'uploader', 'company', 'branch']);
 
         // Scope company
-        if (!$user->isSuperAdmin()) {
-            $query->where('company_id', $user->company_id);
-        } elseif ($request->filled('company_id')) {
-            $query->where('company_id', $request->company_id);
+        if ($user && !$user->isSuperAdmin()) {
+            $companyId = $user->company_id ?? session('active_company_id');
+            if ($companyId) {
+                $query->where('company_id', $companyId);
+            }
+        } else {
+            if ($request->filled('company_id')) {
+                $query->where('company_id', $request->company_id);
+            }
         }
 
         // Filters
@@ -108,16 +113,16 @@ class DocumentController extends Controller
             }
         }
 
-        $totalRecords = $query->count();
-        $limit = $request->input('length', 10);
-        $start = $request->input('start', 0);
-        $orderColumnIndex = $request->input('order.0.column', 0);
-        $orderDir = $request->input('order.0.dir', 'desc');
+        $totalRecords = (clone $query)->count();
+        $limit = max(1, intval($request->input('length', 10)));
+        $start = max(0, intval($request->input('start', 0)));
+        $orderColumnIndex = intval($request->input('order.0.column', 0));
+        $orderDir = strtolower($request->input('order.0.dir', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         $columns = ['id', 'document_number', 'name', 'category_id', 'version', 'file_size', 'expiry_date', 'status', 'created_at'];
         $orderBy = $columns[$orderColumnIndex] ?? 'created_at';
 
-        $documents = $query->orderBy($orderBy, $orderDir)
+        $documents = (clone $query)->orderBy($orderBy, $orderDir)
             ->offset($start)
             ->limit($limit)
             ->get();
@@ -132,15 +137,15 @@ class DocumentController extends Controller
                 'category' => $doc->category?->name ?? 'N/A',
                 'folder' => $doc->folder?->name ?? 'Root',
                 'version' => 'v' . $doc->version,
-                'file_extension' => strtoupper($doc->file_extension),
+                'file_extension' => strtoupper($doc->file_extension ?? ''),
                 'file_size' => $doc->formatted_file_size,
                 'uploader' => $doc->uploader?->full_name ?? 'N/A',
                 'expiry_date' => $doc->expiry_date ? $doc->expiry_date->format('d M Y') : '-',
                 'is_expired' => $doc->is_expired,
                 'is_expiring_soon' => $doc->is_expiring_soon,
                 'status' => $doc->status,
-                'downloads' => $doc->downloads_count,
-                'created_at' => $doc->created_at->format('d M Y, h:i A'),
+                'downloads' => $doc->downloads_count ?? 0,
+                'created_at' => $doc->created_at ? $doc->created_at->format('d M Y, h:i A') : '-',
                 'actions' => view('admin.documents.partials.actions', compact('doc'))->render(),
             ];
         }
