@@ -210,7 +210,7 @@
                                         <td>{{ $bulty->lr_date ? $bulty->lr_date->format('d/m/Y') : '-' }}</td>
                                         <td style="font-weight: bold;">{{ $bulty->vehicle->vehicle_number ?? '-' }}</td>
                                         <td>{{ $bulty->lr_no ?? '-' }}</td>
-                                        <td>{{ $bulty->bultyDetail->challan_qty ?? ($bulty->bultyItems->sum('weight') ?? '-') }}</td>
+                                        <td>{{ ($bulty->bultyItems && $bulty->bultyItems->sum('articles') > 0) ? $bulty->bultyItems->sum('articles') : ($bulty->bultyDetail->challan_qty ?? '-') }}</td>
                                         <td>{{ $bulty->destinationCity->name ?? '-' }}</td>
                                         <td style="text-transform: uppercase;">{{ $bulty->mode ?? 'DEDICATED' }}</td>
                                         
