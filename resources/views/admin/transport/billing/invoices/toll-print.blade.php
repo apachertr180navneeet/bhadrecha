@@ -9,8 +9,7 @@
     $companyGst = $comp ? $comp->gst_number : '';
     $companyPan = $comp && $comp->pan_number ? $comp->pan_number : '';
     $companyPhone = $comp ? $comp->phone : '';
-    $companyHsn = !empty($invoice->custom_hsn_code) ? $invoice->custom_hsn_code : ($comp && $comp->hsn_code ? $comp->hsn_code : '');
-
+    $companyHsn = !empty($invoice->custom_hsn_code) ? $invoice->custom_hsn_code : ($comp && $comp->hsn_code ? $comp->hsn_code : '996791');
     $partyName = $invoice->consignor_name ?? ($invoice->consignor->name ?? '-');
     $partyAddress = !empty($invoice->billing_address) ? str_replace("\n", "<br>", $invoice->billing_address) : ($invoice->consignor ? str_replace("\n", "<br>", $invoice->consignor->address ?? '') : '');
     $partyGst = !empty($invoice->custom_gstn) ? $invoice->custom_gstn : ($invoice->consignor ? ($invoice->consignor->gst_no ?? '-') : '-');
@@ -102,6 +101,7 @@
                 <input type="hidden" name="bill_number" id="hidden_bill_number" value="">
                 <input type="hidden" name="company_name" id="hidden_company_name" value="">
                 <input type="hidden" name="billing_address" id="hidden_billing_address" value="">
+                <input type="hidden" name="custom_hsn_code" id="hidden_custom_hsn_code" value="">
                 <input type="hidden" name="custom_place_of_supply" id="hidden_custom_place_of_supply" value="">
                 <input type="hidden" name="custom_district" id="hidden_custom_district" value="">
                 <input type="hidden" name="custom_state" id="hidden_custom_state" value="">
@@ -118,6 +118,7 @@
                     document.getElementById('hidden_bill_number').value = gv('bill_number_cell');
                     document.getElementById('hidden_company_name').value = gv('company_name_cell');
                     document.getElementById('hidden_billing_address').value = gh('billing_address_cell');
+                    document.getElementById('hidden_custom_hsn_code').value = gv('custom_hsn_cell');
                     document.getElementById('hidden_custom_place_of_supply').value = gv('custom_place_of_supply_cell');
                     document.getElementById('hidden_custom_district').value = gv('custom_district_cell');
                     document.getElementById('hidden_custom_state').value = gv('custom_state_cell');
@@ -177,7 +178,7 @@
                             <td style="width: 15%; font-weight: bold; border-right: 1px solid #000; padding: 4px;">PLACE OF SUPPLY</td>
                             <td id="custom_place_of_supply_cell" contenteditable="true" style="width: 45%; font-weight: bold; border-right: 1px solid #000; padding: 4px; text-transform: uppercase; outline: none;" title="Click to edit place of supply">{{ $placeOfSupply }}</td>
                             <td style="width: 25%; font-weight: bold; border-right: 1px solid #000; padding: 4px;">HSN/SAC CODE-</td>
-                            <td id="custom_hsn_cell" style="width: 15%; font-weight: bold; padding: 4px; text-align: center;">{{ $invoice->custom_hsn_code ?? $invoice->custom_hsn_code ?? '' }}</td>
+                            <td id="custom_hsn_cell" contenteditable="true" style="width: 15%; font-weight: bold; padding: 4px; text-align: center; outline: none;" title="Click to edit HSN/SAC code">{{ $companyHsn }}</td>
                         </tr>
                         <tr>
                             <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px; vertical-align: top;">COMPANY NAME</td>

@@ -12,7 +12,7 @@
     $companyGst = $comp ? $comp->gst_number : '';
     $companyPan = $comp && $comp->pan_number ? $comp->pan_number : '';
     $companyPhone = $comp ? $comp->phone : '';
-    $companyHsn = !empty($invoice->custom_hsn_code) ? $invoice->custom_hsn_code : ($comp && $comp->hsn_code ? $comp->hsn_code : '');
+    $companyHsn = !empty($invoice->custom_hsn_code) ? $invoice->custom_hsn_code : ($comp && $comp->hsn_code ? $comp->hsn_code : '996791');
 
     $partyName = $invoice->consignor_name ?? ($invoice->consignor->name ?? '-');
     $partyAddress = !empty($invoice->billing_address) ? str_replace("\n", "<br>", $invoice->billing_address) : ($invoice->consignor ? str_replace("\n", "<br>", $invoice->consignor->address ?? '') : '');
