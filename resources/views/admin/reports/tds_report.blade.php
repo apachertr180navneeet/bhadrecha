@@ -110,11 +110,12 @@
                             $totalGst += $receiving->receiving_gst;
                             $totalTds += $receiving->tds;
                             $totalDeduction += $receiving->deduction;
+                            $billNo = !empty($receiving->invoice?->bill_number) ? $receiving->invoice?->bill_number : ($receiving->invoice?->invoice_no ?? ('#'.$receiving->invoice_id));
                         @endphp
                         <tr>
                             <td>{{ $receivings->firstItem() + $index }}</td>
                             <td>{{ $receiving->date?->format('d-m-Y') }}</td>
-                            <td><strong class="text-primary">{{ $receiving->invoice?->bill_number ?? $receiving->invoice?->invoice_no }}</strong></td>
+                            <td><strong class="text-primary">{{ $billNo }}</strong></td>
                             <td>{{ $receiving->invoice?->consignor_name }}</td>
                             <td>{{ $receiving->company?->name ?? 'N/A' }}</td>
                             <td>{{ $receiving->branch?->name ?? 'N/A' }}</td>

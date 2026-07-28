@@ -29,7 +29,10 @@ class SalesLedgerController extends Controller
         }
 
         if ($request->filled('bill_number')) {
-            $query->where('bill_number', 'LIKE', '%' . $request->bill_number . '%');
+            $query->where(function ($q) use ($request) {
+                $q->where('bill_number', 'LIKE', '%' . $request->bill_number . '%')
+                  ->orWhere('invoice_no', 'LIKE', '%' . $request->bill_number . '%');
+            });
         }
 
         if ($request->filled('bill_to')) {
@@ -67,7 +70,7 @@ class SalesLedgerController extends Controller
         // Get bills for dropdown
         $allBills = \App\Models\Invoice::when($companyId && $companyId !== 'all', function ($q) use ($companyId) {
             $q->where('company_id', $companyId);
-        })->orderBy('bill_number', 'desc')->get(['id', 'bill_number', 'consignor_name', 'company_id', 'branch_id']);
+        })->orderBy('id', 'desc')->get(['id', 'bill_number', 'invoice_no', 'consignor_name', 'company_id', 'branch_id']);
 
         return view('admin.reports.sales_ledger', compact('invoices', 'companies', 'branches', 'consignors', 'allBills'));
     }
@@ -94,7 +97,10 @@ class SalesLedgerController extends Controller
         }
 
         if ($request->filled('bill_number')) {
-            $query->where('bill_number', 'LIKE', '%' . $request->bill_number . '%');
+            $query->where(function ($q) use ($request) {
+                $q->where('bill_number', 'LIKE', '%' . $request->bill_number . '%')
+                  ->orWhere('invoice_no', 'LIKE', '%' . $request->bill_number . '%');
+            });
         }
 
         if ($request->filled('bill_to')) {
@@ -149,12 +155,14 @@ class SalesLedgerController extends Controller
             $totalReceived = $invoice->total_received_amount;
             $outstanding = $invoice->outstanding_amount;
 
+            $billNo = !empty($invoice->bill_number) ? $invoice->bill_number : ($invoice->invoice_no ?? ('INV-' . $invoice->id));
+
             $data[] = [
                 $index + 1,
                 $invoice->invoice_date?->format('d-m-Y') ?? '',
                 $invoice->company?->name ?? 'N/A',
                 $invoice->branch?->name ?? 'N/A',
-                $invoice->bill_number ?? $invoice->invoice_no,
+                $billNo,
                 $invoice->consignor_name,
                 number_format($amountWithoutGst, 2, '.', ''),
                 number_format($invoice->total_gst, 2, '.', ''),
@@ -201,7 +209,10 @@ class SalesLedgerController extends Controller
 
         if ($request->filled('bill_number')) {
             $query->whereHas('invoice', function ($q) use ($request) {
-                $q->where('bill_number', 'LIKE', '%' . $request->bill_number . '%');
+                $q->where(function ($subQ) use ($request) {
+                    $subQ->where('bill_number', 'LIKE', '%' . $request->bill_number . '%')
+                         ->orWhere('invoice_no', 'LIKE', '%' . $request->bill_number . '%');
+                });
             });
         }
 
@@ -249,7 +260,10 @@ class SalesLedgerController extends Controller
         
         if ($request->filled('bill_number')) {
             $query->whereHas('invoice', function($q) use ($request) {
-                $q->where('bill_number', 'LIKE', '%' . $request->bill_number . '%');
+                $q->where(function ($subQ) use ($request) {
+                    $subQ->where('bill_number', 'LIKE', '%' . $request->bill_number . '%')
+                         ->orWhere('invoice_no', 'LIKE', '%' . $request->bill_number . '%');
+                });
             });
         }
 

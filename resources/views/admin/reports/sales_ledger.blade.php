@@ -154,7 +154,7 @@
                             <td>{{ $invoice->invoice_date?->format('d-m-Y') }}</td>
                             <td>{{ $invoice->company?->name ?? 'N/A' }}</td>
                             <td>{{ $invoice->branch?->name ?? 'N/A' }}</td>
-                            <td><strong class="text-primary">{{ $invoice->bill_number ?? $invoice->invoice_no }}</strong></td>
+                            <td><strong class="text-primary">{{ !empty($invoice->bill_number) ? $invoice->bill_number : ($invoice->invoice_no ?? ('INV-' . $invoice->id)) }}</strong></td>
                             <td>{{ $invoice->consignor_name }}</td>
                             <td class="text-end">₹ {{ number_format($amountWithoutGst, 2) }}</td>
                             <td class="text-end">₹ {{ number_format($invoice->total_gst, 2) }}</td>
@@ -212,7 +212,10 @@
                             <select name="invoice_id" id="invoice_id" class="form-select select2" required>
                                 <option value="">Select Bill Number</option>
                                 @foreach($allBills as $bill)
-                                    <option value="{{ $bill->id }}">{{ $bill->bill_number ?? $bill->invoice_no }}</option>
+                                    @php
+                                        $displayBillNo = !empty($bill->bill_number) ? $bill->bill_number : ($bill->invoice_no ?? ('INV-' . $bill->id));
+                                    @endphp
+                                    <option value="{{ $bill->id }}">{{ $displayBillNo }} - {{ $bill->consignor_name }}</option>
                                 @endforeach
                             </select>
                         </div>
