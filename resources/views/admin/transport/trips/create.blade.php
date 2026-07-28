@@ -362,7 +362,16 @@
                             </div>
                         </div>
                         <div class="row g-3 mt-1">
-                            <div class="col-md-9">
+                            <div class="col-md-3">
+                                <label class="form-label small">Payment Type</label>
+                                <select name="advance_details[0][payment_type]" class="form-select form-select-sm">
+                                    <option value="">Select</option>
+                                    <option value="credit">Credit</option>
+                                    <option value="debit">Debit</option>
+                                    <option value="cash">Cash</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
                                 <label class="form-label small">Remark</label>
                                 <input type="text" name="advance_details[0][remark]" class="form-control form-control-sm" placeholder="Remark" maxlength="500">
                             </div>
@@ -1161,7 +1170,16 @@
                                     </div>
                                 </div>
                                 <div class="row g-3 mt-1">
-                                    <div class="col-md-9">
+                                    <div class="col-md-3">
+                                        <label class="form-label small">Payment Type</label>
+                                        <select name="advance_details[${idx}][payment_type]" class="form-select form-select-sm">
+                                            <option value="">Select</option>
+                                            <option value="credit" ${row.payment_type && row.payment_type.toLowerCase() === 'credit' ? 'selected' : ''}>Credit</option>
+                                            <option value="debit" ${row.payment_type && row.payment_type.toLowerCase() === 'debit' ? 'selected' : ''}>Debit</option>
+                                            <option value="cash" ${row.payment_type && row.payment_type.toLowerCase() === 'cash' ? 'selected' : ''}>Cash</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
                                         <label class="form-label small">Remark</label>
                                         <input type="text" name="advance_details[${idx}][remark]" class="form-control form-control-sm" placeholder="Remark" maxlength="500" value="${row.remark || ''}">
                                     </div>
@@ -1253,7 +1271,16 @@
                     </div>
                 </div>
                 <div class="row g-3 mt-1">
-                    <div class="col-md-9">
+                    <div class="col-md-3">
+                        <label class="form-label small">Payment Type</label>
+                        <select name="advance_details[${idx}][payment_type]" class="form-select form-select-sm">
+                            <option value="">Select</option>
+                            <option value="credit">Credit</option>
+                            <option value="debit">Debit</option>
+                            <option value="cash">Cash</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
                         <label class="form-label small">Remark</label>
                         <input type="text" name="advance_details[${idx}][remark]" class="form-control form-control-sm" placeholder="Remark" maxlength="500">
                     </div>

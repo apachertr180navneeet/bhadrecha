@@ -10,7 +10,7 @@ class AdvanceDetailTemplateExport implements FromArray, WithHeadings
     public function array(): array
     {
         return [
-            ['2026-06-18', '1000.00', 'Sample remark'],
+            ['2026-06-18', '1000.00', 'cash', 'Sample remark'],
         ];
     }
 
@@ -19,6 +19,7 @@ class AdvanceDetailTemplateExport implements FromArray, WithHeadings
         return [
             'date',
             'advance_amount',
+            'payment_type',
             'remark',
         ];
     }

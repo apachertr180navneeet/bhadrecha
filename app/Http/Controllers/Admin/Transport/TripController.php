@@ -116,6 +116,7 @@ class TripController extends Controller
             'advance_details.*.date' => "nullable|date|before_or_equal:9999-12-31",
             'advance_details.*.fuel_company_id' => 'nullable|exists:fuel_companies,id',
             'advance_details.*.fuel_pump_id' => 'nullable|exists:fuel_pumps,id',
+            'advance_details.*.payment_type' => 'nullable|string|in:credit,debit,cash',
             'advance_details.*.advance_amount' => 'nullable|numeric|min:0',
             'advance_details.*.remark' => 'nullable|string|max:500',
         ]);
@@ -207,6 +208,7 @@ class TripController extends Controller
                             'fuel_company_id' => $detail['fuel_company_id'] ?? null,
                             'fuel_pump_id' => $detail['fuel_pump_id'],
                             'advance_amount' => $detail['advance_amount'] ?? 0,
+                            'payment_type' => $detail['payment_type'] ?? null,
                             'remark' => $detail['remark'] ?? null,
                         ]);
                     }
@@ -279,6 +281,7 @@ class TripController extends Controller
             'advance_details.*.date' => "nullable|date|before_or_equal:9999-12-31",
             'advance_details.*.fuel_company_id' => 'nullable|exists:fuel_companies,id',
             'advance_details.*.fuel_pump_id' => 'nullable|exists:fuel_pumps,id',
+            'advance_details.*.payment_type' => 'nullable|string|in:credit,debit,cash',
             'advance_details.*.advance_amount' => 'nullable|numeric|min:0',
             'advance_details.*.remark' => 'nullable|string|max:500',
         ]);
@@ -374,6 +377,7 @@ class TripController extends Controller
                             'fuel_company_id' => $detail['fuel_company_id'] ?? null,
                             'fuel_pump_id' => $detail['fuel_pump_id'],
                             'advance_amount' => $detail['advance_amount'] ?? 0,
+                            'payment_type' => $detail['payment_type'] ?? null,
                             'remark' => $detail['remark'] ?? null,
                         ]);
                     }
@@ -587,6 +591,7 @@ class TripController extends Controller
                         'fuel_company_id' => $defaultCompanyId ?: null,
                         'fuel_pump_id' => $defaultPumpId ?: null,
                         'advance_amount' => $row['advance_amount'] ?? 0,
+                        'payment_type' => $row['payment_type'] ?? null,
                         'remark' => $row['remark'] ?? '',
                     ];
                 }
@@ -635,7 +640,7 @@ class TripController extends Controller
 
         if ($request->filled('date_from')) {
             $opFuelQuery = TripFuelDetail::query()->where('payment_type', 'credit')->where('date', '<', $request->date_from);
-            $opAdvanceQuery = TripAdvanceDetail::query()->where('date', '<', $request->date_from);
+            $opAdvanceQuery = TripAdvanceDetail::query()->where(function ($q) { $q->whereNull('payment_type')->orWhere('payment_type', 'credit'); })->where('date', '<', $request->date_from);
             $opPaymentQuery = FuelPumpPayment::query()->where('date', '<', $request->date_from);
 
             if ($request->filled('fuel_company_id')) {
@@ -685,7 +690,7 @@ class TripController extends Controller
 
         // 2. Calculate Summary Table (Overview) of all pumps/companies for the selected period
         $fuelQuery = TripFuelDetail::query()->where('payment_type', 'credit');
-        $advanceQuery = TripAdvanceDetail::query();
+        $advanceQuery = TripAdvanceDetail::query()->where(function ($q) { $q->whereNull('payment_type')->orWhere('payment_type', 'credit'); });
         $paymentQuery = FuelPumpPayment::query();
 
         // Apply filters to summary query if filtered
@@ -817,7 +822,8 @@ class TripController extends Controller
         $fuelLedgerQuery = TripFuelDetail::with(['trip.builty.vehicle', 'fuelCompany', 'fuelPump'])
             ->where('payment_type', 'credit');
 
-        $advanceLedgerQuery = TripAdvanceDetail::with(['trip.builty.vehicle', 'fuelCompany', 'fuelPump']);
+        $advanceLedgerQuery = TripAdvanceDetail::with(['trip.builty.vehicle', 'fuelCompany', 'fuelPump'])
+            ->where(function ($q) { $q->whereNull('payment_type')->orWhere('payment_type', 'credit'); });
         $paymentLedgerQuery = FuelPumpPayment::with(['fuelCompany', 'fuelPump']);
 
         if ($request->filled('fuel_company_id')) {
@@ -861,7 +867,7 @@ class TripController extends Controller
         $singleOpeningBalance = 0.0;
         if ($request->filled('date_from')) {
             $singleOpFuelQuery = TripFuelDetail::query()->where('payment_type', 'credit')->where('date', '<', $request->date_from);
-            $singleOpAdvanceQuery = TripAdvanceDetail::query()->where('date', '<', $request->date_from);
+            $singleOpAdvanceQuery = TripAdvanceDetail::query()->where(function ($q) { $q->whereNull('payment_type')->orWhere('payment_type', 'credit'); })->where('date', '<', $request->date_from);
             $singleOpPaymentQuery = FuelPumpPayment::query()->where('date', '<', $request->date_from);
 
             if ($request->filled('fuel_company_id')) {

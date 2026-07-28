@@ -491,7 +491,16 @@
                             </div>
                         </div>
                         <div class="row g-3 mt-1">
-                            <div class="col-md-9">
+                            <div class="col-md-3">
+                                <label class="form-label small">Payment Type</label>
+                                <select name="advance_details[{{ $i }}][payment_type]" class="form-select form-select-sm">
+                                    <option value="">Select</option>
+                                    <option value="credit" {{ (isset($ad->payment_type) && strtolower($ad->payment_type) == 'credit') ? 'selected' : '' }}>Credit</option>
+                                    <option value="debit" {{ (isset($ad->payment_type) && strtolower($ad->payment_type) == 'debit') ? 'selected' : '' }}>Debit</option>
+                                    <option value="cash" {{ (isset($ad->payment_type) && strtolower($ad->payment_type) == 'cash') ? 'selected' : '' }}>Cash</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
                                 <label class="form-label small">Remark</label>
                                 <input type="text" name="advance_details[{{ $i }}][remark]" class="form-control form-control-sm" placeholder="Remark" maxlength="500" value="{{ $ad->remark }}">
                             </div>
@@ -528,7 +537,16 @@
                             </div>
                         </div>
                         <div class="row g-3 mt-1">
-                            <div class="col-md-9">
+                            <div class="col-md-3">
+                                <label class="form-label small">Payment Type</label>
+                                <select name="advance_details[0][payment_type]" class="form-select form-select-sm">
+                                    <option value="">Select</option>
+                                    <option value="credit">Credit</option>
+                                    <option value="debit">Debit</option>
+                                    <option value="cash">Cash</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
                                 <label class="form-label small">Remark</label>
                                 <input type="text" name="advance_details[0][remark]" class="form-control form-control-sm" placeholder="Remark" maxlength="500">
                             </div>
@@ -1278,14 +1296,23 @@
                                     </div>
                                 </div>
                                 <div class="row g-3 mt-1">
-                                    <div class="col-md-9">
-                                        <label class="form-label small">Remark</label>
-                                        <input type="text" name="advance_details[${idx}][remark]" class="form-control form-control-sm" placeholder="Remark" maxlength="500" value="${row.remark || ''}">
-                                    </div>
-                                    <div class="col-md-3 d-flex align-items-end justify-content-end">
-                                        <button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="bx bx-trash me-1"></i> Remove</button>
-                                    </div>
-                                </div>
+                                     <div class="col-md-3">
+                                         <label class="form-label small">Payment Type</label>
+                                         <select name="advance_details[${idx}][payment_type]" class="form-select form-select-sm">
+                                             <option value="">Select</option>
+                                             <option value="credit" ${row.payment_type && row.payment_type.toLowerCase() === 'credit' ? 'selected' : ''}>Credit</option>
+                                             <option value="debit" ${row.payment_type && row.payment_type.toLowerCase() === 'debit' ? 'selected' : ''}>Debit</option>
+                                             <option value="cash" ${row.payment_type && row.payment_type.toLowerCase() === 'cash' ? 'selected' : ''}>Cash</option>
+                                         </select>
+                                     </div>
+                                     <div class="col-md-6">
+                                         <label class="form-label small">Remark</label>
+                                         <input type="text" name="advance_details[${idx}][remark]" class="form-control form-control-sm" placeholder="Remark" maxlength="500" value="${row.remark || ''}">
+                                     </div>
+                                     <div class="col-md-3 d-flex align-items-end justify-content-end">
+                                         <button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="bx bx-trash me-1"></i> Remove</button>
+                                     </div>
+                                 </div>
                             </div>`;
                             $('#advanceContainer').append(html);
                         });
@@ -1352,7 +1379,16 @@
                     </div>
                 </div>
                 <div class="row g-3 mt-1">
-                    <div class="col-md-9">
+                    <div class="col-md-3">
+                        <label class="form-label small">Payment Type</label>
+                        <select name="advance_details[${idx}][payment_type]" class="form-select form-select-sm">
+                            <option value="">Select</option>
+                            <option value="credit">Credit</option>
+                            <option value="debit">Debit</option>
+                            <option value="cash">Cash</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
                         <label class="form-label small">Remark</label>
                         <input type="text" name="advance_details[${idx}][remark]" class="form-control form-control-sm" placeholder="Remark" maxlength="500">
                     </div>

@@ -18,6 +18,7 @@ class TripAdvanceDetail extends Model
         'fuel_company_id',
         'fuel_pump_id',
         'advance_amount',
+        'payment_type',
         'remark',
     ];
 
