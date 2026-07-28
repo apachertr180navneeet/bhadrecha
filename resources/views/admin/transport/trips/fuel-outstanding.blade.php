@@ -531,8 +531,8 @@
         }
     });
 
-    // Load pumps dynamically based on selected company in the modal
-    function loadPumpsForModal(companyId) {
+    // Modal Operations defined globally on window object so HTML onclick handlers can invoke them
+    window.loadPumpsForModal = function(companyId) {
         var $pumpSelect = $('#pay_fuel_pump_id');
         $pumpSelect.empty().append('<option value="">Select Pump</option>');
 
@@ -554,10 +554,9 @@
                 alert('Error loading pumps for company.');
             }
         });
-    }
+    };
 
-    // Modal Operations
-    function openPaymentModal() {
+    window.openPaymentModal = function() {
         $('#paymentForm')[0].reset();
         $('#payment_id').val('');
         $('#payment_method_field').val('POST');
@@ -579,9 +578,9 @@
             $('#pay_fuel_company_id').val('').trigger('change');
             $('#pay_fuel_pump_id').val('').trigger('change');
         }, 100);
-    }
+    };
 
-    function recordPaymentForPump(companyId, pumpId) {
+    window.recordPaymentForPump = function(companyId, pumpId) {
         openPaymentModal();
         // Wait for openPaymentModal timeout to complete initial setup
         setTimeout(function() {
@@ -602,16 +601,21 @@
         }, 200);
     }
 
-    function viewLedgerForPump(companyId, pumpId) {
+    window.viewLedgerForPump = function(companyId, pumpId) {
         $('#filter_fuel_company_id').val(companyId).trigger('change');
         // Brief timeout for select updates
         setTimeout(function() {
             $('#filter_fuel_pump_id').val(pumpId).trigger('change');
+            var triggerEl = document.querySelector('#ledger-tab');
+            if (triggerEl) {
+                var tab = new bootstrap.Tab(triggerEl);
+                tab.show();
+            }
             $('#filterForm').submit();
         }, 100);
-    }
+    };
 
-    function savePayment(e) {
+    window.savePayment = function(e) {
         e.preventDefault();
         var id = $('#payment_id').val();
         var isEdit = id !== '';
@@ -648,9 +652,9 @@
                 }
             }
         });
-    }
+    };
 
-    function editPayment(id) {
+    window.editPayment = function(id) {
         $.ajax({
             url: "{{ url('admin/transport/trips/fuel-payments') }}/" + id + "/edit",
             type: 'GET',
@@ -692,9 +696,9 @@
                 Swal.fire({ icon: 'error', title: 'Error', text: 'Could not fetch payment record.', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
             }
         });
-    }
+    };
 
-    function deletePayment(id) {
+    window.deletePayment = function(id) {
         if (confirm('Are you sure you want to delete this payment record? This action will restore outstanding balance.')) {
             $.ajax({
                 url: "{{ url('admin/transport/trips/fuel-payments') }}/" + id,
@@ -716,6 +720,6 @@
                 }
             });
         }
-    }
+    };
 </script>
 @endsection
