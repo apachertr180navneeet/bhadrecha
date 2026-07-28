@@ -425,7 +425,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Select Operating Company *</label>
-                        <select name="company_id" id="pay_company_id" class="form-select select2-modal" required>
+                        <select name="company_id" id="pay_company_id" class="form-select modal-select2" required>
                             <option value="">Select Company</option>
                             @if(isset($companies))
                             @foreach($companies as $company)
@@ -440,7 +440,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Fuel Company *</label>
-                        <select name="fuel_company_id" id="pay_fuel_company_id" class="form-select select2-modal" required onchange="loadPumpsForModal(this.value)">
+                        <select name="fuel_company_id" id="pay_fuel_company_id" class="form-select modal-select2" required onchange="loadPumpsForModal(this.value)">
                             <option value="">Select Company</option>
                             @foreach($fuelCompanies as $company)
                             <option value="{{ $company->id }}">{{ $company->name }}</option>
@@ -449,7 +449,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Fuel Pump *</label>
-                        <select name="fuel_pump_id" id="pay_fuel_pump_id" class="form-select select2-modal" required>
+                        <select name="fuel_pump_id" id="pay_fuel_pump_id" class="form-select modal-select2" required>
                             <option value="">Select Pump</option>
                             @foreach($fuelPumps as $pump)
                             <option value="{{ $pump->id }}" data-company="{{ $pump->fuel_company_id }}">{{ $pump->name }}</option>
@@ -514,16 +514,15 @@
         });
 
         // Initialize select2 inside modal when it is shown
+        var modalSelect2Initialized = false;
         $('#paymentModal').on('shown.bs.modal', function () {
-            $('.select2-modal').each(function() {
-                if ($(this).hasClass('select2-hidden-accessible')) {
-                    $(this).select2('destroy');
-                }
-                $(this).select2({
+            if (!modalSelect2Initialized) {
+                $('.modal-select2').select2({
                     dropdownParent: $('#paymentModal'),
                     width: '100%'
                 });
-            });
+                modalSelect2Initialized = true;
+            }
         });
 
         // Parse query params to auto-open specific tabs if requested

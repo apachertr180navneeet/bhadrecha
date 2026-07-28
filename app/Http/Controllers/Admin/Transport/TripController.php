@@ -634,13 +634,12 @@ class TripController extends Controller
         $fuelPumps = FuelPump::with('fuelCompany')->orderBy('name')->get();
         
         $user = auth()->user();
-        if ($user && !$user->isSuperAdmin() && $user->company_id) {
+        if ($user && $user->isSuperAdmin()) {
+            $companies = \App\Models\Company::orderBy('name')->get();
+        } elseif ($user && $user->company_id) {
             $companies = \App\Models\Company::where('id', $user->company_id)->get();
         } else {
-            $companies = \App\Models\Company::where('status', 'active')->orderBy('name')->get();
-            if ($companies->isEmpty()) {
-                $companies = \App\Models\Company::orderBy('name')->get();
-            }
+            $companies = \App\Models\Company::orderBy('name')->get();
         }
 
         $targetCompanyId = $request->filled('company_id') ? $request->company_id : (session('current_company_id') && session('current_company_id') !== 'all' ? session('current_company_id') : null);
@@ -1188,13 +1187,12 @@ class TripController extends Controller
         $adblueCompanies = AdBlueCompany::orderBy('name')->get();
         
         $user = auth()->user();
-        if ($user && !$user->isSuperAdmin() && $user->company_id) {
+        if ($user && $user->isSuperAdmin()) {
+            $companies = \App\Models\Company::orderBy('name')->get();
+        } elseif ($user && $user->company_id) {
             $companies = \App\Models\Company::where('id', $user->company_id)->get();
         } else {
-            $companies = \App\Models\Company::where('status', 'active')->orderBy('name')->get();
-            if ($companies->isEmpty()) {
-                $companies = \App\Models\Company::orderBy('name')->get();
-            }
+            $companies = \App\Models\Company::orderBy('name')->get();
         }
 
         $targetCompanyId = $request->filled('company_id') ? $request->company_id : (session('current_company_id') && session('current_company_id') !== 'all' ? session('current_company_id') : null);

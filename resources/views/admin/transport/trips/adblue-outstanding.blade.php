@@ -399,7 +399,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Select Operating Company *</label>
-                        <select name="company_id" id="pay_company_id" class="form-select select2-modal" required>
+                        <select name="company_id" id="pay_company_id" class="form-select modal-select2" required>
                             <option value="">Select Company</option>
                             @if(isset($companies))
                             @foreach($companies as $company)
@@ -414,7 +414,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">AdBlue Company *</label>
-                        <select name="adblue_company_id" id="pay_adblue_company_id" class="form-select select2-modal" required>
+                        <select name="adblue_company_id" id="pay_adblue_company_id" class="form-select modal-select2" required>
                             <option value="">Select Company</option>
                             @foreach($adblueCompanies as $company)
                             <option value="{{ $company->id }}">{{ $company->name }}</option>
@@ -462,16 +462,15 @@
         });
 
         // Initialize modal select2 when modal opens
+        var modalSelect2Initialized = false;
         $('#paymentModal').on('shown.bs.modal', function () {
-            $('.select2-modal').each(function() {
-                if ($(this).hasClass('select2-hidden-accessible')) {
-                    $(this).select2('destroy');
-                }
-                $(this).select2({
+            if (!modalSelect2Initialized) {
+                $('.modal-select2').select2({
                     dropdownParent: $('#paymentModal'),
                     width: '100%'
                 });
-            });
+                modalSelect2Initialized = true;
+            }
         });
     });
 
