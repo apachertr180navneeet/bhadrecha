@@ -461,16 +461,12 @@
             width: '100%'
         });
 
-        // Initialize modal select2 when modal opens
-        var modalSelect2Initialized = false;
-        $('#paymentModal').on('shown.bs.modal', function () {
-            if (!modalSelect2Initialized) {
-                $('.modal-select2').select2({
-                    dropdownParent: $('#paymentModal'),
-                    width: '100%'
-                });
-                modalSelect2Initialized = true;
-            }
+        // Initialize modal select2 on modal show instead of shown so it's ready before change triggers
+        $('#paymentModal').on('show.bs.modal', function () {
+            $('.modal-select2').select2({
+                dropdownParent: $('#paymentModal'),
+                width: '100%'
+            });
         });
     });
 
@@ -481,20 +477,27 @@
         $('#payment_method_field').val('POST');
         $('#pay_date').val(new Date().toISOString().substring(0, 10));
         
-        var filterComp = $('#filter_company_id').length ? $('#filter_company_id').val() : '';
-        if (filterComp) {
-            $('#pay_company_id').val(filterComp).trigger('change');
-        } else {
-            $('#pay_company_id').val('{{ session("current_company_id") != "all" ? session("current_company_id") : "" }}').trigger('change');
-        }
-
-        $('#pay_adblue_company_id').val('').trigger('change');
+        // Show modal first so select2 is initialized
         $('#paymentModal').modal('show');
+
+        setTimeout(function() {
+            var filterComp = $('#filter_company_id').length ? $('#filter_company_id').val() : '';
+            var sessComp = '{{ session("current_company_id") }}';
+            
+            if (filterComp) {
+                $('#pay_company_id').val(filterComp).trigger('change');
+            } else if (sessComp && sessComp !== 'all') {
+                $('#pay_company_id').val(sessComp).trigger('change');
+            } else {
+                $('#pay_company_id').val('').trigger('change');
+            }
+
+            $('#pay_adblue_company_id').val('').trigger('change');
+        }, 100);
     }
 
     function recordPaymentForCompany(companyId) {
         openPaymentModal();
-        // Brief timeout to allow select2 container to be ready
         setTimeout(function() {
             $('#pay_adblue_company_id').val(companyId).trigger('change');
         }, 150);
@@ -557,12 +560,15 @@
                 $('#pay_method').val(payment.payment_method);
                 $('#pay_remark').val(payment.remark);
                 $('#payment_method_field').val('PUT');
-                if ($('#pay_company_id').length) {
-                    $('#pay_company_id').val(payment.company_id).trigger('change');
-                }
 
-                $('#pay_adblue_company_id').val(payment.adblue_company_id).trigger('change');
                 $('#paymentModal').modal('show');
+
+                setTimeout(function() {
+                    if ($('#pay_company_id').length) {
+                        $('#pay_company_id').val(payment.company_id).trigger('change');
+                    }
+                    $('#pay_adblue_company_id').val(payment.adblue_company_id).trigger('change');
+                }, 100);
             },
             error: function() {
                 Swal.fire({ icon: 'error', title: 'Error', text: 'Could not fetch payment record.', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
