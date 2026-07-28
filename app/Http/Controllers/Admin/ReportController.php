@@ -1361,13 +1361,12 @@ class ReportController extends Controller
             return $pdf->download('vehicle_report_' . now()->format('Y-m-d') . '.pdf');
         }
 
-        $headings = ['#', 'Vehicle', 'Type', 'Trips', 'Total Fuel (L)', 'Total Amount (Rs)', 'Total KM', 'Avg KM/L', 'Advance (Rs)'];
+        $headings = ['#', 'Vehicle', 'Type', 'Trips', 'Total Fuel (L)', 'Total Amount (Rs)', 'Total KM', 'Avg KM/L'];
         $data = $vehicles->values()->map(fn($v, $i) => [
             $i + 1, $v->vehicle_number, $v->vehicle_type ?? '-',
             $v->total_trips, number_format($v->total_fuel_qty, 2), number_format($v->total_fuel_amount, 2),
             number_format($v->total_km, 2),
             $v->total_fuel_qty > 0 ? round($v->total_km / $v->total_fuel_qty, 2) : 0,
-            number_format($v->total_advance, 2),
         ])->toArray();
         return Excel::download(new ReportExport($headings, $data, 'Vehicle Performance Report'), 'vehicle_report_' . now()->format('Y-m-d') . '.xlsx');
     }

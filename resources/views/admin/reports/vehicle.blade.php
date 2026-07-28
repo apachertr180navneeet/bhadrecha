@@ -69,7 +69,6 @@
                             <th class="text-end">Total Amount (₹)</th>
                             <th class="text-end">Total KM</th>
                             <th class="text-end">Avg KM/L</th>
-                            <th class="text-end">Advance (₹)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -94,11 +93,10 @@
                                         <span class="text-muted">-</span>
                                     @endif
                                 </td>
-                                <td class="text-end">{{ number_format($vehicle->total_advance, 2) }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="text-center">No data found</td>
+                                <td colspan="8" class="text-center">No data found</td>
                             </tr>
                         @endforelse
                     </tbody>
