@@ -281,7 +281,7 @@
                                         <td>{{ $bulty->lr_date ? $bulty->lr_date->format('d/m/Y') : '-' }}</td>
                                         <td style="font-weight: bold;">{{ $bulty->vehicle->vehicle_number ?? '-' }}</td>
                                         <td>{{ $bulty->lr_no ?? '-' }}</td>
-                                        <td>{{ ($bulty->bultyItems && $bulty->bultyItems->sum('articles') > 0) ? $bulty->bultyItems->sum('articles') : ((!empty($bulty->bultyDetail->challan_qty) && floatval($bulty->bultyDetail->challan_qty) > 0) ? floatval($bulty->bultyDetail->challan_qty) : '-') }}</td>
+                                        <td>{{ (!empty($bulty->bultyDetail->challan_qty) && floatval($bulty->bultyDetail->challan_qty) > 0) ? floatval($bulty->bultyDetail->challan_qty) : (($bulty->bultyItems && $bulty->bultyItems->sum('weight') > 0) ? floatval($bulty->bultyItems->sum('weight')) : '-') }}</td>
                                         <td>{{ $bulty->destinationCity->name ?? '-' }}</td>
                                         <td style="text-transform: uppercase;">
                                             <select class="bulty-mode-select" data-bulty-id="{{ $bulty->id }}" style="font-weight: bold; font-size: inherit; border: 1px solid #000; padding: 1px 2px; text-transform: uppercase; background: #fff; color: #000; width: 100%;">
