@@ -664,7 +664,7 @@ class BillingController extends Controller
                 'visible_fields' => $invoice->visible_fields,
                 'grn_fields' => $invoice->grn_fields,
                 'grn_new_page' => $invoice->grn_new_page,
-                'status' => 'paid',
+                'status' => 'pending',
                 'user_id' => auth()->id(),
                 'gst_master_id' => $invoice->gst_master_id,
                 'mn_number' => $metaData['mn_number'],
@@ -681,7 +681,7 @@ class BillingController extends Controller
                 ]);
             }
         } else {
-            $updateData = ['status' => 'paid'];
+            $updateData = ['status' => 'pending'];
             if ($request->has('bill_number')) {
                 $updateData['bill_number'] = $request->bill_number;
             }
