@@ -4,27 +4,28 @@
 <div class="container-fluid flex-grow-1 container-p-y">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-3">
         <div>
-            <h5 class="fw-bold mb-1">Fuel Report</h5>
+            <h5 class="fw-bold mb-1">AdBlue Report</h5>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb breadcrumb-style1 mb-0">
                     <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
                     <li class="breadcrumb-item"><a href="#">Reports</a></li>
-                    <li class="breadcrumb-item active">Fuel Report</li>
+                    <li class="breadcrumb-item active">AdBlue Report</li>
                 </ol>
             </nav>
         </div>
         <div>
             <a href="{{ route('admin.reports.vehicle') }}" class="btn btn-outline-primary btn-sm"><i class="bx bx-car me-1"></i> Vehicle Report</a>
             <a href="{{ route('admin.reports.trip-reports') }}" class="btn btn-outline-primary btn-sm"><i class="bx bx-trip me-1"></i> Trip Reports</a>
+            <a href="{{ route('admin.reports.fuel') }}" class="btn btn-outline-primary btn-sm"><i class="bx bx-gas-pump me-1"></i> Fuel Report</a>
         </div>
     </div>
 
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Fuel Consumption Details</h5>
+            <h5 class="mb-0">AdBlue Consumption Details</h5>
         </div>
         <div class="card-body">
-            <form method="GET" action="{{ route('admin.reports.fuel') }}" class="mb-3">
+            <form method="GET" action="{{ route('admin.reports.adblue') }}" class="mb-3">
                 <div class="row g-2 align-items-end">
                     <div class="col-auto">
                         <label class="form-label">Vehicle</label>
@@ -36,20 +37,11 @@
                         </select>
                     </div>
                     <div class="col-auto">
-                        <label class="form-label">Fuel Company</label>
-                        <select name="fuel_company_id" id="fuel_company_id" class="form-select select2">
+                        <label class="form-label">AdBlue Company</label>
+                        <select name="adblue_company_id" id="adblue_company_id" class="form-select select2">
                             <option value="">All Companies</option>
-                            @foreach($fuelCompanies as $fc)
-                            <option value="{{ $fc->id }}" {{ request('fuel_company_id') == $fc->id ? 'selected' : '' }}>{{ $fc->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-auto">
-                        <label class="form-label">Fuel Pump</label>
-                        <select name="fuel_pump_id" id="fuel_pump_id" class="form-select select2">
-                            <option value="">All Pumps</option>
-                            @foreach($fuelPumps as $fp)
-                            <option value="{{ $fp->id }}" data-company-id="{{ $fp->fuel_company_id }}" {{ request('fuel_pump_id') == $fp->id ? 'selected' : '' }}>{{ $fp->name }}</option>
+                            @foreach($adblueCompanies as $ac)
+                            <option value="{{ $ac->id }}" {{ request('adblue_company_id') == $ac->id ? 'selected' : '' }}>{{ $ac->name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -74,9 +66,9 @@
                         <label class="form-label">&nbsp;</label>
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-primary"><i class="bx bx-filter me-1"></i> Filter</button>
-                            <a href="{{ route('admin.reports.fuel') }}" class="btn btn-outline-secondary">Reset</a>
-                            <a href="{{ route('admin.reports.fuel.export', 'excel') . '?' . http_build_query(request()->except('page')) }}" class="btn btn-success btn-sm"><i class="bx bx-spreadsheet me-1"></i> Excel</a>
-                            <a href="{{ route('admin.reports.fuel.export', 'pdf') . '?' . http_build_query(request()->except('page')) }}" class="btn btn-danger btn-sm"><i class="bx bxs-file-pdf me-1"></i> PDF</a>
+                            <a href="{{ route('admin.reports.adblue') }}" class="btn btn-outline-secondary">Reset</a>
+                            <a href="{{ route('admin.reports.adblue.export', 'excel') . '?' . http_build_query(request()->except('page')) }}" class="btn btn-success btn-sm"><i class="bx bx-spreadsheet me-1"></i> Excel</a>
+                            <a href="{{ route('admin.reports.adblue.export', 'pdf') . '?' . http_build_query(request()->except('page')) }}" class="btn btn-danger btn-sm"><i class="bx bxs-file-pdf me-1"></i> PDF</a>
                         </div>
                     </div>
                 </div>
@@ -117,7 +109,6 @@
                         <tr>
                             <th>Date</th>
                             <th>Vehicle</th>
-                            <th>Pump</th>
                             <th>Company</th>
                             <th>Payment Type</th>
                             <th class="text-end">Qty (L)</th>
@@ -128,15 +119,14 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($fuelDetails as $fd)
+                        @forelse($adblueDetails as $ad)
                         <tr>
-                            <td>{{ $fd->date?->format('d-m-Y') ?? '-' }}</td>
-                            <td><strong>{{ $fd->trip?->builty?->vehicle?->vehicle_number ?? '-' }}</strong></td>
-                            <td>{{ $fd->fuelPump?->name ?? '-' }}</td>
-                            <td>{{ $fd->fuelCompany?->name ?? '-' }}</td>
+                            <td>{{ $ad->date?->format('d-m-Y') ?? '-' }}</td>
+                            <td><strong>{{ $ad->trip?->builty?->vehicle?->vehicle_number ?? '-' }}</strong></td>
+                            <td>{{ $ad->adblueCompany?->name ?? '-' }}</td>
                             <td>
                                 @php
-                                    $pt = strtolower($fd->payment_type ?? '');
+                                    $pt = strtolower($ad->payment_type ?? '');
                                     $badgeClass = match($pt) {
                                         'cash' => 'bg-label-success',
                                         'debit' => 'bg-label-info',
@@ -144,64 +134,29 @@
                                         default => 'bg-label-secondary',
                                     };
                                 @endphp
-                                <span class="badge {{ $badgeClass }}">{{ ucfirst($fd->payment_type ?? '-') }}</span>
+                                <span class="badge {{ $badgeClass }}">{{ ucfirst($ad->payment_type ?? '-') }}</span>
                             </td>
-                            <td class="text-end">{{ number_format($fd->quantity, 2) }}</td>
-                            <td class="text-end">₹ {{ number_format($fd->rate, 2) }}</td>
-                            <td class="text-end">₹ {{ number_format($fd->amount, 2) }}</td>
-                            <td class="text-end">{{ number_format($fd->km, 2) }}</td>
-                            <td>{{ $fd->trip?->builty?->lr_no ?? '-' }}</td>
+                            <td class="text-end">{{ number_format($ad->quantity, 2) }}</td>
+                            <td class="text-end">₹ {{ number_format($ad->rate, 2) }}</td>
+                            <td class="text-end">₹ {{ number_format($ad->amount, 2) }}</td>
+                            <td class="text-end">{{ number_format($ad->km, 2) }}</td>
+                            <td>{{ $ad->trip?->builty?->lr_no ?? '-' }}</td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="10" class="text-center">No data found</td>
+                            <td colspan="9" class="text-center">No data found</td>
                         </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
 
-            @if(method_exists($fuelDetails, 'links'))
+            @if(method_exists($adblueDetails, 'links'))
                 <div class="mt-3">
-                    {{ $fuelDetails->withQueryString()->links() }}
+                    {{ $adblueDetails->withQueryString()->links() }}
                 </div>
             @endif
         </div>
     </div>
 </div>
 @endsection
-
-@push('scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const companySelect = document.getElementById('fuel_company_id');
-        const pumpSelect = document.getElementById('fuel_pump_id');
-        
-        if (companySelect && pumpSelect) {
-            const pumpOptions = Array.from(pumpSelect.options).filter(opt => opt.value !== "");
-            
-            function filterPumps() {
-                const selectedCompany = companySelect.value;
-                let firstValidOpt = null;
-                
-                pumpOptions.forEach(opt => {
-                    if (selectedCompany === "" || opt.dataset.companyId === selectedCompany) {
-                        opt.style.display = '';
-                    } else {
-                        opt.style.display = 'none';
-                    }
-                });
-                
-                // If current selected pump is now hidden, reset pump selection
-                const selectedPumpOption = pumpSelect.options[pumpSelect.selectedIndex];
-                if (selectedPumpOption && selectedPumpOption.value !== "" && selectedPumpOption.style.display === 'none') {
-                    pumpSelect.value = "";
-                }
-            }
-            
-            companySelect.addEventListener('change', filterPumps);
-            filterPumps(); // Run on load
-        }
-    });
-</script>
-@endpush

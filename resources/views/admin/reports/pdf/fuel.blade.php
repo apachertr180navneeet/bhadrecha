@@ -14,7 +14,7 @@
 @endif
 <table>
     <thead>
-        <tr><th>Date</th><th>Vehicle</th><th>Pump</th><th>Company</th><th class="text-end">Qty (L)</th><th class="text-end">Rate</th><th class="text-end">Amount</th><th class="text-end">KM</th><th>LR No</th></tr>
+        <tr><th>Date</th><th>Vehicle</th><th>Pump</th><th>Company</th><th>Payment Type</th><th class="text-end">Qty (L)</th><th class="text-end">Rate</th><th class="text-end">Amount</th><th class="text-end">KM</th><th>LR No</th></tr>
     </thead>
     <tbody>
         @foreach($fuelDetails as $fd)
@@ -23,6 +23,7 @@
             <td>{{ $fd->trip?->builty?->vehicle?->vehicle_number ?? '-' }}</td>
             <td>{{ $fd->fuelPump?->name ?? '-' }}</td>
             <td>{{ $fd->fuelCompany?->name ?? '-' }}</td>
+            <td>{{ ucfirst($fd->payment_type ?? '-') }}</td>
             <td class="text-end">{{ number_format($fd->quantity, 2) }}</td>
             <td class="text-end">₹ {{ number_format($fd->rate, 2) }}</td>
             <td class="text-end">₹ {{ number_format($fd->amount, 2) }}</td>

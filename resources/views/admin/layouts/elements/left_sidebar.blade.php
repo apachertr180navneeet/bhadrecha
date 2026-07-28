@@ -321,7 +321,7 @@
             </li>
         @endcanany
 
-        @canany(['view reports', 'view vehicle report', 'view driver trip report', 'view customer ledger', 'view sales ledger', 'view tds report', 'view trip reports', 'view bilty advance details', 'view fuel report', 'view fuel outstanding', 'view adblue outstanding', 'view vehicle utilization', 'view mis report', 'view expense management', 'view vehicle document report', 'view gst tax report', 'view profit loss report'])
+        @canany(['view reports', 'view vehicle report', 'view driver trip report', 'view customer ledger', 'view sales ledger', 'view tds report', 'view trip reports', 'view bilty advance details', 'view fuel report', 'view adblue report', 'view fuel outstanding', 'view adblue outstanding', 'view vehicle utilization', 'view mis report', 'view expense management', 'view vehicle document report', 'view gst tax report', 'view profit loss report'])
             <li class="menu-divider"></li>
             <li class="menu-header small text-uppercase">
                 <span class="menu-header-text">Reports</span>
@@ -396,6 +396,14 @@
                             </a>
                         </li>
                     @endcan
+                    @canany(['view adblue report', 'view adblue outstanding', 'view reports'])
+                        <li class="menu-item {{ (request()->is('admin/reports/adblue') || request()->is('admin/reports/adblue/*')) && !request()->is('admin/reports/adblue-outstanding*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.reports.adblue') }}" class="menu-link">
+                                <i class="menu-icon tf-icons bx bx-droplet"></i>
+                                <div data-i18n="AdBlue Report">AdBlue Report</div>
+                            </a>
+                        </li>
+                    @endcanany
                     @can('view fuel outstanding')
                         <li class="menu-item {{ request()->is('admin/reports/fuel-outstanding*') ? 'active' : '' }}">
                             <a href="{{ route('admin.reports.fuel-outstanding') }}" class="menu-link">

@@ -14,6 +14,7 @@ use App\Models\TripFuelDetail;
 use App\Models\Consignee;
 use App\Models\FuelCompany;
 use App\Models\FuelPump;
+use App\Models\AdBlueCompany;
 use App\Models\TripFastTagDetail;
 use App\Models\TripAdBlueDetail;
 use App\Models\TripOtherAmountDetail;
@@ -341,6 +342,10 @@ class ReportController extends Controller
             $query->where('fuel_pump_id', $request->fuel_pump_id);
         }
 
+        if ($request->filled('payment_type')) {
+            $query->where('payment_type', $request->payment_type);
+        }
+
         if ($request->filled('date_from')) {
             $query->whereDate('date', '>=', $request->date_from);
         }
@@ -364,6 +369,58 @@ class ReportController extends Controller
         $fuelPumps = FuelPump::orderBy('name')->get();
 
         return view('admin.reports.fuel', compact('fuelDetails', 'vehicleList', 'fuelCompanies', 'fuelPumps', 'summary'));
+    }
+
+    public function adblueReport(Request $request)
+    {
+        $user = auth()->user();
+        $companyId = $user->isSuperAdmin()
+            ? ($request->filled('company_id') ? $request->company_id : session('current_company_id'))
+            : $user->company_id;
+
+        $query = TripAdBlueDetail::with([
+            'adblueCompany', 'trip.builty.vehicle',
+        ]);
+
+        if ($companyId && $companyId !== 'all') {
+            $query->whereHas('trip.builty', fn($q) => $q->where('company_id', $companyId));
+        }
+
+        if ($request->filled('vehicle_id')) {
+            $query->whereHas('trip.builty', fn($q) => $q->where('vehicle_id', $request->vehicle_id));
+        }
+
+        if ($request->filled('adblue_company_id')) {
+            $query->where('adblue_company_id', $request->adblue_company_id);
+        }
+
+        if ($request->filled('payment_type')) {
+            $query->where('payment_type', $request->payment_type);
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('date', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('date', '<=', $request->date_to);
+        }
+
+        $summary = (clone $query)->select(
+            DB::raw('COALESCE(SUM(quantity), 0) as total_qty'),
+            DB::raw('COALESCE(SUM(amount), 0) as total_amount'),
+            DB::raw('COALESCE(SUM(km), 0) as total_km')
+        )->first();
+
+        $adblueDetails = $query->orderBy('date', 'desc')->paginate(20);
+
+        $vehicleList = Vehicle::where('status', 'active')
+            ->orderBy('vehicle_number')
+            ->get();
+
+        $adblueCompanies = AdBlueCompany::orderBy('name')->get();
+
+        return view('admin.reports.adblue', compact('adblueDetails', 'vehicleList', 'adblueCompanies', 'summary'));
     }
 
     public function vehicleUtilization(Request $request)
@@ -1489,6 +1546,7 @@ class ReportController extends Controller
         if ($request->filled('vehicle_id')) $query->whereHas('trip.builty', fn($q) => $q->where('vehicle_id', $request->vehicle_id));
         if ($request->filled('fuel_company_id')) $query->where('fuel_company_id', $request->fuel_company_id);
         if ($request->filled('fuel_pump_id')) $query->where('fuel_pump_id', $request->fuel_pump_id);
+        if ($request->filled('payment_type')) $query->where('payment_type', $request->payment_type);
         if ($request->filled('date_from')) $query->whereDate('date', '>=', $request->date_from);
         if ($request->filled('date_to')) $query->whereDate('date', '<=', $request->date_to);
 
@@ -1501,15 +1559,50 @@ class ReportController extends Controller
             return $pdf->download('fuel_report_' . now()->format('Y-m-d') . '.pdf');
         }
 
-        $headings = ['Date', 'Vehicle', 'Pump', 'Company', 'Qty (L)', 'Rate', 'Amount', 'KM', 'LR No'];
+        $headings = ['Date', 'Vehicle', 'Pump', 'Company', 'Payment Type', 'Qty (L)', 'Rate', 'Amount', 'KM', 'LR No'];
         $data = $fuelDetails->map(fn($fd) => [
             $fd->date?->format('d-m-Y') ?? '-', $fd->trip?->builty?->vehicle?->vehicle_number ?? '-',
             $fd->fuelPump?->name ?? '-', $fd->fuelCompany?->name ?? '-',
+            ucfirst($fd->payment_type ?? '-'),
             number_format($fd->quantity, 2), number_format($fd->rate, 2),
             number_format($fd->amount, 2), number_format($fd->km, 2),
             $fd->trip?->builty?->lr_no ?? '-',
         ])->toArray();
         return Excel::download(new ReportExport($headings, $data, 'Fuel Report'), 'fuel_report_' . now()->format('Y-m-d') . '.xlsx');
+    }
+
+    public function exportAdBlue(Request $request, $format = 'excel')
+    {
+        $user = auth()->user();
+        $companyId = $user->isSuperAdmin() ? ($request->filled('company_id') ? $request->company_id : session('current_company_id')) : $user->company_id;
+
+        $query = TripAdBlueDetail::with(['adblueCompany','trip.builty.vehicle']);
+        if ($companyId && $companyId !== 'all') $query->whereHas('trip.builty', fn($q) => $q->where('company_id', $companyId));
+        if ($request->filled('vehicle_id')) $query->whereHas('trip.builty', fn($q) => $q->where('vehicle_id', $request->vehicle_id));
+        if ($request->filled('adblue_company_id')) $query->where('adblue_company_id', $request->adblue_company_id);
+        if ($request->filled('payment_type')) $query->where('payment_type', $request->payment_type);
+        if ($request->filled('date_from')) $query->whereDate('date', '>=', $request->date_from);
+        if ($request->filled('date_to')) $query->whereDate('date', '<=', $request->date_to);
+
+        $adblueDetails = $query->orderBy('date', 'desc')->get();
+        $summary = (clone $query)->select(DB::raw('COALESCE(SUM(quantity),0) as total_qty'), DB::raw('COALESCE(SUM(amount),0) as total_amount'), DB::raw('COALESCE(SUM(km),0) as total_km'))->first();
+
+        if ($format === 'pdf') {
+            $title = 'AdBlue Report';
+            $pdf = Pdf::loadView('admin.reports.pdf.adblue', compact('adblueDetails', 'summary', 'title'));
+            return $pdf->download('adblue_report_' . now()->format('Y-m-d') . '.pdf');
+        }
+
+        $headings = ['Date', 'Vehicle', 'Company', 'Payment Type', 'Qty (L)', 'Rate', 'Amount', 'KM', 'LR No'];
+        $data = $adblueDetails->map(fn($ad) => [
+            $ad->date?->format('d-m-Y') ?? '-', $ad->trip?->builty?->vehicle?->vehicle_number ?? '-',
+            $ad->adblueCompany?->name ?? '-',
+            ucfirst($ad->payment_type ?? '-'),
+            number_format($ad->quantity, 2), number_format($ad->rate, 2),
+            number_format($ad->amount, 2), number_format($ad->km, 2),
+            $ad->trip?->builty?->lr_no ?? '-',
+        ])->toArray();
+        return Excel::download(new ReportExport($headings, $data, 'AdBlue Report'), 'adblue_report_' . now()->format('Y-m-d') . '.xlsx');
     }
 
     public function exportVehicleUtilization(Request $request, $format = 'excel')

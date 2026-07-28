@@ -131,6 +131,7 @@ Route::name('admin.')->prefix('admin')->group(function () {
         Route::get('reports/customer-ledger', [ReportController::class, 'customerLedger'])->name('reports.customer-ledger');
         Route::get('reports/trip-reports', [ReportController::class, 'tripReports'])->name('reports.trip-reports');
         Route::get('reports/fuel', [ReportController::class, 'fuelReport'])->name('reports.fuel');
+        Route::get('reports/adblue', [ReportController::class, 'adblueReport'])->name('reports.adblue');
         Route::get('reports/fuel-outstanding', [TripController::class, 'fuelOutstanding'])->name('reports.fuel-outstanding');
         Route::get('reports/adblue-outstanding', [TripController::class, 'adblueOutstanding'])->name('reports.adblue-outstanding');
         Route::get('reports/vehicle-utilization', [ReportController::class, 'vehicleUtilization'])->name('reports.vehicle-utilization');
@@ -163,6 +164,7 @@ Route::name('admin.')->prefix('admin')->group(function () {
         Route::get('reports/customer-ledger/export/{format}', [ReportController::class, 'exportCustomerLedger'])->name('reports.customer-ledger.export');
         Route::get('reports/trip-reports/export/{format}', [ReportController::class, 'exportTripReports'])->name('reports.trip-reports.export');
         Route::get('reports/fuel/export/{format}', [ReportController::class, 'exportFuel'])->name('reports.fuel.export');
+        Route::get('reports/adblue/export/{format}', [ReportController::class, 'exportAdBlue'])->name('reports.adblue.export');
         Route::get('reports/vehicle-utilization/export/{format}', [ReportController::class, 'exportVehicleUtilization'])->name('reports.vehicle-utilization.export');
         Route::get('reports/mis/export/{format}', [ReportController::class, 'exportMis'])->name('reports.mis.export');
         Route::get('reports/expense-management/export/{format}', [ReportController::class, 'exportExpense'])->name('reports.expense-management.export');

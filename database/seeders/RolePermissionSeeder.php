@@ -72,7 +72,7 @@ class RolePermissionSeeder extends Seeder
             'reports' => [
                 'view reports', 'export reports',
                 'view vehicle report', 'view driver trip report', 'view customer ledger', 'view sales ledger', 'view tds report',
-                'view trip reports', 'view bilty advance details', 'view fuel report', 'view fuel outstanding', 'view adblue outstanding',
+                'view trip reports', 'view bilty advance details', 'view fuel report', 'view adblue report', 'view fuel outstanding', 'view adblue outstanding',
                 'view vehicle utilization', 'view mis report', 'view expense management', 'view vehicle document report',
                 'view gst tax report', 'view profit loss report'
             ],
@@ -196,7 +196,7 @@ class RolePermissionSeeder extends Seeder
             'manage categories', 'manage folders', 'view document reports', 'view activity', 'manage document trash',
             'view customer ledger', 'view sales ledger', 'view tds report',
             'view trip reports', 'view bilty advance details',
-            'view fuel report', 'view fuel outstanding', 'view adblue outstanding',
+            'view fuel report', 'view adblue report', 'view fuel outstanding', 'view adblue outstanding',
             'view vehicle report', 'view driver trip report',
         ])->get();
         $branchManager->syncPermissions($branchManagerPermissions);
@@ -231,7 +231,7 @@ class RolePermissionSeeder extends Seeder
             'manage categories', 'manage folders', 'view document reports', 'view activity', 'manage document trash',
             'view customer ledger', 'view sales ledger', 'view tds report',
             'view trip reports', 'view bilty advance details',
-            'view fuel report', 'view fuel outstanding', 'view adblue outstanding',
+            'view fuel report', 'view adblue report', 'view fuel outstanding', 'view adblue outstanding',
             'view vehicle report', 'view driver trip report',
             'view vehicle utilization', 'view mis report', 'view expense management',
             'view vehicle document report', 'view gst tax report', 'view profit loss report',
