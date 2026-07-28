@@ -138,6 +138,17 @@
         <div class="card-body">
             <form method="GET" action="{{ route($currentRoute) }}" id="filterForm">
                 <div class="row g-3">
+                    @if(isset($companies) && count($companies) > 0)
+                    <div class="col-md-3 col-sm-6">
+                        <label class="form-label small fw-bold">Operating Company</label>
+                        <select name="company_id" id="filter_company_id" class="form-select select2">
+                            <option value="">All Operating Companies</option>
+                            @foreach($companies as $comp)
+                            <option value="{{ $comp->id }}" {{ request('company_id') == $comp->id ? 'selected' : '' }}>{{ $comp->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @endif
                     <div class="col-md-3 col-sm-6">
                         <label class="form-label small fw-bold">Fuel Company</label>
                         <select name="fuel_company_id" id="filter_fuel_company_id" class="form-select select2">
@@ -345,6 +356,7 @@
                             <thead class="table-light">
                                 <tr>
                                     <th>Date</th>
+                                    <th>Operating Company</th>
                                     <th>Fuel Company</th>
                                     <th>Fuel Pump</th>
                                     <th>Method</th>
@@ -359,6 +371,7 @@
                                 @forelse($payments as $p)
                                 <tr>
                                     <td>{{ $p->date ? $p->date->format('d-m-Y') : '-' }}</td>
+                                    <td><span class="badge bg-label-info">{{ $p->company->name ?? '-' }}</span></td>
                                     <td>{{ $p->fuelCompany->name ?? '-' }}</td>
                                     <td class="fw-semibold text-primary">{{ $p->fuelPump->name ?? '-' }}</td>
                                     <td><span class="badge bg-label-secondary">{{ $p->payment_method ?? 'Bank Transfer' }}</span></td>
@@ -379,7 +392,7 @@
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="{{ request()->routeIs('admin.reports.*') ? 6 : 7 }}" class="text-center text-muted py-4">No payment logs found.</td>
+                                    <td colspan="{{ request()->routeIs('admin.reports.*') ? 7 : 8 }}" class="text-center text-muted py-4">No payment logs found.</td>
                                 </tr>
                                 @endforelse
                             </tbody>
@@ -410,17 +423,17 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    @if(isset($companies) && count($companies) > 0)
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Select Operating Company *</label>
                         <select name="company_id" id="pay_company_id" class="form-select select2-modal" required>
                             <option value="">Select Company</option>
+                            @if(isset($companies))
                             @foreach($companies as $company)
                             <option value="{{ $company->id }}">{{ $company->name }}</option>
                             @endforeach
+                            @endif
                         </select>
                     </div>
-                    @endif
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Payment Date *</label>
                         <input type="date" max="9999-12-31" name="date" id="pay_date" class="form-control" required value="{{ date('Y-m-d') }}">
@@ -502,9 +515,14 @@
 
         // Initialize select2 inside modal when it is shown
         $('#paymentModal').on('shown.bs.modal', function () {
-            $('.select2-modal').select2({
-                dropdownParent: $('#paymentModal'),
-                width: '100%'
+            $('.select2-modal').each(function() {
+                if ($(this).hasClass('select2-hidden-accessible')) {
+                    $(this).select2('destroy');
+                }
+                $(this).select2({
+                    dropdownParent: $('#paymentModal'),
+                    width: '100%'
+                });
             });
         });
 
@@ -551,7 +569,14 @@
         $('#payment_id').val('');
         $('#payment_method_field').val('POST');
         $('#paymentModalTitle').text('Record Credit Payment');
-        $('#pay_company_id').val('').trigger('change');
+        
+        var filterComp = $('#filter_company_id').length ? $('#filter_company_id').val() : '';
+        if (filterComp) {
+            $('#pay_company_id').val(filterComp).trigger('change');
+        } else {
+            $('#pay_company_id').val('{{ session("current_company_id") != "all" ? session("current_company_id") : "" }}').trigger('change');
+        }
+
         $('#pay_fuel_company_id').val('').trigger('change');
         $('#pay_fuel_pump_id').val('').trigger('change');
         $('#paymentModal').modal('show');

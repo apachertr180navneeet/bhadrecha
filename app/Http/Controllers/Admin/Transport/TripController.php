@@ -632,7 +632,18 @@ class TripController extends Controller
         $vehicleList = Vehicle::orderBy('vehicle_number')->get();
         $fuelCompanies = FuelCompany::orderBy('name')->get();
         $fuelPumps = FuelPump::with('fuelCompany')->orderBy('name')->get();
-        $companies = \App\Models\Company::where('status', 'active')->orderBy('name')->get();
+        
+        $user = auth()->user();
+        if ($user && !$user->isSuperAdmin() && $user->company_id) {
+            $companies = \App\Models\Company::where('id', $user->company_id)->get();
+        } else {
+            $companies = \App\Models\Company::where('status', 'active')->orderBy('name')->get();
+            if ($companies->isEmpty()) {
+                $companies = \App\Models\Company::orderBy('name')->get();
+            }
+        }
+
+        $targetCompanyId = $request->filled('company_id') ? $request->company_id : (session('current_company_id') && session('current_company_id') !== 'all' ? session('current_company_id') : null);
 
         // 1. Calculate Opening Balances if date_from is set
         $openingBalancesMap = [];
@@ -641,7 +652,17 @@ class TripController extends Controller
         if ($request->filled('date_from')) {
             $opFuelQuery = TripFuelDetail::query()->where('payment_type', 'credit')->where('date', '<', $request->date_from);
             $opAdvanceQuery = TripAdvanceDetail::query()->where(function ($q) { $q->whereNull('payment_type')->orWhere('payment_type', 'credit'); })->where('date', '<', $request->date_from);
-            $opPaymentQuery = FuelPumpPayment::query()->where('date', '<', $request->date_from);
+            $opPaymentQuery = FuelPumpPayment::query()->withoutGlobalScope('company')->where('date', '<', $request->date_from);
+
+            if ($targetCompanyId) {
+                $opFuelQuery->whereHas('builty', function ($q) use ($targetCompanyId) {
+                    $q->where('company_id', $targetCompanyId);
+                });
+                $opAdvanceQuery->whereHas('builty', function ($q) use ($targetCompanyId) {
+                    $q->where('company_id', $targetCompanyId);
+                });
+                $opPaymentQuery->where('company_id', $targetCompanyId);
+            }
 
             if ($request->filled('fuel_company_id')) {
                 $opFuelQuery->where('fuel_company_id', $request->fuel_company_id);
@@ -691,7 +712,17 @@ class TripController extends Controller
         // 2. Calculate Summary Table (Overview) of all pumps/companies for the selected period
         $fuelQuery = TripFuelDetail::query()->where('payment_type', 'credit');
         $advanceQuery = TripAdvanceDetail::query()->where(function ($q) { $q->whereNull('payment_type')->orWhere('payment_type', 'credit'); });
-        $paymentQuery = FuelPumpPayment::query();
+        $paymentQuery = FuelPumpPayment::query()->withoutGlobalScope('company');
+
+        if ($targetCompanyId) {
+            $fuelQuery->whereHas('builty', function ($q) use ($targetCompanyId) {
+                $q->where('company_id', $targetCompanyId);
+            });
+            $advanceQuery->whereHas('builty', function ($q) use ($targetCompanyId) {
+                $q->where('company_id', $targetCompanyId);
+            });
+            $paymentQuery->where('company_id', $targetCompanyId);
+        }
 
         // Apply filters to summary query if filtered
         if ($request->filled('fuel_company_id')) {
@@ -824,7 +855,18 @@ class TripController extends Controller
 
         $advanceLedgerQuery = TripAdvanceDetail::with(['trip.builty.vehicle', 'fuelCompany', 'fuelPump'])
             ->where(function ($q) { $q->whereNull('payment_type')->orWhere('payment_type', 'credit'); });
-        $paymentLedgerQuery = FuelPumpPayment::with(['fuelCompany', 'fuelPump']);
+        $paymentLedgerQuery = FuelPumpPayment::with(['fuelCompany', 'fuelPump', 'company'])
+            ->withoutGlobalScope('company');
+
+        if ($targetCompanyId) {
+            $fuelLedgerQuery->whereHas('builty', function ($q) use ($targetCompanyId) {
+                $q->where('company_id', $targetCompanyId);
+            });
+            $advanceLedgerQuery->whereHas('builty', function ($q) use ($targetCompanyId) {
+                $q->where('company_id', $targetCompanyId);
+            });
+            $paymentLedgerQuery->where('company_id', $targetCompanyId);
+        }
 
         if ($request->filled('fuel_company_id')) {
             $fuelLedgerQuery->where('fuel_company_id', $request->fuel_company_id);
@@ -868,7 +910,17 @@ class TripController extends Controller
         if ($request->filled('date_from')) {
             $singleOpFuelQuery = TripFuelDetail::query()->where('payment_type', 'credit')->where('date', '<', $request->date_from);
             $singleOpAdvanceQuery = TripAdvanceDetail::query()->where(function ($q) { $q->whereNull('payment_type')->orWhere('payment_type', 'credit'); })->where('date', '<', $request->date_from);
-            $singleOpPaymentQuery = FuelPumpPayment::query()->where('date', '<', $request->date_from);
+            $singleOpPaymentQuery = FuelPumpPayment::query()->withoutGlobalScope('company')->where('date', '<', $request->date_from);
+
+            if ($targetCompanyId) {
+                $singleOpFuelQuery->whereHas('builty', function ($q) use ($targetCompanyId) {
+                    $q->where('company_id', $targetCompanyId);
+                });
+                $singleOpAdvanceQuery->whereHas('builty', function ($q) use ($targetCompanyId) {
+                    $q->where('company_id', $targetCompanyId);
+                });
+                $singleOpPaymentQuery->where('company_id', $targetCompanyId);
+            }
 
             if ($request->filled('fuel_company_id')) {
                 $singleOpFuelQuery->where('fuel_company_id', $request->fuel_company_id);
@@ -1001,7 +1053,13 @@ class TripController extends Controller
         unset($item);
 
         // 4. Paginated Credit Payments tab
-        $paymentsQuery = FuelPumpPayment::with(['fuelCompany', 'fuelPump'])->orderBy('date', 'desc');
+        $paymentsQuery = FuelPumpPayment::with(['fuelCompany', 'fuelPump', 'company'])
+            ->withoutGlobalScope('company')
+            ->orderBy('date', 'desc');
+
+        if ($targetCompanyId) {
+            $paymentsQuery->where('company_id', $targetCompanyId);
+        }
         if ($request->filled('fuel_company_id')) {
             $paymentsQuery->where('fuel_company_id', $request->fuel_company_id);
         }
@@ -1040,6 +1098,7 @@ class TripController extends Controller
     public function storeFuelPayment(Request $request)
     {
         $validated = $request->validate([
+            'company_id' => 'nullable|exists:companies,id',
             'date' => 'required|date|before_or_equal:9999-12-31',
             'fuel_company_id' => 'required|exists:fuel_companies,id',
             'fuel_pump_id' => 'required|exists:fuel_pumps,id',
@@ -1084,7 +1143,7 @@ class TripController extends Controller
 
     public function editFuelPayment($id)
     {
-        $payment = FuelPumpPayment::findOrFail($id);
+        $payment = FuelPumpPayment::with('company')->findOrFail($id);
         return response()->json($payment);
     }
 
@@ -1093,6 +1152,7 @@ class TripController extends Controller
         $payment = FuelPumpPayment::findOrFail($id);
 
         $validated = $request->validate([
+            'company_id' => 'nullable|exists:companies,id',
             'date' => 'required|date|before_or_equal:9999-12-31',
             'fuel_company_id' => 'required|exists:fuel_companies,id',
             'fuel_pump_id' => 'required|exists:fuel_pumps,id',
@@ -1100,6 +1160,10 @@ class TripController extends Controller
             'payment_method' => 'nullable|string|max:50',
             'remark' => 'nullable|string|max:500',
         ]);
+
+        if ($request->filled('company_id')) {
+            $validated['company_id'] = $request->company_id;
+        }
 
         $payment->update($validated);
 
@@ -1122,7 +1186,18 @@ class TripController extends Controller
     {
         $vehicleList = Vehicle::orderBy('vehicle_number')->get();
         $adblueCompanies = AdBlueCompany::orderBy('name')->get();
-        $companies = \App\Models\Company::where('status', 'active')->orderBy('name')->get();
+        
+        $user = auth()->user();
+        if ($user && !$user->isSuperAdmin() && $user->company_id) {
+            $companies = \App\Models\Company::where('id', $user->company_id)->get();
+        } else {
+            $companies = \App\Models\Company::where('status', 'active')->orderBy('name')->get();
+            if ($companies->isEmpty()) {
+                $companies = \App\Models\Company::orderBy('name')->get();
+            }
+        }
+
+        $targetCompanyId = $request->filled('company_id') ? $request->company_id : (session('current_company_id') && session('current_company_id') !== 'all' ? session('current_company_id') : null);
 
         // 1. Calculate Opening Balances if date_from is set
         $openingBalancesMap = [];
@@ -1130,7 +1205,14 @@ class TripController extends Controller
 
         if ($request->filled('date_from')) {
             $opAdBlueQuery = TripAdBlueDetail::query()->where('date', '<', $request->date_from);
-            $opPaymentQuery = AdBlueCompanyPayment::query()->where('date', '<', $request->date_from);
+            $opPaymentQuery = AdBlueCompanyPayment::query()->withoutGlobalScope('company')->where('date', '<', $request->date_from);
+
+            if ($targetCompanyId) {
+                $opAdBlueQuery->whereHas('builty', function ($q) use ($targetCompanyId) {
+                    $q->where('company_id', $targetCompanyId);
+                });
+                $opPaymentQuery->where('company_id', $targetCompanyId);
+            }
 
             if ($request->filled('adblue_company_id')) {
                 $opAdBlueQuery->where('adblue_company_id', $request->adblue_company_id);
@@ -1162,7 +1244,14 @@ class TripController extends Controller
 
         // 2. Calculate Summary Table (Overview) of all companies for the selected period
         $adblueQuery = TripAdBlueDetail::query();
-        $paymentQuery = AdBlueCompanyPayment::query();
+        $paymentQuery = AdBlueCompanyPayment::query()->withoutGlobalScope('company');
+
+        if ($targetCompanyId) {
+            $adblueQuery->whereHas('builty', function ($q) use ($targetCompanyId) {
+                $q->where('company_id', $targetCompanyId);
+            });
+            $paymentQuery->where('company_id', $targetCompanyId);
+        }
 
         // Apply filters to summary query if filtered
         if ($request->filled('adblue_company_id')) {
@@ -1249,7 +1338,14 @@ class TripController extends Controller
         // 3. Detailed Ledger
         $ledgerItems = [];
         $adblueLedgerQuery = TripAdBlueDetail::with(['trip.builty.vehicle', 'adblueCompany']);
-        $paymentLedgerQuery = AdBlueCompanyPayment::with(['adblueCompany']);
+        $paymentLedgerQuery = AdBlueCompanyPayment::with(['adblueCompany', 'company'])->withoutGlobalScope('company');
+
+        if ($targetCompanyId) {
+            $adblueLedgerQuery->whereHas('builty', function ($q) use ($targetCompanyId) {
+                $q->where('company_id', $targetCompanyId);
+            });
+            $paymentLedgerQuery->where('company_id', $targetCompanyId);
+        }
 
         if ($request->filled('adblue_company_id')) {
             $adblueLedgerQuery->where('adblue_company_id', $request->adblue_company_id);
@@ -1278,7 +1374,14 @@ class TripController extends Controller
         $singleOpeningBalance = 0.0;
         if ($request->filled('date_from')) {
             $singleOpAdBlueQuery = TripAdBlueDetail::query()->where('date', '<', $request->date_from);
-            $singleOpPaymentQuery = AdBlueCompanyPayment::query()->where('date', '<', $request->date_from);
+            $singleOpPaymentQuery = AdBlueCompanyPayment::query()->withoutGlobalScope('company')->where('date', '<', $request->date_from);
+
+            if ($targetCompanyId) {
+                $singleOpAdBlueQuery->whereHas('builty', function ($q) use ($targetCompanyId) {
+                    $q->where('company_id', $targetCompanyId);
+                });
+                $singleOpPaymentQuery->where('company_id', $targetCompanyId);
+            }
 
             if ($request->filled('adblue_company_id')) {
                 $singleOpAdBlueQuery->where('adblue_company_id', $request->adblue_company_id);
@@ -1377,7 +1480,13 @@ class TripController extends Controller
         unset($item);
 
         // 4. Paginated Payments tab
-        $paymentsQuery = AdBlueCompanyPayment::with(['adblueCompany'])->orderBy('date', 'desc');
+        $paymentsQuery = AdBlueCompanyPayment::with(['adblueCompany', 'company'])
+            ->withoutGlobalScope('company')
+            ->orderBy('date', 'desc');
+
+        if ($targetCompanyId) {
+            $paymentsQuery->where('company_id', $targetCompanyId);
+        }
         if ($request->filled('adblue_company_id')) {
             $paymentsQuery->where('adblue_company_id', $request->adblue_company_id);
         }
@@ -1412,6 +1521,7 @@ class TripController extends Controller
     public function storeAdBluePayment(Request $request)
     {
         $validated = $request->validate([
+            'company_id' => 'nullable|exists:companies,id',
             'date' => 'required|date|before_or_equal:9999-12-31',
             'adblue_company_id' => 'required|exists:adblue_companies,id',
             'amount' => 'required|numeric|min:0.01',
@@ -1454,7 +1564,7 @@ class TripController extends Controller
 
     public function editAdBluePayment($id)
     {
-        $payment = AdBlueCompanyPayment::findOrFail($id);
+        $payment = AdBlueCompanyPayment::with('company')->findOrFail($id);
         return response()->json($payment);
     }
 
@@ -1463,12 +1573,17 @@ class TripController extends Controller
         $payment = AdBlueCompanyPayment::findOrFail($id);
 
         $validated = $request->validate([
+            'company_id' => 'nullable|exists:companies,id',
             'date' => 'required|date|before_or_equal:9999-12-31',
             'adblue_company_id' => 'required|exists:adblue_companies,id',
             'amount' => 'required|numeric|min:0.01',
             'payment_method' => 'nullable|string|max:50',
             'remark' => 'nullable|string|max:500',
         ]);
+
+        if ($request->filled('company_id')) {
+            $validated['company_id'] = $request->company_id;
+        }
 
         $payment->update($validated);
 
