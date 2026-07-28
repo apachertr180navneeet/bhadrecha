@@ -78,34 +78,36 @@ class SuperAdminController extends Controller
         $monthlyLRs = $this->getMonthlyLRTrend();
 
         // Monthly P&L trend – last 12 months (for chart)
-        $monthlyPnL = $this->getMonthlyPnLTrend();
+        $companyId = session('current_company_id');
+        $monthlyPnL = $this->getMonthlyPnLTrend($companyId);
 
-        // Expiring documents
-        $expiringDocuments = collect();
+        // Expiring documents (single SQL query instead of loading all vehicles)
         $threshold = now()->addDays(30);
-        $documentFields = [
+        $expiringDocuments = collect();
+        $vehicleFields = [
             'insurance_expiry' => 'Insurance',
             'fitness_expiry' => 'Fitness Certificate',
             'permit_expiry' => 'Permit',
             'pollution_expiry' => 'Pollution Certificate',
         ];
-        $vehicles = Vehicle::withoutGlobalScopes()->where('status', 'active')->get();
-        foreach ($vehicles as $vehicle) {
-            foreach ($documentFields as $field => $label) {
-                $expiryDate = $vehicle->$field;
-                if ($expiryDate && $expiryDate <= $threshold) {
-                    $expiringDocuments->push([
-                        'vehicle_number' => $vehicle->vehicle_number,
-                        'vehicle_id' => $vehicle->id,
-                        'company_name' => $vehicle->company?->name ?? 'N/A',
-                        'document' => $label,
-                        'expiry_date' => $expiryDate,
-                        'days_left' => now()->diffInDays($expiryDate, false),
-                    ]);
-                }
+        $thresholdDate = $threshold->toDateString();
+        $unionSql = '';
+        $unionBindings = [];
+        $first = true;
+        foreach ($vehicleFields as $field => $label) {
+            $sql = "(SELECT v.id as vehicle_id, v.vehicle_number, 'N/A' as company_name, ? as document, ? as document_field, v.$field as expiry_date, DATEDIFF(?, v.$field) as days_left FROM vehicles v WHERE v.status = 'active' AND v.$field IS NOT NULL AND v.$field <= ?)";
+            $unionBindings = array_merge($unionBindings, [$label, $field, $thresholdDate, $thresholdDate]);
+            if ($first) {
+                $unionSql = $sql;
+                $first = false;
+            } else {
+                $unionSql .= " UNION ALL " . $sql;
             }
         }
-        $expiringDocuments = $expiringDocuments->sortBy('days_left')->values();
+        $expiringDocuments = collect(DB::select($unionSql, $unionBindings))
+            ->map(fn($d) => (array) $d)
+            ->sortBy('days_left')
+            ->values();
 
         return [
             'total_companies'    => $totalCompanies,
@@ -131,53 +133,128 @@ class SuperAdminController extends Controller
     /** Last 6 months LR count (all companies, no scope). */
     private function getMonthlyLRTrend(): array
     {
+        $sixMonthsAgo = Carbon::now()->subMonths(5)->startOfMonth();
+        $monthlyCounts = Bulty::withoutGlobalScopes()
+            ->select(DB::raw('YEAR(created_at) as y, MONTH(created_at) as m, COUNT(*) as count'))
+            ->where('created_at', '>=', $sixMonthsAgo)
+            ->groupBy('y', 'm')
+            ->orderBy('y')
+            ->orderBy('m')
+            ->get()
+            ->keyBy(fn($r) => $r->y . '-' . $r->m);
+
         $months = [];
         $counts = [];
         for ($i = 5; $i >= 0; $i--) {
             $date = Carbon::now()->subMonths($i);
             $months[] = $date->format('M Y');
-            $counts[] = Bulty::withoutGlobalScopes()
-                ->whereYear('created_at', $date->year)
-                ->whereMonth('created_at', $date->month)
-                ->count();
+            $key = $date->year . '-' . $date->month;
+            $counts[] = (int)($monthlyCounts[$key]->count ?? 0);
         }
         return ['months' => $months, 'counts' => $counts];
     }
 
     /** Monthly P&L trend – last 12 months (for dashboard chart). */
-    private function getMonthlyPnLTrend(): array
+    private function getMonthlyPnLTrend($companyId = null, $branchId = null): array
     {
         $months = [];
         $incomeData = [];
         $expenseData = [];
+
+        $twelveMonthsAgo = Carbon::now()->subMonths(11)->startOfMonth();
+
+        $bultyWhere = "status NOT IN ('pending','planned')";
+        $bultyParams = [];
+        if ($companyId && $companyId !== 'all') {
+            $bultyWhere .= " AND company_id = ?";
+            $bultyParams[] = $companyId;
+        }
+        if ($branchId) {
+            $bultyWhere .= " AND branch_id = ?";
+            $bultyParams[] = $branchId;
+        }
+
+        $monthlyBulties = DB::select(
+            "SELECT YEAR(lr_date) as y, MONTH(lr_date) as m,
+                    COALESCE(SUM(total_amount),0) as income,
+                    COALESCE(SUM(bilty_commission),0) as commission
+             FROM bulties
+             WHERE $bultyWhere AND lr_date >= ?
+             GROUP BY YEAR(lr_date), MONTH(lr_date)
+             ORDER BY y, m",
+            array_merge($bultyParams, [$twelveMonthsAgo])
+        );
+
+        $monthlyTrips = DB::select(
+            "SELECT YEAR(b.lr_date) as y, MONTH(b.lr_date) as m,
+                    COALESCE(SUM(t.fuel_amount),0) as trip_fuel,
+                    COALESCE(SUM(t.fasttag_total_amount),0) as trip_fasttag,
+                    COALESCE(SUM(t.adblue_total_amount),0) as trip_adblue,
+                    COALESCE(SUM(t.other_amount),0) as trip_other,
+                    COALESCE(SUM(t.advance_total_amount),0) as trip_advance
+             FROM bulties b
+             JOIN trips t ON t.builty_id = b.id
+             WHERE b.$bultyWhere AND b.lr_date >= ?
+             GROUP BY YEAR(b.lr_date), MONTH(b.lr_date)
+             ORDER BY y, m",
+            array_merge($bultyParams, [$twelveMonthsAgo])
+        );
+
+        $monthlyDetails = DB::select(
+            "SELECT YEAR(b.lr_date) as y, MONTH(b.lr_date) as m,
+                    COALESCE(SUM(tfd.amount),0) as fuel,
+                    COALESCE(SUM(tft.amount),0) as fasttag,
+                    COALESCE(SUM(tad.amount),0) as adblue,
+                    COALESCE(SUM(toad.amount),0) as other,
+                    COALESCE(SUM(tad2.advance_amount),0) as adv_amount
+             FROM bulties b
+             LEFT JOIN trips t ON t.builty_id = b.id
+             LEFT JOIN trip_fuel_details tfd ON tfd.trip_id = t.id
+             LEFT JOIN trip_fast_tag_details tft ON tft.trip_id = t.id
+             LEFT JOIN trip_adblue_details tad ON tad.trip_id = t.id
+             LEFT JOIN trip_other_amount_details toad ON toad.trip_id = t.id
+             LEFT JOIN trip_advance_details tad2 ON tad2.trip_id = t.id
+             WHERE b.$bultyWhere AND b.lr_date >= ?
+             GROUP BY YEAR(b.lr_date), MONTH(b.lr_date)
+             ORDER BY y, m",
+            array_merge($bultyParams, [$twelveMonthsAgo])
+        );
+
+        $monthlyBultyMap = [];
+        foreach ($monthlyBulties as $r) {
+            $monthlyBultyMap[$r->y . '-' . $r->m] = $r;
+        }
+        $monthlyTripMap = [];
+        foreach ($monthlyTrips as $r) {
+            $monthlyTripMap[$r->y . '-' . $r->m] = $r;
+        }
+        $monthlyDetailMap = [];
+        foreach ($monthlyDetails as $r) {
+            $monthlyDetailMap[$r->y . '-' . $r->m] = $r;
+        }
+
         for ($i = 11; $i >= 0; $i--) {
             $date = Carbon::now()->subMonths($i);
-            $year = $date->year;
-            $month = $date->month;
+            $key = $date->year . '-' . $date->month;
             $months[] = $date->format('M Y');
 
-            // Total income from bulties (delivered/released only)
-            $mBultyIds = Bulty::withoutGlobalScopes()
-                ->whereNotIn('status', ['pending', 'planned'])
-                ->whereYear('lr_date', $year)
-                ->whereMonth('lr_date', $month)
-                ->pluck('id');
+            $mb = $monthlyBultyMap[$key] ?? null;
+            $mt = $monthlyTripMap[$key] ?? null;
+            $md = $monthlyDetailMap[$key] ?? null;
 
-            $income = Bulty::withoutGlobalScopes()
-                ->whereIn('id', $mBultyIds)
-                ->sum('total_amount');
+            $income = (float)($mb->income ?? 0);
+            $commission = (float)($mb->commission ?? 0);
 
-            $tripExpenses = Trip::whereIn('builty_id', $mBultyIds)
-                ->selectRaw('COALESCE(SUM(fuel_amount),0) + COALESCE(SUM(fasttag_total_amount),0) + COALESCE(SUM(adblue_total_amount),0) + COALESCE(SUM(other_amount),0) + COALESCE(SUM(advance_total_amount),0) as total')
-                ->value('total') ?? 0;
+            $fuel = max((float)($md->fuel ?? 0), (float)($mt->trip_fuel ?? 0));
+            $fasttag = max((float)($md->fasttag ?? 0), (float)($mt->trip_fasttag ?? 0));
+            $adblue = max((float)($md->adblue ?? 0), (float)($mt->trip_adblue ?? 0));
+            $other = max((float)($md->other ?? 0), (float)($mt->trip_other ?? 0));
+            $advance = max((float)($md->adv_amount ?? 0), (float)($mt->trip_advance ?? 0));
 
-            // Commission on bulties
-            $commission = Bulty::withoutGlobalScopes()
-                ->whereIn('id', $mBultyIds)
-                ->sum('bilty_commission');
+            $tripExpenses = $fuel + $fasttag + $adblue + $other + $advance;
 
-            $incomeData[] = round((float)$income, 0);
-            $expenseData[] = round((float)$tripExpenses + (float)$commission, 0);
+            $incomeData[] = round($income, 0);
+            $expenseData[] = round($tripExpenses + $commission, 0);
         }
         return ['months' => $months, 'income' => $incomeData, 'expense' => $expenseData];
     }
@@ -196,6 +273,7 @@ class SuperAdminController extends Controller
             ->has('trip')->count();
 
         $monthlyLRs = $this->getCompanyMonthlyLRTrend($companyId);
+        $monthlyPnL = $this->getMonthlyPnLTrend($companyId);
 
         return [
             'company'        => $company,
@@ -207,21 +285,30 @@ class SuperAdminController extends Controller
             'total_bulties'  => $totalBulties,
             'total_trips'    => $totalTrips,
             'monthly_lrs'    => $monthlyLRs,
+            'monthly_pnl'    => $monthlyPnL,
         ];
     }
 
     private function getCompanyMonthlyLRTrend($companyId): array
     {
+        $sixMonthsAgo = Carbon::now()->subMonths(5)->startOfMonth();
+        $monthlyCounts = Bulty::withoutGlobalScopes()
+            ->select(DB::raw('YEAR(created_at) as y, MONTH(created_at) as m, COUNT(*) as count'))
+            ->where('company_id', $companyId)
+            ->where('created_at', '>=', $sixMonthsAgo)
+            ->groupBy('y', 'm')
+            ->orderBy('y')
+            ->orderBy('m')
+            ->get()
+            ->keyBy(fn($r) => $r->y . '-' . $r->m);
+
         $months = [];
         $counts = [];
         for ($i = 5; $i >= 0; $i--) {
             $date = Carbon::now()->subMonths($i);
             $months[] = $date->format('M Y');
-            $counts[] = Bulty::withoutGlobalScopes()
-                ->where('company_id', $companyId)
-                ->whereYear('created_at', $date->year)
-                ->whereMonth('created_at', $date->month)
-                ->count();
+            $key = $date->year . '-' . $date->month;
+            $counts[] = (int)($monthlyCounts[$key]->count ?? 0);
         }
         return ['months' => $months, 'counts' => $counts];
     }
@@ -240,6 +327,7 @@ class SuperAdminController extends Controller
             ->has('trip')->count();
 
         $monthlyLRs = $this->getBranchMonthlyLRTrend($branchId);
+        $monthlyPnL = $this->getMonthlyPnLTrend($companyId, $branchId);
 
         return [
             'branch'         => $branch,
@@ -250,21 +338,30 @@ class SuperAdminController extends Controller
             'total_bulties'  => $totalBulties,
             'total_trips'    => $totalTrips,
             'monthly_lrs'    => $monthlyLRs,
+            'monthly_pnl'    => $monthlyPnL,
         ];
     }
 
     private function getBranchMonthlyLRTrend($branchId): array
     {
+        $sixMonthsAgo = Carbon::now()->subMonths(5)->startOfMonth();
+        $monthlyCounts = Bulty::withoutGlobalScopes()
+            ->select(DB::raw('YEAR(created_at) as y, MONTH(created_at) as m, COUNT(*) as count'))
+            ->where('branch_id', $branchId)
+            ->where('created_at', '>=', $sixMonthsAgo)
+            ->groupBy('y', 'm')
+            ->orderBy('y')
+            ->orderBy('m')
+            ->get()
+            ->keyBy(fn($r) => $r->y . '-' . $r->m);
+
         $months = [];
         $counts = [];
         for ($i = 5; $i >= 0; $i--) {
             $date = Carbon::now()->subMonths($i);
             $months[] = $date->format('M Y');
-            $counts[] = Bulty::withoutGlobalScopes()
-                ->where('branch_id', $branchId)
-                ->whereYear('created_at', $date->year)
-                ->whereMonth('created_at', $date->month)
-                ->count();
+            $key = $date->year . '-' . $date->month;
+            $counts[] = (int)($monthlyCounts[$key]->count ?? 0);
         }
         return ['months' => $months, 'counts' => $counts];
     }

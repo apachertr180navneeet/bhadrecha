@@ -8,6 +8,7 @@ use App\Models\DriverSalary;
 use App\Models\DriverAdvance;
 use App\Models\SalarySlip;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class DriverManagementController extends Controller
@@ -66,16 +67,20 @@ class DriverManagementController extends Controller
         $advances = DriverAdvance::with('driver')->latest()->get();
         $editAdvance = null;
 
-        $slips = SalarySlip::all();
-        $deductedSoFar = [];
-        foreach ($slips as $ps) {
-            foreach (collect($ps->advances_data ?? []) as $ad) {
-                $aid = $ad['id'] ?? null;
-                if ($aid) {
-                    $deductedSoFar[$aid] = ($deductedSoFar[$aid] ?? 0) + ($ad['deduction_amount'] ?? 0);
+        $deductedSoFar = DB::table('salary_slips')
+            ->whereNotNull('advances_data')
+            ->where('advances_data', '!=', '[]')
+            ->select('advances_data')
+            ->get()
+            ->reduce(function ($carry, $slip) {
+                foreach (json_decode($slip->advances_data, true) ?? [] as $ad) {
+                    $aid = $ad['id'] ?? null;
+                    if ($aid) {
+                        $carry[$aid] = ($carry[$aid] ?? 0) + ($ad['deduction_amount'] ?? 0);
+                    }
                 }
-            }
-        }
+                return $carry;
+            }, []);
 
         foreach ($advances as $advance) {
             $deducted = $deductedSoFar[$advance->id] ?? 0;
@@ -109,16 +114,20 @@ class DriverManagementController extends Controller
         $advances = DriverAdvance::with('driver')->latest()->get();
         $editAdvance = $advance;
 
-        $slips = SalarySlip::all();
-        $deductedSoFar = [];
-        foreach ($slips as $ps) {
-            foreach (collect($ps->advances_data ?? []) as $ad) {
-                $aid = $ad['id'] ?? null;
-                if ($aid) {
-                    $deductedSoFar[$aid] = ($deductedSoFar[$aid] ?? 0) + ($ad['deduction_amount'] ?? 0);
+        $deductedSoFar = DB::table('salary_slips')
+            ->whereNotNull('advances_data')
+            ->where('advances_data', '!=', '[]')
+            ->select('advances_data')
+            ->get()
+            ->reduce(function ($carry, $slip) {
+                foreach (json_decode($slip->advances_data, true) ?? [] as $ad) {
+                    $aid = $ad['id'] ?? null;
+                    if ($aid) {
+                        $carry[$aid] = ($carry[$aid] ?? 0) + ($ad['deduction_amount'] ?? 0);
+                    }
                 }
-            }
-        }
+                return $carry;
+            }, []);
 
         foreach ($advances as $adv) {
             $deducted = $deductedSoFar[$adv->id] ?? 0;
