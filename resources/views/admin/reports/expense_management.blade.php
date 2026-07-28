@@ -247,7 +247,7 @@
                         <tbody>
                             @forelse($recentFastTagDetails as $ft)
                             <tr>
-                                <td>{{ $ft->transaction_time->format('d-m-Y') }}</td>
+                                <td>{{ $ft->transaction_time ? $ft->transaction_time->format('d-m-Y') : ($ft->created_at ? $ft->created_at->format('d-m-Y') : '-') }}</td>
                                 <td>{{ $ft->trip?->builty?->vehicle?->vehicle_number ?? '-' }}</td>
                                 <td>{{ Str::limit($ft->description, 30) }}</td>
                                 <td class="text-end">₹ {{ number_format($ft->amount, 0) }}</td>

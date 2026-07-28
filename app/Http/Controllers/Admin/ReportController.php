@@ -639,7 +639,13 @@ class ReportController extends Controller
         $tripCompanyFilter = fn($q) => $q->when($companyId && $companyId !== 'all', fn($q) => $q->whereHas('trip.builty', fn($q) => $q->where('company_id', $companyId)));
 
         $tripFuelQuery = TripFuelDetail::whereBetween('date', [$fromDate, $toDate]);
-        $tripFastTagQuery = TripFastTagDetail::whereBetween('transaction_time', [$fromDate, $toDate . ' 23:59:59']);
+        $tripFastTagQuery = TripFastTagDetail::where(function($q) use ($fromDate, $toDate) {
+            $q->whereBetween('transaction_time', [$fromDate, $toDate . ' 23:59:59'])
+              ->orWhere(function($q2) use ($fromDate, $toDate) {
+                  $q2->whereNull('transaction_time')
+                     ->whereBetween('created_at', [$fromDate, $toDate . ' 23:59:59']);
+              });
+        });
         $tripAdBlueQuery = TripAdBlueDetail::whereBetween('date', [$fromDate, $toDate]);
         $tripOtherQuery = TripOtherAmountDetail::whereBetween('date', [$fromDate, $toDate]);
         $tripAdvanceQuery = TripAdvanceDetail::whereBetween('date', [$fromDate, $toDate]);
@@ -693,7 +699,13 @@ class ReportController extends Controller
                 $vehicle->fuel_expense = TripFuelDetail::whereBetween('date', [$fromDate, $toDate])
                     ->whereHas('trip.builty', fn($q) => $q->where('vehicle_id', $vehicle->id))
                     ->sum('amount');
-                $vehicle->fasttag_expense = TripFastTagDetail::whereBetween('transaction_time', [$fromDate, $toDate . ' 23:59:59'])
+                $vehicle->fasttag_expense = TripFastTagDetail::where(function($q) use ($fromDate, $toDate) {
+                        $q->whereBetween('transaction_time', [$fromDate, $toDate . ' 23:59:59'])
+                          ->orWhere(function($q2) use ($fromDate, $toDate) {
+                              $q2->whereNull('transaction_time')
+                                 ->whereBetween('created_at', [$fromDate, $toDate . ' 23:59:59']);
+                          });
+                    })
                     ->whereHas('trip.builty', fn($q) => $q->where('vehicle_id', $vehicle->id))
                     ->sum('amount');
                 $vehicle->adblue_expense = TripAdBlueDetail::whereBetween('date', [$fromDate, $toDate])
@@ -1819,7 +1831,13 @@ class ReportController extends Controller
         $tripCf = fn($q) => $q->when($companyId && $companyId !== 'all', fn($q) => $q->whereHas('trip.builty', fn($q) => $q->where('company_id', $companyId)));
 
         $tripFuelQuery = TripFuelDetail::whereBetween('date', [$fromDate, $toDate]); $tripCf($tripFuelQuery);
-        $tripFastTagQuery = TripFastTagDetail::whereBetween('transaction_time', [$fromDate, $toDate . ' 23:59:59']); $tripCf($tripFastTagQuery);
+        $tripFastTagQuery = TripFastTagDetail::where(function($q) use ($fromDate, $toDate) {
+            $q->whereBetween('transaction_time', [$fromDate, $toDate . ' 23:59:59'])
+              ->orWhere(function($q2) use ($fromDate, $toDate) {
+                  $q2->whereNull('transaction_time')
+                     ->whereBetween('created_at', [$fromDate, $toDate . ' 23:59:59']);
+              });
+        }); $tripCf($tripFastTagQuery);
         $tripAdBlueQuery = TripAdBlueDetail::whereBetween('date', [$fromDate, $toDate]); $tripCf($tripAdBlueQuery);
         $tripOtherQuery = TripOtherAmountDetail::whereBetween('date', [$fromDate, $toDate]); $tripCf($tripOtherQuery);
         $tripAdvanceQuery = TripAdvanceDetail::whereBetween('date', [$fromDate, $toDate]); $tripCf($tripAdvanceQuery);
@@ -1861,7 +1879,13 @@ class ReportController extends Controller
             ->when($request->filled('vehicle_id'), fn($q) => $q->where('id', $vehicleId))
             ->get()->map(function($v) use ($fromDate, $toDate) {
                 $v->fuel_expense = TripFuelDetail::whereBetween('date', [$fromDate, $toDate])->whereHas('trip.builty', fn($q) => $q->where('vehicle_id', $v->id))->sum('amount');
-                $v->fasttag_expense = TripFastTagDetail::whereBetween('transaction_time', [$fromDate, $toDate . ' 23:59:59'])->whereHas('trip.builty', fn($q) => $q->where('vehicle_id', $v->id))->sum('amount');
+                $v->fasttag_expense = TripFastTagDetail::where(function($q) use ($fromDate, $toDate) {
+                        $q->whereBetween('transaction_time', [$fromDate, $toDate . ' 23:59:59'])
+                          ->orWhere(function($q2) use ($fromDate, $toDate) {
+                              $q2->whereNull('transaction_time')
+                                 ->whereBetween('created_at', [$fromDate, $toDate . ' 23:59:59']);
+                          });
+                    })->whereHas('trip.builty', fn($q) => $q->where('vehicle_id', $v->id))->sum('amount');
                 $v->adblue_expense = TripAdBlueDetail::whereBetween('date', [$fromDate, $toDate])->whereHas('trip.builty', fn($q) => $q->where('vehicle_id', $v->id))->sum('amount');
                 $v->other_expense = TripOtherAmountDetail::whereBetween('date', [$fromDate, $toDate])->whereHas('trip.builty', fn($q) => $q->where('vehicle_id', $v->id))->sum('amount');
                 $v->advance_expense = TripAdvanceDetail::whereBetween('date', [$fromDate, $toDate])->whereHas('trip.builty', fn($q) => $q->where('vehicle_id', $v->id))->sum('advance_amount');
