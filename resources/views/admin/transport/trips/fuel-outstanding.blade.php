@@ -513,16 +513,10 @@
             $pumpSelect.val(selectedPump).trigger('change.select2');
         });
 
-        // Initialize select2 inside modal when it is shown
-        var modalSelect2Initialized = false;
-        $('#paymentModal').on('shown.bs.modal', function () {
-            if (!modalSelect2Initialized) {
-                $('.modal-select2').select2({
-                    dropdownParent: $('#paymentModal'),
-                    width: '100%'
-                });
-                modalSelect2Initialized = true;
-            }
+        // Initialize select2 inside modal
+        $('.modal-select2').select2({
+            dropdownParent: $('#paymentModal'),
+            width: '100%'
         });
 
         // Parse query params to auto-open specific tabs if requested
@@ -570,23 +564,28 @@
         $('#paymentModalTitle').text('Record Credit Payment');
         
         var filterComp = $('#filter_company_id').length ? $('#filter_company_id').val() : '';
-        if (filterComp) {
-            $('#pay_company_id').val(filterComp).trigger('change');
-        } else {
-            $('#pay_company_id').val('{{ session("current_company_id") != "all" ? session("current_company_id") : "" }}').trigger('change');
-        }
+        var targetCompany = filterComp ? filterComp : '{{ session("current_company_id") != "all" ? session("current_company_id") : "" }}';
 
-        $('#pay_fuel_company_id').val('').trigger('change');
-        $('#pay_fuel_pump_id').val('').trigger('change');
         $('#paymentModal').modal('show');
+
+        // Apply values after modal is shown and select2 dropdown Parent is rendered
+        setTimeout(function() {
+            $('.modal-select2').select2({
+                dropdownParent: $('#paymentModal'),
+                width: '100%'
+            });
+
+            $('#pay_company_id').val(targetCompany).trigger('change');
+            $('#pay_fuel_company_id').val('').trigger('change');
+            $('#pay_fuel_pump_id').val('').trigger('change');
+        }, 100);
     }
 
     function recordPaymentForPump(companyId, pumpId) {
         openPaymentModal();
-        $('#pay_fuel_company_id').val(companyId).trigger('change');
-        // Wait briefly for Select2 to sync, then load and set pump
+        // Wait for openPaymentModal timeout to complete initial setup
         setTimeout(function() {
-            // Fetch pumps for this company and select the pumpId
+            $('#pay_fuel_company_id').val(companyId).trigger('change');
             var $pumpSelect = $('#pay_fuel_pump_id');
             $.ajax({
                 url: "{{ url('admin/transport/trips/pumps-by-company') }}/" + companyId,
@@ -600,7 +599,7 @@
                     $pumpSelect.trigger('change');
                 }
             });
-        }, 300);
+        }, 200);
     }
 
     function viewLedgerForPump(companyId, pumpId) {
