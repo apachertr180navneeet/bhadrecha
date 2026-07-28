@@ -518,45 +518,117 @@
         }
         #toll-print-sheet {
             width: 100% !important;
-            min-height: calc(100vh - 6mm) !important;
             box-sizing: border-box;
             border: 1px solid #000 !important;
         }
         #toll-print-sheet * {
             color: #000 !important;
         }
-        /* Header section - full width */
-        #toll-print-sheet h2 {
-            font-size: 20px !important;
+        #toll-print-sheet > div:first-child {
+            padding: 2px !important;
         }
-        /* Meta table fills width */
+        .text-center.fw-bold[style*="font-size: 14px"] {
+            font-size: 11px !important;
+            padding: 2px !important;
+        }
+        .text-center.fw-bold[style*="font-size: 12px"] {
+            font-size: 10px !important;
+            padding: 3px !important;
+        }
         .table-meta {
             width: 100% !important;
         }
         .table-meta td {
-            padding: 4px 6px !important;
-            font-size: 11px !important;
+            padding: 2px 4px !important;
+            font-size: 8px !important;
         }
-        /* Toll table - full width, rows stretch */
         .table-responsive {
             overflow: visible !important;
             display: block !important;
         }
         .table-toll {
             width: 100% !important;
+            font-size: 7px !important;
         }
         .table-toll th, .table-toll td {
             border: 1px solid #000 !important;
-            padding: 4px 3px !important;
-            font-size: 10px !important;
+            padding: 1px 2px !important;
+            font-size: 7px !important;
             vertical-align: middle !important;
+            line-height: 1.2 !important;
         }
-        /* Bottom sections */
+        .table-toll th {
+            font-size: 7px !important;
+            padding: 2px 1px !important;
+        }
+        .table-toll select {
+            font-size: 7px !important;
+            padding: 0 !important;
+        }
+        .table-toll th[style*="font-size: 9px"],
+        .table-toll th[style*="font-size: 8px"] {
+            font-size: 7px !important;
+        }
+        #toll-print-sheet [style*="border-bottom: 1px solid #000; padding: 8px"] {
+            padding: 3px !important;
+            font-size: 8px !important;
+        }
+        #toll-print-sheet [style*="padding: 6px"][style*="font-weight: bold"][style*="font-size: 11px"] {
+            padding: 3px !important;
+            font-size: 8px !important;
+        }
         .col-8.p-2, .col-4.p-2 {
-            font-size: 10px !important;
+            font-size: 8px !important;
+            padding: 3px !important;
         }
         .col-4.p-2 {
-            min-height: 70px !important;
+            min-height: 50px !important;
+        }
+        .col-4.p-2 .fw-bold[style*="font-size: 11px"] {
+            font-size: 8px !important;
+        }
+        #toll-print-sheet [style*="background: #e6e6e6"][style*="border-top"][style*="padding: 5px"] {
+            padding: 3px !important;
+            font-size: 8px !important;
+        }
+        #toll-print-sheet [style*="border-bottom: 1px solid #000; padding: 4px"][style*="font-size: 11px"] {
+            padding: 1px !important;
+            font-size: 9px !important;
+        }
+        #toll-print-sheet [style*="padding: 4px"][style*="font-size: 14px"] {
+            font-size: 11px !important;
+            padding: 2px !important;
+        }
+        #toll-print-sheet [style*="padding: 6px"] {
+            padding: 2px !important;
+        }
+        #toll-print-sheet [style*="margin-top: 4px"] {
+            margin-top: 1px !important;
+        }
+        #toll-print-sheet [style*="margin-top: 2px"] {
+            margin-top: 1px !important;
+        }
+        #toll-print-sheet .fw-bold[style*="text-transform: uppercase"] {
+            font-size: 9px !important;
+        }
+        #toll-print-sheet [style*="border-bottom: 1px solid #000; padding: 4px; font-size: 11px"] {
+            padding: 1px !important;
+            font-size: 9px !important;
+        }
+        #toll-print-sheet [style*="border-top: 1px solid #000; padding: 8px"] {
+            padding: 3px !important;
+            font-size: 8px !important;
+        }
+        #toll-print-sheet [style*="border-top: 1px solid #000; padding: 6px"] {
+            padding: 2px !important;
+            font-size: 8px !important;
+        }
+        #toll-print-sheet .row.g-0 [class*="col-"] {
+            font-size: 8px !important;
+            padding: 2px !important;
+        }
+        #toll-print-sheet .row.g-0 [class*="col-"] .fw-bold[style*="11px"] {
+            font-size: 8px !important;
         }
         @page {
             size: A4 landscape;

@@ -1,22 +1,7 @@
 @extends('admin.layouts.app')
 
 @section('style')
-<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
 <style>
-    .select2-container--default .select2-selection--single {
-        height: calc(1.5em + .75rem + 2px);
-        border: 1px solid #d9dee3;
-        border-radius: var(--bs-border-radius);
-        font-size: .875rem;
-    }
-    .select2-container--default .select2-selection--single .select2-selection__rendered {
-        line-height: calc(1.5em + .75rem);
-        padding-left: .5rem;
-        color: #697a8d;
-    }
-    .select2-container--default .select2-selection--single .select2-selection__arrow {
-        height: calc(1.5em + .75rem);
-    }
     .metric-card {
         transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
@@ -141,7 +126,7 @@
                     @if(isset($companies) && count($companies) > 0)
                     <div class="col-md-3 col-sm-6">
                         <label class="form-label small fw-bold">Operating Company</label>
-                        <select name="company_id" id="filter_company_id" class="form-select select2">
+                        <select name="company_id" id="filter_company_id" class="form-select">
                             <option value="">All Operating Companies</option>
                             @foreach($companies as $comp)
                             <option value="{{ $comp->id }}" {{ request('company_id') == $comp->id ? 'selected' : '' }}>{{ $comp->name }}</option>
@@ -151,7 +136,7 @@
                     @endif
                     <div class="col-md-3 col-sm-6">
                         <label class="form-label small fw-bold">Fuel Company</label>
-                        <select name="fuel_company_id" id="filter_fuel_company_id" class="form-select select2">
+                        <select name="fuel_company_id" id="filter_fuel_company_id" class="form-select">
                             <option value="">All Companies</option>
                             @foreach($fuelCompanies as $company)
                             <option value="{{ $company->id }}" {{ request('fuel_company_id') == $company->id ? 'selected' : '' }}>{{ $company->name }}</option>
@@ -160,7 +145,7 @@
                     </div>
                     <div class="col-md-3 col-sm-6">
                         <label class="form-label small fw-bold">Fuel Pump</label>
-                        <select name="fuel_pump_id" id="filter_fuel_pump_id" class="form-select select2">
+                        <select name="fuel_pump_id" id="filter_fuel_pump_id" class="form-select">
                             <option value="">All Pumps</option>
                             @foreach($fuelPumps as $pump)
                             <option value="{{ $pump->id }}" {{ request('fuel_pump_id') == $pump->id ? 'selected' : '' }} data-company="{{ $pump->fuel_company_id }}">{{ $pump->name }}</option>
@@ -169,7 +154,7 @@
                     </div>
                     <div class="col-md-3 col-sm-6">
                         <label class="form-label small fw-bold">Truck (Vehicle)</label>
-                        <select name="vehicle_id" class="form-select select2">
+                        <select name="vehicle_id" class="form-select">
                             <option value="">All Trucks</option>
                             @foreach($vehicleList as $v)
                             <option value="{{ $v->id }}" {{ request('vehicle_id') == $v->id ? 'selected' : '' }}>{{ $v->vehicle_number }}</option>
@@ -425,7 +410,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Select Operating Company *</label>
-                        <select name="company_id" id="pay_company_id" class="form-select modal-select2" required>
+                        <select name="company_id" id="pay_company_id" class="form-select" required>
                             <option value="">Select Company</option>
                             @if(isset($companies))
                             @foreach($companies as $company)
@@ -440,7 +425,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Fuel Company *</label>
-                        <select name="fuel_company_id" id="pay_fuel_company_id" class="form-select modal-select2" required onchange="loadPumpsForModal(this.value)">
+                        <select name="fuel_company_id" id="pay_fuel_company_id" class="form-select" required onchange="loadPumpsForModal(this.value)">
                             <option value="">Select Company</option>
                             @foreach($fuelCompanies as $company)
                             <option value="{{ $company->id }}">{{ $company->name }}</option>
@@ -449,7 +434,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Fuel Pump *</label>
-                        <select name="fuel_pump_id" id="pay_fuel_pump_id" class="form-select modal-select2" required>
+                        <select name="fuel_pump_id" id="pay_fuel_pump_id" class="form-select" required>
                             <option value="">Select Pump</option>
                             @foreach($fuelPumps as $pump)
                             <option value="{{ $pump->id }}" data-company="{{ $pump->fuel_company_id }}">{{ $pump->name }}</option>
@@ -489,13 +474,8 @@
 @endsection
 
 @section('script')
-<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
 <script>
     $(document).ready(function() {
-        $('.select2').select2({
-            width: '100%'
-        });
-
         // Handle dynamic pumps filtering in the main form
         var allFilterPumps = $('#filter_fuel_pump_id option').clone();
         $('#filter_fuel_company_id').on('change', function() {
@@ -510,19 +490,12 @@
                     $pumpSelect.append($(this).clone());
                 }
             });
-            $pumpSelect.val(selectedPump).trigger('change.select2');
-        });
-
-        // Initialize select2 inside modal
-        $('.modal-select2').select2({
-            dropdownParent: $('#paymentModal'),
-            width: '100%'
+            $pumpSelect.val(selectedPump);
         });
 
         // Parse query params to auto-open specific tabs if requested
         var urlParams = new URLSearchParams(window.location.search);
         if (urlParams.has('fuel_company_id') || urlParams.has('fuel_pump_id') || urlParams.has('vehicle_id')) {
-            // Auto trigger ledger tab if filtered
             var triggerEl = document.querySelector('#ledger-tab');
             if (triggerEl) {
                 var tab = new bootstrap.Tab(triggerEl);
@@ -557,47 +530,42 @@
     };
 
     window.openPaymentModal = function() {
-        $('#paymentForm')[0].reset();
         $('#payment_id').val('');
         $('#payment_method_field').val('POST');
+        $('#pay_amount').val('');
+        $('#pay_method').val('Bank Transfer');
+        $('#pay_remark').val('');
         $('#paymentModalTitle').text('Record Credit Payment');
         
         var filterComp = $('#filter_company_id').length ? $('#filter_company_id').val() : '';
         var targetCompany = filterComp ? filterComp : '{{ session("current_company_id") != "all" ? session("current_company_id") : "" }}';
 
+        // Reset select2 selects properly
+        $('#pay_company_id').val('').trigger('change');
+        $('#pay_fuel_company_id').val('').trigger('change');
+        $('#pay_fuel_pump_id').empty().append('<option value="">Select Pump</option>').trigger('change');
+
         $('#paymentModal').modal('show');
 
-        // Apply values after modal is shown and select2 dropdown Parent is rendered
         setTimeout(function() {
-            $('.modal-select2').select2({
-                dropdownParent: $('#paymentModal'),
-                width: '100%'
-            });
-
-            $('#pay_company_id').val(targetCompany).trigger('change');
-            $('#pay_fuel_company_id').val('').trigger('change');
-            $('#pay_fuel_pump_id').val('').trigger('change');
+            if (targetCompany) {
+                $('#pay_company_id').val(targetCompany).trigger('change');
+            }
         }, 100);
     };
 
     window.recordPaymentForPump = function(companyId, pumpId) {
         openPaymentModal();
-        // Wait for openPaymentModal timeout to complete initial setup
         setTimeout(function() {
             $('#pay_fuel_company_id').val(companyId).trigger('change');
-            var $pumpSelect = $('#pay_fuel_pump_id');
-            $.ajax({
-                url: "{{ url('admin/transport/trips/pumps-by-company') }}/" + companyId,
-                type: 'GET',
-                success: function(data) {
-                    $pumpSelect.empty().append('<option value="">Select Pump</option>');
-                    $.each(data, function(index, pump) {
-                        var selected = (pump.id == pumpId) ? 'selected' : '';
-                        $pumpSelect.append('<option value="' + pump.id + '" ' + selected + '>' + pump.name + '</option>');
-                    });
-                    $pumpSelect.trigger('change');
+            // onchange -> loadPumpsForModal will load pumps, wait then select the right one
+            var checkPumps = setInterval(function() {
+                if ($('#pay_fuel_pump_id option').length > 1) {
+                    clearInterval(checkPumps);
+                    $('#pay_fuel_pump_id').val(pumpId).trigger('change');
                 }
-            });
+            }, 100);
+            setTimeout(function() { clearInterval(checkPumps); }, 5000);
         }, 200);
     }
 
@@ -670,27 +638,22 @@
                     $('#pay_company_id').val(payment.company_id).trigger('change');
                 }
 
-                // Set Company and Pump
+                // Set Company - triggers loadPumpsForModal via onchange
                 $('#pay_fuel_company_id').val(payment.fuel_company_id).trigger('change');
                 
-                // Load pumps dynamically then set the select value
-                var companyId = payment.fuel_company_id;
+                // Wait for pumps to load via onchange, then select the right pump
                 var pumpId = payment.fuel_pump_id;
-                var $pumpSelect = $('#pay_fuel_pump_id');
-                
-                $.ajax({
-                    url: "{{ url('admin/transport/trips/pumps-by-company') }}/" + companyId,
-                    type: 'GET',
-                    success: function(data) {
-                        $pumpSelect.empty().append('<option value="">Select Pump</option>');
-                        $.each(data, function(index, pump) {
-                            var selected = (pump.id == pumpId) ? 'selected' : '';
-                            $pumpSelect.append('<option value="' + pump.id + '" ' + selected + '>' + pump.name + '</option>');
-                        });
-                        $pumpSelect.trigger('change');
+                var checkPumps = setInterval(function() {
+                    if ($('#pay_fuel_pump_id option').length > 1) {
+                        clearInterval(checkPumps);
+                        $('#pay_fuel_pump_id').val(pumpId).trigger('change');
                         $('#paymentModal').modal('show');
                     }
-                });
+                }, 100);
+                setTimeout(function() {
+                    clearInterval(checkPumps);
+                    $('#paymentModal').modal('show');
+                }, 5000);
             },
             error: function() {
                 Swal.fire({ icon: 'error', title: 'Error', text: 'Could not fetch payment record.', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });

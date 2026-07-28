@@ -1,22 +1,7 @@
 @extends('admin.layouts.app')
 
 @section('style')
-<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
 <style>
-    .select2-container--default .select2-selection--single {
-        height: calc(1.5em + .75rem + 2px);
-        border: 1px solid #d9dee3;
-        border-radius: var(--bs-border-radius);
-        font-size: .875rem;
-    }
-    .select2-container--default .select2-selection--single .select2-selection__rendered {
-        line-height: calc(1.5em + .75rem);
-        padding-left: .5rem;
-        color: #697a8d;
-    }
-    .select2-container--default .select2-selection--single .select2-selection__arrow {
-        height: calc(1.5em + .75rem);
-    }
     .metric-card {
         transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
@@ -129,7 +114,7 @@
                     @if(isset($companies) && count($companies) > 0)
                     <div class="col-md-3 col-sm-6">
                         <label class="form-label small fw-bold">Operating Company</label>
-                        <select name="company_id" id="filter_company_id" class="form-select select2">
+                        <select name="company_id" id="filter_company_id" class="form-select">
                             <option value="">All Operating Companies</option>
                             @foreach($companies as $comp)
                             <option value="{{ $comp->id }}" {{ request('company_id') == $comp->id ? 'selected' : '' }}>{{ $comp->name }}</option>
@@ -139,7 +124,7 @@
                     @endif
                     <div class="col-md-3 col-sm-6">
                         <label class="form-label small fw-bold">AdBlue Company</label>
-                        <select name="adblue_company_id" id="filter_adblue_company_id" class="form-select select2">
+                        <select name="adblue_company_id" id="filter_adblue_company_id" class="form-select">
                             <option value="">All Companies</option>
                             @foreach($adblueCompanies as $company)
                             <option value="{{ $company->id }}" {{ request('adblue_company_id') == $company->id ? 'selected' : '' }}>{{ $company->name }}</option>
@@ -148,7 +133,7 @@
                     </div>
                     <div class="col-md-3 col-sm-6">
                         <label class="form-label small fw-bold">Truck (Vehicle)</label>
-                        <select name="vehicle_id" class="form-select select2">
+                        <select name="vehicle_id" class="form-select">
                             <option value="">All Trucks</option>
                             @foreach($vehicleList as $v)
                             <option value="{{ $v->id }}" {{ request('vehicle_id') == $v->id ? 'selected' : '' }}>{{ $v->vehicle_number }}</option>
@@ -399,7 +384,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Select Operating Company *</label>
-                        <select name="company_id" id="pay_company_id" class="form-select modal-select2" required>
+                        <select name="company_id" id="pay_company_id" class="form-select" required>
                             <option value="">Select Company</option>
                             @if(isset($companies))
                             @foreach($companies as $company)
@@ -414,7 +399,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">AdBlue Company *</label>
-                        <select name="adblue_company_id" id="pay_adblue_company_id" class="form-select modal-select2" required>
+                        <select name="adblue_company_id" id="pay_adblue_company_id" class="form-select" required>
                             <option value="">Select Company</option>
                             @foreach($adblueCompanies as $company)
                             <option value="{{ $company->id }}">{{ $company->name }}</option>
@@ -454,19 +439,7 @@
 @endsection
 
 @section('script')
-<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
 <script>
-    $(document).ready(function() {
-        $('.select2').select2({
-            width: '100%'
-        });
-
-        // Initialize select2 inside modal
-        $('.modal-select2').select2({
-            dropdownParent: $('#paymentModal'),
-            width: '100%'
-        });
-    });
 
     function openPaymentModal() {
         $('#payment_id').val('');
