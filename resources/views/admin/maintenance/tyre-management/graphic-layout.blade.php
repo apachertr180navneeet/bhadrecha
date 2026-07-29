@@ -84,17 +84,17 @@
             <!-- Left Side: Interactive Graphic Chassis Diagram (9 Left + 9 Right + 2 Spares = 20 Total) -->
             <div class="col-lg-8">
                 <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-dark text-white d-flex flex-wrap justify-content-between align-items-center py-2 gap-2">
-                        <div class="fw-bold fs-6">
-                            <i class="bx bx-truck me-2 text-info"></i> Heavy Truck Chassis Diagram (9 Left + 9 Right + 2 Spares): {{ $selectedVehicle->vehicle_number }}
+                    <div class="card-header d-flex flex-wrap justify-content-between align-items-center py-2 gap-2" style="background-color: #f8fafc !important; border-bottom: 1px solid #e2e8f0;">
+                        <div class="fw-bold fs-6 text-dark">
+                            <i class="bx bx-truck me-2 text-primary"></i> Heavy Truck Chassis Diagram (9 Left + 9 Right + 2 Spares): <span class="text-primary">{{ $selectedVehicle->vehicle_number }}</span>
                         </div>
                         <div class="d-flex align-items-center gap-3">
                             <div class="btn-group btn-group-sm" role="group" id="chassis-theme-selector">
-                                <button type="button" class="btn btn-outline-light active" data-theme="theme-dark-grid" title="Dark Technical Grid"><i class="bx bx-grid-alt me-1"></i> Dark Grid</button>
-                                <button type="button" class="btn btn-outline-light" data-theme="theme-blueprint-blue" title="Technical Blueprint Blue"><i class="bx bx-layer me-1"></i> Blueprint</button>
-                                <button type="button" class="btn btn-outline-light" data-theme="theme-light-studio" title="Light Workshop Grid"><i class="bx bx-sun me-1"></i> Light Studio</button>
+                                <button type="button" class="btn btn-outline-secondary active" onclick="setChassisTheme('theme-dark-grid')" data-theme="theme-dark-grid" title="Dark Technical Grid"><i class="bx bx-grid-alt me-1"></i> Dark Grid</button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="setChassisTheme('theme-blueprint-blue')" data-theme="theme-blueprint-blue" title="Technical Blueprint Blue"><i class="bx bx-layer me-1"></i> Blueprint</button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="setChassisTheme('theme-light-studio')" data-theme="theme-light-studio" title="Light Workshop Grid"><i class="bx bx-sun me-1"></i> Light Studio</button>
                             </div>
-                            <small class="text-light opacity-75 d-none d-xl-inline"><i class="bx bx-info-circle me-1"></i> Drag tyre cards to fit/swap</small>
+                            <small class="text-secondary fw-semibold d-none d-xl-inline"><i class="bx bx-info-circle me-1"></i> Drag tyre cards to fit/swap</small>
                         </div>
                     </div>
                     <div id="chassis-canvas-body" class="card-body p-4 overflow-auto position-relative theme-dark-grid" style="min-height: 680px;">
@@ -400,6 +400,25 @@
 </div>
 
 <style>
+/* Theme Selector Button Contrast Fix */
+#chassis-theme-selector .btn {
+    border: 1px solid #cbd5e1 !important;
+    color: #334155 !important;
+    background-color: #ffffff !important;
+    font-weight: 600;
+    opacity: 1 !important;
+}
+#chassis-theme-selector .btn.active {
+    background-color: #0f172a !important;
+    color: #ffffff !important;
+    border-color: #0f172a !important;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
+}
+#chassis-theme-selector .btn:hover:not(.active) {
+    background-color: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
 /* Canvas Background Themes & Styling */
 #chassis-canvas-body {
     transition: background 0.3s ease, color 0.3s ease;
@@ -640,28 +659,45 @@ function showToast(type, message) {
         if (el) el.remove();
     }, 4000);
 }
-$(document).ready(function() {
-    $('#vehicle_id').on('change', function() {
-        $('#vehicle-select-form').submit();
-    });
-
-    // Theme switcher logic
-    const savedTheme = localStorage.getItem('chassis_layout_theme') || 'theme-dark-grid';
-    applyTheme(savedTheme);
-
-    $('#chassis-theme-selector button').on('click', function() {
-        const theme = $(this).data('theme');
-        applyTheme(theme);
-        localStorage.setItem('chassis_layout_theme', theme);
-    });
-
-    function applyTheme(themeName) {
-        const canvas = $('#chassis-canvas-body');
-        canvas.removeClass('theme-dark-grid theme-blueprint-blue theme-light-studio').addClass(themeName);
-        
-        $('#chassis-theme-selector button').removeClass('active');
-        $(`#chassis-theme-selector button[data-theme="${themeName}"]`).addClass('active');
+function setChassisTheme(themeName) {
+    const canvas = document.getElementById('chassis-canvas-body');
+    if (canvas) {
+        canvas.classList.remove('theme-dark-grid', 'theme-blueprint-blue', 'theme-light-studio');
+        canvas.classList.add(themeName);
     }
+    const buttons = document.querySelectorAll('#chassis-theme-selector .btn');
+    buttons.forEach(btn => {
+        if (btn.getAttribute('data-theme') === themeName) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+    try {
+        localStorage.setItem('chassis_layout_theme', themeName);
+    } catch(e) {
+        console.error('LocalStorage error:', e);
+    }
+}
+window.setChassisTheme = setChassisTheme;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const vehicleSelect = document.getElementById('vehicle_id');
+    if (vehicleSelect) {
+        vehicleSelect.addEventListener('change', function() {
+            document.getElementById('vehicle-select-form')?.submit();
+        });
+    }
+
+    if (typeof jQuery !== 'undefined') {
+        jQuery('#vehicle_id').on('change', function() {
+            document.getElementById('vehicle-select-form')?.submit();
+        });
+    }
+
+    // Apply saved theme on page load
+    const savedTheme = localStorage.getItem('chassis_layout_theme') || 'theme-dark-grid';
+    setChassisTheme(savedTheme);
 });
 </script>
 @endsection
