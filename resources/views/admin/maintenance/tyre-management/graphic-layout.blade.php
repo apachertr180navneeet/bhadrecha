@@ -115,12 +115,12 @@
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <span class="badge bg-primary text-uppercase px-3 py-2 fs-6 shadow-sm"><i class="bx bx-truck me-1"></i> Side Elevation View - Container Semi Trailer Truck</span>
                                 
-                                <!-- Sub-tabs for Left Side vs Right Side Profile -->
-                                <div class="btn-group btn-group-sm" role="group" id="side-sub-tabs">
-                                    <button type="button" class="btn btn-outline-info active" onclick="setSideProfile('left')" id="btn-side-left">
+                                <!-- Sub-tabs for Left Side vs Right Side Profile (with gap spacing) -->
+                                <div class="d-flex gap-2" id="side-sub-tabs">
+                                    <button type="button" class="btn btn-sm btn-outline-info active rounded-pill px-3" onclick="setSideProfile('left')" id="btn-side-left">
                                         <i class="bx bx-left-arrow-alt me-1"></i> Left Side (L1 - L9)
                                     </button>
-                                    <button type="button" class="btn btn-outline-info" onclick="setSideProfile('right')" id="btn-side-right">
+                                    <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3" onclick="setSideProfile('right')" id="btn-side-right">
                                         <i class="bx bx-right-arrow-alt me-1"></i> Right Side (R1 - R9)
                                     </button>
                                 </div>
