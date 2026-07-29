@@ -85,8 +85,19 @@
             <div class="col-lg-8">
                 <div class="card border-0 shadow-sm">
                     <div class="card-header d-flex flex-wrap justify-content-between align-items-center py-2 gap-2" style="background-color: #f8fafc !important; border-bottom: 1px solid #e2e8f0;">
-                        <div class="fw-bold fs-6 text-dark">
-                            <i class="bx bx-truck me-2 text-primary"></i> Heavy Truck Chassis Diagram (9 Left + 9 Right + 2 Spares): <span class="text-primary">{{ $selectedVehicle->vehicle_number }}</span>
+                        <div class="d-flex align-items-center gap-2">
+                            <!-- View Selector Mode Tabs (with gap spacing) -->
+                            <div class="d-flex gap-2 me-2" id="layout-view-mode">
+                                <button type="button" class="btn btn-sm btn-primary active rounded-pill px-3" onclick="setLayoutView('top-down')" id="btn-view-top-down">
+                                    <i class="bx bx-layer me-1"></i> Top-Down Axle View
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="setLayoutView('side-view')" id="btn-view-side">
+                                    <i class="bx bx-truck me-1"></i> Side Elevation View
+                                </button>
+                            </div>
+                            <span class="fw-bold fs-6 text-dark d-none d-md-inline">
+                                Vehicle: <span class="text-primary">{{ $selectedVehicle->vehicle_number }}</span>
+                            </span>
                         </div>
                         <div class="d-flex align-items-center gap-3">
                             <div class="btn-group btn-group-sm" role="group" id="chassis-theme-selector">
@@ -99,14 +110,188 @@
                     </div>
                     <div id="chassis-canvas-body" class="card-body p-4 overflow-auto position-relative theme-dark-grid" style="min-height: 680px;">
                         
-                        <!-- Graphical Truck Diagram Wrapper -->
-                        <div class="truck-chassis-container mx-auto position-relative py-3" style="max-width: 740px;">
+                        <!-- VIEW 1: Side Elevation Container Truck Graphic View -->
+                        <div id="side-elevation-view-container" class="w-100 py-3 display-none" style="display: none;">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="badge bg-primary text-uppercase px-3 py-2 fs-6 shadow-sm"><i class="bx bx-truck me-1"></i> Side Elevation View - Container Semi Trailer Truck</span>
+                                
+                                <!-- Sub-tabs for Left Side vs Right Side Profile -->
+                                <div class="btn-group btn-group-sm" role="group" id="side-sub-tabs">
+                                    <button type="button" class="btn btn-outline-info active" onclick="setSideProfile('left')" id="btn-side-left">
+                                        <i class="bx bx-left-arrow-alt me-1"></i> Left Side (L1 - L9)
+                                    </button>
+                                    <button type="button" class="btn btn-outline-info" onclick="setSideProfile('right')" id="btn-side-right">
+                                        <i class="bx bx-right-arrow-alt me-1"></i> Right Side (R1 - R9)
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Vector Graphic Side Profile Trailer & Cab Banner -->
+                            <div class="position-relative mx-auto my-4 p-3 bg-dark rounded border border-secondary shadow-lg text-center" style="max-width: 760px; overflow: hidden; background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 240" class="w-100 h-auto" id="side-truck-svg" style="max-height: 200px;">
+                                    <defs>
+                                        <linearGradient id="cabGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stop-color="#f8fafc"/>
+                                            <stop offset="100%" stop-color="#cbd5e1"/>
+                                        </linearGradient>
+                                        <linearGradient id="containerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                            <stop offset="0%" stop-color="#ffffff"/>
+                                            <stop offset="100%" stop-color="#e2e8f0"/>
+                                        </linearGradient>
+                                    </defs>
+                                    <!-- Tractor Cab (Left Facing) -->
+                                    <g id="svg-cab-group">
+                                        <path d="M 20,180 L 20,80 Q 20,40 50,30 L 130,30 L 160,80 L 175,80 L 175,180 Z" fill="url(#cabGrad)" stroke="#475569" stroke-width="3"/>
+                                        <path d="M 45,42 L 120,42 L 145,80 L 45,80 Z" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/>
+                                        <rect x="15" y="150" width="160" height="25" fill="#334155" rx="3"/>
+                                    </g>
+                                    <!-- Containers -->
+                                    <rect x="195" y="40" width="330" height="120" fill="url(#containerGrad)" stroke="#94a3b8" stroke-width="3" rx="2"/>
+                                    <g stroke="#cbd5e1" stroke-width="2">
+                                        <line x1="220" y1="40" x2="220" y2="160"/><line x1="250" y1="40" x2="250" y2="160"/>
+                                        <line x1="280" y1="40" x2="280" y2="160"/><line x1="310" y1="40" x2="310" y2="160"/>
+                                        <line x1="340" y1="40" x2="340" y2="160"/><line x1="370" y1="40" x2="370" y2="160"/>
+                                        <line x1="400" y1="40" x2="400" y2="160"/><line x1="430" y1="40" x2="430" y2="160"/>
+                                        <line x1="460" y1="40" x2="460" y2="160"/><line x1="490" y1="40" x2="490" y2="160"/>
+                                    </g>
+                                    <rect x="535" y="40" width="345" height="120" fill="url(#containerGrad)" stroke="#94a3b8" stroke-width="3" rx="2"/>
+                                    <g stroke="#cbd5e1" stroke-width="2">
+                                        <line x1="560" y1="40" x2="560" y2="160"/><line x1="590" y1="40" x2="590" y2="160"/>
+                                        <line x1="620" y1="40" x2="620" y2="160"/><line x1="650" y1="40" x2="650" y2="160"/>
+                                        <line x1="680" y1="40" x2="680" y2="160"/><line x1="710" y1="40" x2="710" y2="160"/>
+                                        <line x1="740" y1="40" x2="740" y2="160"/><line x1="770" y1="40" x2="770" y2="160"/>
+                                        <line x1="800" y1="40" x2="800" y2="160"/><line x1="830" y1="40" x2="830" y2="160"/>
+                                    </g>
+                                    <rect x="170" y="160" width="710" height="20" fill="#334155"/>
+                                    <path d="M 370,180 L 375,210 L 385,210 L 390,180 Z" fill="#64748b"/>
+                                    <rect x="865" y="170" width="15" height="35" fill="#dc2626"/>
+                                </svg>
+                            </div>
+
+                            <!-- LEFT SIDE PROFILE SLOTS (L1 TO L9 + SP1) -->
+                            <div id="side-left-slots" class="row g-3 justify-content-center">
+                                <div class="col-6 col-md-4 col-lg-3">
+                                    <div class="text-center mb-1"><span class="badge bg-primary">Axle 1: Front Steer</span></div>
+                                    @include('admin.maintenance.tyre-management.partials.slot', ['slotCode' => 'L1', 'slotName' => 'Front Left (L1)', 'tyre' => $findTyre(['L1'])])
+                                </div>
+                                <div class="col-6 col-md-4 col-lg-3">
+                                    <div class="text-center mb-1"><span class="badge bg-dark border border-secondary">Axle 2: Left Outer</span></div>
+                                    @include('admin.maintenance.tyre-management.partials.slot', ['slotCode' => 'L2', 'slotName' => 'Left Outer 1 (L2)', 'tyre' => $findTyre(['L2'])])
+                                </div>
+                                <div class="col-6 col-md-4 col-lg-3">
+                                    <div class="text-center mb-1"><span class="badge bg-dark border border-secondary">Axle 2: Left Inner</span></div>
+                                    @include('admin.maintenance.tyre-management.partials.slot', ['slotCode' => 'L3', 'slotName' => 'Left Inner 1 (L3)', 'tyre' => $findTyre(['L3'])])
+                                </div>
+                                <div class="col-6 col-md-4 col-lg-3">
+                                    <div class="text-center mb-1"><span class="badge bg-dark border border-secondary">Axle 3: Left Outer</span></div>
+                                    @include('admin.maintenance.tyre-management.partials.slot', ['slotCode' => 'L4', 'slotName' => 'Left Outer 2 (L4)', 'tyre' => $findTyre(['L4'])])
+                                </div>
+                                <div class="col-6 col-md-4 col-lg-3">
+                                    <div class="text-center mb-1"><span class="badge bg-dark border border-secondary">Axle 3: Left Inner</span></div>
+                                    @include('admin.maintenance.tyre-management.partials.slot', ['slotCode' => 'L5', 'slotName' => 'Left Inner 2 (L5)', 'tyre' => $findTyre(['L5'])])
+                                </div>
+                                <div class="col-6 col-md-4 col-lg-3">
+                                    <div class="text-center mb-1"><span class="badge bg-secondary">Axle 4: Left Outer</span></div>
+                                    @include('admin.maintenance.tyre-management.partials.slot', ['slotCode' => 'L6', 'slotName' => 'Left Outer 3 (L6)', 'tyre' => $findTyre(['L6'])])
+                                </div>
+                                <div class="col-6 col-md-4 col-lg-3">
+                                    <div class="text-center mb-1"><span class="badge bg-secondary">Axle 4: Left Inner</span></div>
+                                    @include('admin.maintenance.tyre-management.partials.slot', ['slotCode' => 'L7', 'slotName' => 'Left Inner 3 (L7)', 'tyre' => $findTyre(['L7'])])
+                                </div>
+                                <div class="col-6 col-md-4 col-lg-3">
+                                    <div class="text-center mb-1"><span class="badge bg-secondary">Axle 5: Left Outer</span></div>
+                                    @include('admin.maintenance.tyre-management.partials.slot', ['slotCode' => 'L8', 'slotName' => 'Left Outer 4 (L8)', 'tyre' => $findTyre(['L8'])])
+                                </div>
+                                <div class="col-6 col-md-4 col-lg-3">
+                                    <div class="text-center mb-1"><span class="badge bg-secondary">Axle 5: Left Inner</span></div>
+                                    @include('admin.maintenance.tyre-management.partials.slot', ['slotCode' => 'L9', 'slotName' => 'Left Inner 4 (L9)', 'tyre' => $findTyre(['L9'])])
+                                </div>
+                                <div class="col-6 col-md-4 col-lg-3">
+                                    <div class="text-center mb-1"><span class="badge bg-warning text-dark">Spare Stepney</span></div>
+                                    @include('admin.maintenance.tyre-management.partials.slot', ['slotCode' => 'SP1', 'slotName' => 'Spare 1 (SP1)', 'tyre' => $findTyre(['SP1'])])
+                                </div>
+                            </div>
+
+                            <!-- RIGHT SIDE PROFILE SLOTS (R1 TO R9 + SP2) -->
+                            <div id="side-right-slots" class="row g-3 justify-content-center display-none" style="display: none;">
+                                <div class="col-6 col-md-4 col-lg-3">
+                                    <div class="text-center mb-1"><span class="badge bg-primary">Axle 1: Front Steer</span></div>
+                                    @include('admin.maintenance.tyre-management.partials.slot', ['slotCode' => 'R1', 'slotName' => 'Front Right (R1)', 'tyre' => $findTyre(['R1'])])
+                                </div>
+                                <div class="col-6 col-md-4 col-lg-3">
+                                    <div class="text-center mb-1"><span class="badge bg-dark border border-secondary">Axle 2: Right Inner</span></div>
+                                    @include('admin.maintenance.tyre-management.partials.slot', ['slotCode' => 'R3', 'slotName' => 'Right Inner 1 (R3)', 'tyre' => $findTyre(['R3'])])
+                                </div>
+                                <div class="col-6 col-md-4 col-lg-3">
+                                    <div class="text-center mb-1"><span class="badge bg-dark border border-secondary">Axle 2: Right Outer</span></div>
+                                    @include('admin.maintenance.tyre-management.partials.slot', ['slotCode' => 'R2', 'slotName' => 'Right Outer 1 (R2)', 'tyre' => $findTyre(['R2'])])
+                                </div>
+                                <div class="col-6 col-md-4 col-lg-3">
+                                    <div class="text-center mb-1"><span class="badge bg-dark border border-secondary">Axle 3: Right Inner</span></div>
+                                    @include('admin.maintenance.tyre-management.partials.slot', ['slotCode' => 'R5', 'slotName' => 'Right Inner 2 (R5)', 'tyre' => $findTyre(['R5'])])
+                                </div>
+                                <div class="col-6 col-md-4 col-lg-3">
+                                    <div class="text-center mb-1"><span class="badge bg-dark border border-secondary">Axle 3: Right Outer</span></div>
+                                    @include('admin.maintenance.tyre-management.partials.slot', ['slotCode' => 'R4', 'slotName' => 'Right Outer 2 (R4)', 'tyre' => $findTyre(['R4'])])
+                                </div>
+                                <div class="col-6 col-md-4 col-lg-3">
+                                    <div class="text-center mb-1"><span class="badge bg-secondary">Axle 4: Right Inner</span></div>
+                                    @include('admin.maintenance.tyre-management.partials.slot', ['slotCode' => 'R7', 'slotName' => 'Right Inner 3 (R7)', 'tyre' => $findTyre(['R7'])])
+                                </div>
+                                <div class="col-6 col-md-4 col-lg-3">
+                                    <div class="text-center mb-1"><span class="badge bg-secondary">Axle 4: Right Outer</span></div>
+                                    @include('admin.maintenance.tyre-management.partials.slot', ['slotCode' => 'R6', 'slotName' => 'Right Outer 3 (R6)', 'tyre' => $findTyre(['R6'])])
+                                </div>
+                                <div class="col-6 col-md-4 col-lg-3">
+                                    <div class="text-center mb-1"><span class="badge bg-secondary">Axle 5: Right Inner</span></div>
+                                    @include('admin.maintenance.tyre-management.partials.slot', ['slotCode' => 'R9', 'slotName' => 'Right Inner 4 (R9)', 'tyre' => $findTyre(['R9'])])
+                                </div>
+                                <div class="col-6 col-md-4 col-lg-3">
+                                    <div class="text-center mb-1"><span class="badge bg-secondary">Axle 5: Right Outer</span></div>
+                                    @include('admin.maintenance.tyre-management.partials.slot', ['slotCode' => 'R8', 'slotName' => 'Right Outer 4 (R8)', 'tyre' => $findTyre(['R8'])])
+                                </div>
+                                <div class="col-6 col-md-4 col-lg-3">
+                                    <div class="text-center mb-1"><span class="badge bg-warning text-dark">Spare Stepney</span></div>
+                                    @include('admin.maintenance.tyre-management.partials.slot', ['slotCode' => 'SP2', 'slotName' => 'Spare 2 (SP2)', 'tyre' => $findTyre(['SP2'])])
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- VIEW 2: Top-Down Chassis Detailed View -->
+                        <div id="top-down-view-container" class="truck-chassis-container mx-auto position-relative py-3" style="max-width: 740px;">
                             
-                            <!-- Front Cabin Graphic (Modernized Semi Truck Front Header) -->
-                            <div class="truck-cab text-center mb-5 p-3 rounded-top position-relative shadow-lg" style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%); border-bottom: 5px solid #38bdf8; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-                                <div class="fs-6 fw-bold text-uppercase tracking-wider text-white"><i class="bx bx-navigation me-1"></i> HEAVY TRUCK FRONT CABIN</div>
+                            <!-- Front Cabin Graphic (Realistic Semi Truck Top-Down Silhouette) -->
+                            <div class="truck-cab text-center mb-4 p-3 rounded-top position-relative shadow-lg" style="background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%); border-bottom: 5px solid #38bdf8;">
+                                <div class="position-relative mx-auto" style="max-width: 320px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 120" class="w-100 h-auto">
+                                        <defs>
+                                            <linearGradient id="topCabHood" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                <stop offset="0%" stop-color="#3b82f6"/>
+                                                <stop offset="100%" stop-color="#1d4ed8"/>
+                                            </linearGradient>
+                                            <linearGradient id="topGlass" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                <stop offset="0%" stop-color="#38bdf8"/>
+                                                <stop offset="100%" stop-color="#0284c7"/>
+                                            </linearGradient>
+                                        </defs>
+                                        <!-- Front Bumper & Bullbar -->
+                                        <rect x="50" y="5" width="220" height="14" rx="4" fill="#64748b" stroke="#cbd5e1" stroke-width="2"/>
+                                        <!-- Engine Hood -->
+                                        <path d="M 60,19 L 260,19 L 250,60 L 70,60 Z" fill="url(#topCabHood)" stroke="#60a5fa" stroke-width="2"/>
+                                        <!-- Front Windshield -->
+                                        <path d="M 80,63 L 240,63 L 230,85 L 90,85 Z" fill="url(#topGlass)" opacity="0.9"/>
+                                        <!-- Cabin Roof Shell -->
+                                        <rect x="70" y="88" width="180" height="28" rx="6" fill="#1e3a8a" stroke="#3b82f6" stroke-width="2"/>
+                                        <!-- Left Side Mirror -->
+                                        <rect x="25" y="45" width="22" height="10" rx="2" fill="#475569" stroke="#94a3b8"/>
+                                        <line x1="47" y1="50" x2="65" y2="50" stroke="#cbd5e1" stroke-width="3"/>
+                                        <!-- Right Side Mirror -->
+                                        <rect x="273" y="45" width="22" height="10" rx="2" fill="#475569" stroke="#94a3b8"/>
+                                        <line x1="273" y1="50" x2="255" y2="50" stroke="#cbd5e1" stroke-width="3"/>
+                                    </svg>
+                                </div>
+                                <div class="fs-6 fw-bold text-uppercase tracking-wider text-white mt-1"><i class="bx bx-navigation me-1"></i> HEAVY TRUCK FRONT CABIN</div>
                                 <div class="small text-light opacity-75">Driver Cockpit & Engine Compartment</div>
-                                <div class="position-absolute top-100 start-50 translate-middle-x rounded-bottom" style="width: 100px; height: 14px; background: linear-gradient(180deg, #334155 0%, #0f172a 100%);"></div>
                             </div>
 
                             <!-- Chassis Frame Centerline Rails (Twin Heavy Metallic Rails) -->
@@ -460,15 +645,38 @@
     color: #0f172a;
 }
 
-/* Centerline Heavy Metallic Frame Rails */
+/* Centerline Heavy Metallic Frame Rails with Mechanical Steel Crossmembers */
 .chassis-frame-rail {
-    width: 14px;
+    width: 16px;
     border-radius: 4px;
-    background: linear-gradient(90deg, #475569 0%, #cbd5e1 50%, #334155 100%);
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5), inset 0 0 4px rgba(255, 255, 255, 0.4);
+    background: linear-gradient(90deg, #1e293b 0%, #475569 25%, #cbd5e1 50%, #475569 75%, #0f172a 100%);
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.7), inset 0 0 4px rgba(255, 255, 255, 0.5), inset 0 0 8px rgba(0, 0, 0, 0.8);
+    position: relative;
+}
+.chassis-frame-rail::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 4px;
+    right: 4px;
+    background: repeating-linear-gradient(0deg, rgba(255,255,255,0.15), rgba(255,255,255,0.15) 2px, transparent 2px, transparent 30px);
 }
 
-/* Modern Heavy Truck Tyre Slot Styles */
+/* Steel Crossmember Bars connecting the dual frame rails */
+.chassis-frame::before {
+    content: '';
+    position: absolute;
+    top: 15%;
+    bottom: 15%;
+    left: 10px;
+    right: 10px;
+    background: repeating-linear-gradient(0deg, #334155, #334155 8px, transparent 8px, transparent 80px);
+    box-shadow: 0 0 4px rgba(0,0,0,0.5);
+    z-index: -1;
+}
+
+/* Modern Heavy Truck Tyre Slot & Mechanical Wheel Hub Styles */
 .tyre-slot {
     width: 124px;
     min-height: 145px;
@@ -478,30 +686,58 @@
     backdrop-filter: blur(8px);
 }
 
+/* Realistic Wheel Hub / Brake Drum Connector behind slots */
+.tyre-slot::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 38px;
+    background: linear-gradient(180deg, #475569 0%, #1e293b 50%, #475569 100%);
+    border: 1px solid #64748b;
+    border-radius: 4px;
+    z-index: 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+.tyre-slot[data-slot-code^="L"]::before {
+    right: -16px;
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+.tyre-slot[data-slot-code^="R"]::before {
+    left: -16px;
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+}
+.tyre-slot[data-slot-code^="SP"]::before {
+    display: none;
+}
+
 /* Dark Theme Slots */
 #chassis-canvas-body.theme-dark-grid .tyre-slot,
 #chassis-canvas-body.theme-blueprint-blue .tyre-slot {
-    background: rgba(15, 23, 42, 0.75);
-    border: 2px dashed rgba(148, 163, 184, 0.4);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    background: rgba(15, 23, 42, 0.85);
+    border: 2px dashed rgba(148, 163, 184, 0.45);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(0,0,0,0.3);
 }
 #chassis-canvas-body.theme-dark-grid .tyre-slot.occupied,
 #chassis-canvas-body.theme-blueprint-blue .tyre-slot.occupied {
-    background: rgba(30, 41, 59, 0.92);
+    background: rgba(30, 41, 59, 0.95);
     border: 2px solid #38bdf8;
-    box-shadow: 0 4px 15px rgba(56, 189, 248, 0.25);
+    box-shadow: 0 4px 18px rgba(56, 189, 248, 0.3), inset 0 0 8px rgba(56, 189, 248, 0.15);
 }
 
 /* Light Theme Slots */
 #chassis-canvas-body.theme-light-studio .tyre-slot {
-    background: rgba(255, 255, 255, 0.85);
-    border: 2px dashed #cbd5e1;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px dashed #94a3b8;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 #chassis-canvas-body.theme-light-studio .tyre-slot.occupied {
     background: #ffffff;
     border: 2px solid #2563eb;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2);
 }
 
 .tyre-slot.drag-over {
@@ -539,6 +775,51 @@
 let currentVehicleId = {{ $selectedVehicleId ?? 'null' }};
 let draggedTyreId = null;
 let draggedFromSlot = null;
+
+function setLayoutView(mode) {
+    const topDownContainer = document.getElementById('top-down-view-container');
+    const sideViewContainer = document.getElementById('side-elevation-view-container');
+    const btnTopDown = document.getElementById('btn-view-top-down');
+    const btnSide = document.getElementById('btn-view-side');
+
+    if (mode === 'side-view') {
+        topDownContainer.style.display = 'none';
+        sideViewContainer.style.display = 'block';
+        btnTopDown.classList.remove('btn-primary', 'active');
+        btnTopDown.classList.add('btn-outline-primary');
+        btnSide.classList.remove('btn-outline-primary');
+        btnSide.classList.add('btn-primary', 'active');
+    } else {
+        sideViewContainer.style.display = 'none';
+        topDownContainer.style.display = 'block';
+        btnSide.classList.remove('btn-primary', 'active');
+        btnSide.classList.add('btn-outline-primary');
+        btnTopDown.classList.remove('btn-outline-primary');
+        btnTopDown.classList.add('btn-primary', 'active');
+    }
+}
+
+function setSideProfile(side) {
+    const leftSlots = document.getElementById('side-left-slots');
+    const rightSlots = document.getElementById('side-right-slots');
+    const btnLeft = document.getElementById('btn-side-left');
+    const btnRight = document.getElementById('btn-side-right');
+    const truckSvg = document.getElementById('side-truck-svg');
+
+    if (side === 'right') {
+        leftSlots.style.display = 'none';
+        rightSlots.style.display = 'flex';
+        btnLeft.classList.remove('active');
+        btnRight.classList.add('active');
+        if (truckSvg) truckSvg.style.transform = 'scaleX(-1)';
+    } else {
+        rightSlots.style.display = 'none';
+        leftSlots.style.display = 'flex';
+        btnRight.classList.remove('active');
+        btnLeft.classList.add('active');
+        if (truckSvg) truckSvg.style.transform = 'scaleX(1)';
+    }
+}
 
 function handleDragStart(event, tyreId, slotCode) {
     draggedTyreId = tyreId;
