@@ -47,9 +47,10 @@
                                 <option value="L5" {{ old('tyre_position', $tyreManagement->tyre_position) == 'L5' ? 'selected' : '' }}>L5 - Drive 2 Left Inner</option>
                                 <option value="L6" {{ old('tyre_position', $tyreManagement->tyre_position) == 'L6' ? 'selected' : '' }}>L6 - Axle 4 Left Outer</option>
                                 <option value="L7" {{ old('tyre_position', $tyreManagement->tyre_position) == 'L7' ? 'selected' : '' }}>L7 - Axle 4 Left Inner</option>
-                                <option value="L8" {{ old('tyre_position', $tyreManagement->tyre_position) == 'L8' ? 'selected' : '' }}>L8 - Axle 5 Rear Left</option>
+                                <option value="L8" {{ old('tyre_position', $tyreManagement->tyre_position) == 'L8' ? 'selected' : '' }}>L8 - Axle 5 Rear Left 1</option>
+                                <option value="L9" {{ old('tyre_position', $tyreManagement->tyre_position) == 'L9' ? 'selected' : '' }}>L9 - Axle 6 Rear Left 2</option>
                             </optgroup>
-                            <optgroup label="Right Side (8 Slots)">
+                            <optgroup label="Right Side (9 Slots)">
                                 <option value="R1" {{ old('tyre_position', $tyreManagement->tyre_position) == 'R1' ? 'selected' : '' }}>R1 - Front Right (Steering)</option>
                                 <option value="R2" {{ old('tyre_position', $tyreManagement->tyre_position) == 'R2' ? 'selected' : '' }}>R2 - Drive 1 Right Outer</option>
                                 <option value="R3" {{ old('tyre_position', $tyreManagement->tyre_position) == 'R3' ? 'selected' : '' }}>R3 - Drive 1 Right Inner</option>
@@ -57,7 +58,8 @@
                                 <option value="R5" {{ old('tyre_position', $tyreManagement->tyre_position) == 'R5' ? 'selected' : '' }}>R5 - Drive 2 Right Inner</option>
                                 <option value="R6" {{ old('tyre_position', $tyreManagement->tyre_position) == 'R6' ? 'selected' : '' }}>R6 - Axle 4 Right Outer</option>
                                 <option value="R7" {{ old('tyre_position', $tyreManagement->tyre_position) == 'R7' ? 'selected' : '' }}>R7 - Axle 4 Right Inner</option>
-                                <option value="R8" {{ old('tyre_position', $tyreManagement->tyre_position) == 'R8' ? 'selected' : '' }}>R8 - Axle 5 Rear Right</option>
+                                <option value="R8" {{ old('tyre_position', $tyreManagement->tyre_position) == 'R8' ? 'selected' : '' }}>R8 - Axle 5 Rear Right 1</option>
+                                <option value="R9" {{ old('tyre_position', $tyreManagement->tyre_position) == 'R9' ? 'selected' : '' }}>R9 - Axle 6 Rear Right 2</option>
                             </optgroup>
                             <optgroup label="Spare Carriers (2 Slots)">
                                 <option value="SP1" {{ old('tyre_position', $tyreManagement->tyre_position) == 'SP1' ? 'selected' : '' }}>SP1 - Spare 1 (Stepney)</option>
