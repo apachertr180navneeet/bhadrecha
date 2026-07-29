@@ -84,28 +84,35 @@
             <!-- Left Side: Interactive Graphic Chassis Diagram (9 Left + 9 Right + 2 Spares = 20 Total) -->
             <div class="col-lg-8">
                 <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-2">
-                        <div class="fw-bold">
-                            <i class="bx bx-truck me-2"></i> Heavy Truck Chassis Diagram (9 Left + 9 Right + 2 Spares): {{ $selectedVehicle->vehicle_number }}
+                    <div class="card-header bg-dark text-white d-flex flex-wrap justify-content-between align-items-center py-2 gap-2">
+                        <div class="fw-bold fs-6">
+                            <i class="bx bx-truck me-2 text-info"></i> Heavy Truck Chassis Diagram (9 Left + 9 Right + 2 Spares): {{ $selectedVehicle->vehicle_number }}
                         </div>
-                        <small class="text-light"><i class="bx bx-info-circle me-1"></i> Drag tyre cards into slots to fit/swap positions</small>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="btn-group btn-group-sm" role="group" id="chassis-theme-selector">
+                                <button type="button" class="btn btn-outline-light active" data-theme="theme-dark-grid" title="Dark Technical Grid"><i class="bx bx-grid-alt me-1"></i> Dark Grid</button>
+                                <button type="button" class="btn btn-outline-light" data-theme="theme-blueprint-blue" title="Technical Blueprint Blue"><i class="bx bx-layer me-1"></i> Blueprint</button>
+                                <button type="button" class="btn btn-outline-light" data-theme="theme-light-studio" title="Light Workshop Grid"><i class="bx bx-sun me-1"></i> Light Studio</button>
+                            </div>
+                            <small class="text-light opacity-75 d-none d-xl-inline"><i class="bx bx-info-circle me-1"></i> Drag tyre cards to fit/swap</small>
+                        </div>
                     </div>
-                    <div class="card-body p-4 overflow-auto" style="min-height: 680px; background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);">
+                    <div id="chassis-canvas-body" class="card-body p-4 overflow-auto position-relative theme-dark-grid" style="min-height: 680px;">
                         
                         <!-- Graphical Truck Diagram Wrapper -->
                         <div class="truck-chassis-container mx-auto position-relative py-3" style="max-width: 740px;">
                             
                             <!-- Front Cabin Graphic (Modernized Semi Truck Front Header) -->
-                            <div class="truck-cab text-center mb-5 p-3 rounded-top position-relative shadow-lg" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); border-bottom: 6px solid #60a5fa;">
+                            <div class="truck-cab text-center mb-5 p-3 rounded-top position-relative shadow-lg" style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%); border-bottom: 5px solid #38bdf8; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
                                 <div class="fs-6 fw-bold text-uppercase tracking-wider text-white"><i class="bx bx-navigation me-1"></i> HEAVY TRUCK FRONT CABIN</div>
                                 <div class="small text-light opacity-75">Driver Cockpit & Engine Compartment</div>
-                                <div class="position-absolute top-100 start-50 translate-middle-x bg-secondary rounded-bottom" style="width: 100px; height: 14px;"></div>
+                                <div class="position-absolute top-100 start-50 translate-middle-x rounded-bottom" style="width: 100px; height: 14px; background: linear-gradient(180deg, #334155 0%, #0f172a 100%);"></div>
                             </div>
 
-                            <!-- Chassis Frame Centerline Rails (Twin Heavy Rails) -->
-                            <div class="chassis-frame position-absolute top-0 bottom-0 start-50 translate-middle-x opacity-25 d-flex justify-content-between" style="width: 130px; z-index: 0; pointer-events: none;">
-                                <div class="bg-light" style="width: 16px; border-radius: 4px; box-shadow: inset 0 0 5px rgba(0,0,0,0.5);"></div>
-                                <div class="bg-light" style="width: 16px; border-radius: 4px; box-shadow: inset 0 0 5px rgba(0,0,0,0.5);"></div>
+                            <!-- Chassis Frame Centerline Rails (Twin Heavy Metallic Rails) -->
+                            <div class="chassis-frame position-absolute top-0 bottom-0 start-50 translate-middle-x opacity-40 d-flex justify-content-between" style="width: 130px; z-index: 0; pointer-events: none;">
+                                <div class="chassis-frame-rail"></div>
+                                <div class="chassis-frame-rail"></div>
                             </div>
 
                             <!-- AXLE 1: FRONT STEERING AXLE (L1 / R1) -->
@@ -393,27 +400,96 @@
 </div>
 
 <style>
+/* Canvas Background Themes & Styling */
+#chassis-canvas-body {
+    transition: background 0.3s ease, color 0.3s ease;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+
+/* 1. Dark Technical Grid Theme (Default - Samsara / Modern Telematics style) */
+#chassis-canvas-body.theme-dark-grid {
+    background-color: #0b0f19;
+    background-image: 
+        radial-gradient(ellipse at 50% 40%, rgba(30, 58, 138, 0.35) 0%, transparent 75%),
+        radial-gradient(rgba(59, 130, 246, 0.15) 1px, transparent 1px),
+        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 100% 100%, 24px 24px, 24px 24px, 24px 24px;
+    color: #f8fafc;
+}
+
+/* 2. Technical Blueprint Blue Theme */
+#chassis-canvas-body.theme-blueprint-blue {
+    background-color: #091e36;
+    background-image: 
+        radial-gradient(ellipse at 50% 30%, rgba(56, 189, 248, 0.25) 0%, transparent 75%),
+        linear-gradient(to right, rgba(56, 189, 248, 0.12) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(56, 189, 248, 0.12) 1px, transparent 1px);
+    background-size: 100% 100%, 20px 20px, 20px 20px;
+    color: #e0f2fe;
+}
+
+/* 3. Soft Light Workshop Theme */
+#chassis-canvas-body.theme-light-studio {
+    background-color: #f1f5f9;
+    background-image: 
+        radial-gradient(ellipse at 50% 30%, rgba(224, 231, 255, 0.8) 0%, transparent 80%),
+        linear-gradient(to right, rgba(148, 163, 184, 0.18) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(148, 163, 184, 0.18) 1px, transparent 1px);
+    background-size: 100% 100%, 20px 20px, 20px 20px;
+    color: #0f172a;
+}
+
+/* Centerline Heavy Metallic Frame Rails */
+.chassis-frame-rail {
+    width: 14px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #475569 0%, #cbd5e1 50%, #334155 100%);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5), inset 0 0 4px rgba(255, 255, 255, 0.4);
+}
+
 /* Modern Heavy Truck Tyre Slot Styles */
 .tyre-slot {
-    width: 120px;
-    min-height: 140px;
-    background-color: #ffffff;
-    border: 2px dashed #94a3b8;
+    width: 124px;
+    min-height: 145px;
     border-radius: 12px;
     transition: all 0.25s ease-in-out;
     position: relative;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(8px);
 }
+
+/* Dark Theme Slots */
+#chassis-canvas-body.theme-dark-grid .tyre-slot,
+#chassis-canvas-body.theme-blueprint-blue .tyre-slot {
+    background: rgba(15, 23, 42, 0.75);
+    border: 2px dashed rgba(148, 163, 184, 0.4);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+#chassis-canvas-body.theme-dark-grid .tyre-slot.occupied,
+#chassis-canvas-body.theme-blueprint-blue .tyre-slot.occupied {
+    background: rgba(30, 41, 59, 0.92);
+    border: 2px solid #38bdf8;
+    box-shadow: 0 4px 15px rgba(56, 189, 248, 0.25);
+}
+
+/* Light Theme Slots */
+#chassis-canvas-body.theme-light-studio .tyre-slot {
+    background: rgba(255, 255, 255, 0.85);
+    border: 2px dashed #cbd5e1;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+}
+#chassis-canvas-body.theme-light-studio .tyre-slot.occupied {
+    background: #ffffff;
+    border: 2px solid #2563eb;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+}
+
 .tyre-slot.drag-over {
-    border-color: #3b82f6 !important;
-    background-color: #eff6ff !important;
+    border-color: #38bdf8 !important;
+    background-color: rgba(56, 189, 248, 0.25) !important;
     transform: scale(1.06);
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.6);
-}
-.tyre-slot.occupied {
-    border-style: solid;
-    border-color: #334155;
-    background-color: #f8fafc;
+    box-shadow: 0 0 25px rgba(56, 189, 248, 0.7) !important;
 }
 
 /* Draggable Tyre Card */
@@ -424,7 +500,7 @@
 }
 .tyre-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15) !important;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2) !important;
 }
 .tyre-card:active {
     cursor: grabbing;
@@ -568,6 +644,24 @@ $(document).ready(function() {
     $('#vehicle_id').on('change', function() {
         $('#vehicle-select-form').submit();
     });
+
+    // Theme switcher logic
+    const savedTheme = localStorage.getItem('chassis_layout_theme') || 'theme-dark-grid';
+    applyTheme(savedTheme);
+
+    $('#chassis-theme-selector button').on('click', function() {
+        const theme = $(this).data('theme');
+        applyTheme(theme);
+        localStorage.setItem('chassis_layout_theme', theme);
+    });
+
+    function applyTheme(themeName) {
+        const canvas = $('#chassis-canvas-body');
+        canvas.removeClass('theme-dark-grid theme-blueprint-blue theme-light-studio').addClass(themeName);
+        
+        $('#chassis-theme-selector button').removeClass('active');
+        $(`#chassis-theme-selector button[data-theme="${themeName}"]`).addClass('active');
+    }
 });
 </script>
 @endsection
