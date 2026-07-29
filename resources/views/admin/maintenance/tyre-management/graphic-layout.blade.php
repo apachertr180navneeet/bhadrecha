@@ -137,13 +137,6 @@
                                 </div>
                             </div>
 
-                            <!-- DISTANCE GAP BETWEEN AXLE 1 AND AXLE 2 (Wheelbase Space) -->
-                            <div class="wheelbase-gap my-5 position-relative d-flex justify-content-center align-items-center" style="z-index: 1;">
-                                <div class="px-3 py-2 rounded-pill bg-dark text-warning border border-warning shadow-sm small fw-semibold text-uppercase opacity-90">
-                                    <i class="bx bx-ruler me-1"></i> Front Chassis Wheelbase Gap (Axle 1 ↔ Axle 2)
-                                </div>
-                            </div>
-
                             <!-- AXLE 2: DRIVE AXLE 1 DUAL TYRES (L2, L3 / R3, R2) -->
                             <div class="axle-section mb-4 position-relative" style="z-index: 1;">
                                 <div class="text-center mb-2">
@@ -184,6 +177,13 @@
                                             'tyre' => $findTyre(['R2', 'ROR1', 'Rear Right Outer'])
                                         ])
                                     </div>
+                                </div>
+                            </div>
+
+                            <!-- DISTANCE GAP AFTER AXLE 2 (Wheelbase Space) -->
+                            <div class="wheelbase-gap my-5 position-relative d-flex justify-content-center align-items-center" style="z-index: 1;">
+                                <div class="px-3 py-2 rounded-pill bg-dark text-warning border border-warning shadow-sm small fw-semibold text-uppercase opacity-90">
+                                    <i class="bx bx-ruler me-1"></i> Chassis Wheelbase Gap (After Axle 2)
                                 </div>
                             </div>
 
@@ -273,61 +273,46 @@
                                 </div>
                             </div>
 
-                            <!-- AXLE 5: AUXILIARY REAR AXLE 1 (L8 / R8) -->
+                            <!-- AXLE 5: AUXILIARY REAR AXLE 1 DUAL TYRES (L8, L9 / R9, R8) -->
                             <div class="axle-section mb-4 position-relative" style="z-index: 1;">
                                 <div class="text-center mb-2">
-                                    <span class="badge bg-secondary text-uppercase px-3 py-1 shadow-sm">Axle 5: Auxiliary Rear Axle 1 (L8 / R8)</span>
+                                    <span class="badge bg-secondary text-uppercase px-3 py-1 shadow-sm">Axle 5: Auxiliary Rear Axle 1 (L8, L9 / R9, R8)</span>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center position-relative px-2">
-                                    <div class="position-absolute start-0 end-0 bg-dark" style="height: 12px; top: 50%; transform: translateY(-50%); z-index: 0;"></div>
+                                    <div class="position-absolute start-0 end-0 bg-dark" style="height: 14px; top: 50%; transform: translateY(-50%); z-index: 0;"></div>
 
-                                    <!-- Left Slot 8 (L8) -->
-                                    @include('admin.maintenance.tyre-management.partials.slot', [
-                                        'slotCode' => 'L8',
-                                        'slotName' => 'Rear Left 1 (L8)',
-                                        'tyre' => $findTyre(['L8', 'RL8'])
-                                    ])
+                                    <!-- Left Dual Pair (L8 Outer, L9 Inner) -->
+                                    <div class="d-flex gap-2 z-1">
+                                        @include('admin.maintenance.tyre-management.partials.slot', [
+                                            'slotCode' => 'L8',
+                                            'slotName' => 'Left Outer 4 (L8)',
+                                            'tyre' => $findTyre(['L8', 'RL8'])
+                                        ])
+                                        @include('admin.maintenance.tyre-management.partials.slot', [
+                                            'slotCode' => 'L9',
+                                            'slotName' => 'Left Inner 4 (L9)',
+                                            'tyre' => $findTyre(['L9', 'RL9'])
+                                        ])
+                                    </div>
 
                                     <!-- Center Axle Hub -->
                                     <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 42px; height: 42px; z-index: 1; border: 2px solid #ffffff;">
                                         A5
                                     </div>
 
-                                    <!-- Right Slot 8 (R8) -->
-                                    @include('admin.maintenance.tyre-management.partials.slot', [
-                                        'slotCode' => 'R8',
-                                        'slotName' => 'Rear Right 1 (R8)',
-                                        'tyre' => $findTyre(['R8', 'RR8'])
-                                    ])
-                                </div>
-                            </div>
-
-                            <!-- AXLE 6: AUXILIARY REAR AXLE 2 (L9 / R9) -->
-                            <div class="axle-section mb-4 position-relative" style="z-index: 1;">
-                                <div class="text-center mb-2">
-                                    <span class="badge bg-info text-dark text-uppercase px-3 py-1 shadow-sm fw-bold">Axle 6: Auxiliary Rear Axle 2 (L9 / R9)</span>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center position-relative px-2">
-                                    <div class="position-absolute start-0 end-0 bg-dark" style="height: 12px; top: 50%; transform: translateY(-50%); z-index: 0;"></div>
-
-                                    <!-- Left Slot 9 (L9) -->
-                                    @include('admin.maintenance.tyre-management.partials.slot', [
-                                        'slotCode' => 'L9',
-                                        'slotName' => 'Rear Left 2 (L9)',
-                                        'tyre' => $findTyre(['L9', 'RL9'])
-                                    ])
-
-                                    <!-- Center Axle Hub -->
-                                    <div class="bg-info text-dark rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 42px; height: 42px; z-index: 1; border: 2px solid #ffffff;">
-                                        A6
+                                    <!-- Right Dual Pair (R9 Inner, R8 Outer) -->
+                                    <div class="d-flex gap-2 z-1">
+                                        @include('admin.maintenance.tyre-management.partials.slot', [
+                                            'slotCode' => 'R9',
+                                            'slotName' => 'Right Inner 4 (R9)',
+                                            'tyre' => $findTyre(['R9', 'RR9'])
+                                        ])
+                                        @include('admin.maintenance.tyre-management.partials.slot', [
+                                            'slotCode' => 'R8',
+                                            'slotName' => 'Right Outer 4 (R8)',
+                                            'tyre' => $findTyre(['R8', 'RR8'])
+                                        ])
                                     </div>
-
-                                    <!-- Right Slot 9 (R9) -->
-                                    @include('admin.maintenance.tyre-management.partials.slot', [
-                                        'slotCode' => 'R9',
-                                        'slotName' => 'Rear Right 2 (R9)',
-                                        'tyre' => $findTyre(['R9', 'RR9'])
-                                    ])
                                 </div>
                             </div>
 
