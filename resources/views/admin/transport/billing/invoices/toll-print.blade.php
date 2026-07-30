@@ -70,10 +70,10 @@
         }
     }
 
-    $calculatedGst = floatval($invoice->total_gst) > 0 ? floatval($invoice->total_gst) : ($grandTollSum * ($gstRate / 100));
-    $cgstVal = floatval($invoice->cgst_amount) > 0 ? floatval($invoice->cgst_amount) : ($calculatedGst / 2);
-    $sgstVal = floatval($invoice->sgst_amount) > 0 ? floatval($invoice->sgst_amount) : ($calculatedGst / 2);
-    $igstVal = floatval($invoice->igst_amount) > 0 ? floatval($invoice->igst_amount) : $calculatedGst;
+    $calculatedGst = $grandTollSum * ($gstRate / 100);
+    $cgstVal = $calculatedGst / 2;
+    $sgstVal = $calculatedGst / 2;
+    $igstVal = $calculatedGst;
 
     $grandTotal = $grandTollSum + $calculatedGst;
     $amountInWords = \App\Http\Controllers\Admin\Transport\BillingController::convertNumberToWords($grandTotal);

@@ -712,6 +712,44 @@ class BillingController extends Controller
             }
         }
 
+        $targetInvoice->load(['tollDetails', 'bulties.trip.fastTagDetails', 'gstMaster', 'company']);
+        $grandTollSum = 0;
+        if ($targetInvoice->tollDetails->isNotEmpty()) {
+            $grandTollSum = floatval($targetInvoice->tollDetails->sum(function($d) {
+                return floatval($d->one_way) + floatval($d->return_amount);
+            }));
+        } else {
+            foreach ($targetInvoice->bulties as $bulty) {
+                if ($bulty->trip) {
+                    $grandTollSum += floatval($bulty->trip->fastTagDetails->sum('amount'));
+                }
+            }
+        }
+
+        $gstRate = $targetInvoice->gstMaster ? floatval($targetInvoice->gstMaster->percentage) : 18.00;
+        $calculatedGst = $grandTollSum * ($gstRate / 100);
+        $grandTotal = $grandTollSum + $calculatedGst;
+        $amountInWords = self::convertNumberToWords($grandTotal);
+
+        $firstBulty = $targetInvoice->bulties->first();
+        $originState = $targetInvoice->company && $targetInvoice->company->state ? $targetInvoice->company->state : ($firstBulty && $firstBulty->originCity ? ($firstBulty->originCity->state ?? 'RAJASTHAN') : 'RAJASTHAN');
+        $placeOfSupply = $targetInvoice->custom_place_of_supply ?: ($firstBulty && $firstBulty->destinationCity ? ($firstBulty->destinationCity->state ?? 'RAJASTHAN') : 'RAJASTHAN');
+        $isSameState = self::isSameGstState($originState, $placeOfSupply);
+
+        $cgstVal = $isSameState ? ($calculatedGst / 2) : 0;
+        $sgstVal = $isSameState ? ($calculatedGst / 2) : 0;
+        $igstVal = !$isSameState ? $calculatedGst : 0;
+
+        $targetInvoice->update([
+            'total_freight' => $grandTollSum,
+            'total_gst' => $calculatedGst,
+            'cgst_amount' => $cgstVal,
+            'sgst_amount' => $sgstVal,
+            'igst_amount' => $igstVal,
+            'total_amount' => $grandTotal,
+            'amount_in_words' => $amountInWords,
+        ]);
+
         return redirect()->route('admin.transport.toll-bills.index')
             ->with('success', 'Toll Bill ' . $targetInvoice->invoice_no . ' saved successfully.');
     }
