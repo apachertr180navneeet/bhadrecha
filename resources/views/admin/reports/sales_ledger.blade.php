@@ -209,7 +209,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Bill Number <span class="text-danger">*</span></label>
-                            <select name="invoice_id" id="invoice_id" class="form-select select2" required>
+                            <select name="invoice_id" id="invoice_id" class="form-select" required>
                                 <option value="">Select Bill Number</option>
                                 @foreach($allBills as $bill)
                                     @php
@@ -310,19 +310,12 @@
             }
         }
 
-        $('#receiveAmountModal').on('shown.bs.modal', function () {
-            $('#invoice_id').select2({
-                dropdownParent: $('#receiveAmountModal'),
-                width: '100%'
-            });
-        });
-
-        $(document).on('select2:select', '#invoice_id', function() {
+        $(document).on('change', '#invoice_id', function() {
             fetchInvoiceDetails($(this).val());
         });
 
         $('#receiveAmountModal').on('hidden.bs.modal', function () {
-            $('#invoice_id').val('').trigger('change');
+            $('#invoice_id').val('');
             $('#auto_bill_to').val('');
             $('#auto_company').val('');
             $('#auto_branch').val('');
