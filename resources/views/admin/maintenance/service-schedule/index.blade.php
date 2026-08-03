@@ -14,8 +14,12 @@
             </nav>
         </div>
         <div>
+            @if(auth()->user()->can('delete service schedules') || auth()->user()->isSuperAdmin())
             <a href="{{ route('admin.maintenance.service-schedule.trashed') }}" class="btn btn-outline-danger"><i class="bx bx-trash me-1"></i> Recycle Bin</a>
+            @endif
+            @if(auth()->user()->can('create service schedules') || auth()->user()->isSuperAdmin())
             <a href="{{ route('admin.maintenance.service-schedule.create') }}" class="btn btn-primary"><i class="bx bx-plus me-1"></i> New Schedule</a>
+            @endif
         </div>
     </div>
 
@@ -90,18 +94,24 @@
                             <span class="badge bg-label-{{ $badge[$schedule->status] ?? 'secondary' }}">{{ ucfirst($schedule->status) }}</span>
                         </td>
                         <td class="text-center text-nowrap">
+                            @if(auth()->user()->can('view service schedules') || auth()->user()->isSuperAdmin())
                             <a href="{{ route('admin.maintenance.service-schedule.show', $schedule) }}" class="btn btn-sm btn-icon btn-outline-info" title="View"><i class="bx bx-show"></i></a>
+                            @endif
+                            @if(auth()->user()->can('edit service schedules') || auth()->user()->isSuperAdmin())
                             <a href="{{ route('admin.maintenance.service-schedule.edit', $schedule) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
-                            @if($schedule->status !== 'completed')
+                            @endif
+                            @if($schedule->status !== 'completed' && (auth()->user()->can('mark service schedules completed') || auth()->user()->can('edit service schedules') || auth()->user()->isSuperAdmin()))
                             <form method="POST" action="{{ route('admin.maintenance.service-schedule.mark-completed', $schedule) }}" class="d-inline">
                                 @csrf
                                 <button type="submit" class="btn btn-sm btn-icon btn-outline-success" title="Mark Completed"><i class="bx bx-check"></i></button>
                             </form>
                             @endif
+                            @if(auth()->user()->can('delete service schedules') || auth()->user()->isSuperAdmin())
                             <form method="POST" action="{{ route('admin.maintenance.service-schedule.destroy', $schedule) }}" class="d-inline" onsubmit="return confirm('Delete this schedule?')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-icon btn-outline-danger" title="Delete"><i class="bx bx-trash"></i></button>
                             </form>
+                            @endif
                         </td>
                     </tr>
                     @empty

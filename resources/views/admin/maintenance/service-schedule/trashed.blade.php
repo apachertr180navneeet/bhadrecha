@@ -42,6 +42,7 @@
                         <td>{{ $schedule->service_type }}</td>
                         <td>{{ $schedule->deleted_at->format('d-m-Y h:i A') }}</td>
                         <td class="text-center text-nowrap">
+                            @if(auth()->user()->can('delete service schedules') || auth()->user()->isSuperAdmin())
                             <form method="POST" action="{{ route('admin.maintenance.service-schedule.restore', $schedule->id) }}" class="d-inline">
                                 @csrf
                                 <button type="submit" class="btn btn-sm btn-icon btn-outline-success" title="Restore"><i class="bx bx-refresh"></i></button>
@@ -50,6 +51,7 @@
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-icon btn-outline-danger" title="Delete Permanently"><i class="bx bx-trash"></i></button>
                             </form>
+                            @endif
                         </td>
                     </tr>
                     @empty

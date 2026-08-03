@@ -12,11 +12,28 @@ use Carbon\Carbon;
 
 class ServiceScheduleController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $schedules = ServiceSchedule::with('vehicle', 'branch')
-            ->latest()
-            ->paginate(15);
+        if (!auth()->user()->can('view service schedules') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $query = ServiceSchedule::with('vehicle', 'branch');
+
+        if ($request->filled('vehicle_id')) {
+            $query->where('vehicle_id', $request->vehicle_id);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where('service_type', 'like', "%{$search}%");
+        }
+
+        $schedules = $query->latest()->paginate(15);
 
         $vehicles = Vehicle::orderBy('vehicle_number')->get();
 
@@ -25,6 +42,10 @@ class ServiceScheduleController extends Controller
 
     public function create()
     {
+        if (!auth()->user()->can('create service schedules') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $vehicles = Vehicle::orderBy('vehicle_number')->get();
 
         return view('admin.maintenance.service-schedule.create', compact('vehicles'));
@@ -32,6 +53,10 @@ class ServiceScheduleController extends Controller
 
     public function store(Request $request)
     {
+        if (!auth()->user()->can('create service schedules') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $validated = $request->validate([
             'vehicle_id' => 'required|exists:vehicles,id',
             'service_type' => 'required|string|max:255',
@@ -71,6 +96,10 @@ class ServiceScheduleController extends Controller
 
     public function show(ServiceSchedule $serviceSchedule)
     {
+        if (!auth()->user()->can('view service schedules') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $serviceSchedule->load('vehicle', 'branch', 'company');
 
         return view('admin.maintenance.service-schedule.show', compact('serviceSchedule'));
@@ -78,6 +107,10 @@ class ServiceScheduleController extends Controller
 
     public function edit(ServiceSchedule $serviceSchedule)
     {
+        if (!auth()->user()->can('edit service schedules') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $vehicles = Vehicle::orderBy('vehicle_number')->get();
 
         return view('admin.maintenance.service-schedule.edit', compact('serviceSchedule', 'vehicles'));
@@ -85,6 +118,10 @@ class ServiceScheduleController extends Controller
 
     public function update(Request $request, ServiceSchedule $serviceSchedule)
     {
+        if (!auth()->user()->can('edit service schedules') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $validated = $request->validate([
             'vehicle_id' => 'required|exists:vehicles,id',
             'service_type' => 'required|string|max:255',
@@ -127,6 +164,10 @@ class ServiceScheduleController extends Controller
 
     public function destroy(ServiceSchedule $serviceSchedule)
     {
+        if (!auth()->user()->can('delete service schedules') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $serviceSchedule->delete();
 
         ActivityLog::log('service_schedule_deleted', "Service schedule deleted", $serviceSchedule);
@@ -137,6 +178,10 @@ class ServiceScheduleController extends Controller
 
     public function trashed()
     {
+        if (!auth()->user()->can('delete service schedules') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $schedules = ServiceSchedule::onlyTrashed()->with('vehicle')->latest()->paginate(15);
 
         return view('admin.maintenance.service-schedule.trashed', compact('schedules'));
@@ -144,6 +189,10 @@ class ServiceScheduleController extends Controller
 
     public function restore($id)
     {
+        if (!auth()->user()->can('delete service schedules') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $schedule = ServiceSchedule::onlyTrashed()->findOrFail($id);
         $schedule->restore();
 
@@ -155,6 +204,10 @@ class ServiceScheduleController extends Controller
 
     public function forceDelete($id)
     {
+        if (!auth()->user()->can('delete service schedules') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $schedule = ServiceSchedule::onlyTrashed()->findOrFail($id);
         $schedule->forceDelete();
 
@@ -166,6 +219,10 @@ class ServiceScheduleController extends Controller
 
     public function markCompleted(ServiceSchedule $serviceSchedule)
     {
+        if (!auth()->user()->can('mark service schedules completed') && !auth()->user()->can('edit service schedules') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $lastServiceDate = $serviceSchedule->scheduled_date ?? now()->toDateString();
         $lastServiceKm = $serviceSchedule->scheduled_km ?? $serviceSchedule->last_service_km;
 

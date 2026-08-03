@@ -15,7 +15,9 @@
             </nav>
         </div>
         <div>
+            @if(auth()->user()->can('edit service schedules') || auth()->user()->isSuperAdmin())
             <a href="{{ route('admin.maintenance.service-schedule.edit', $serviceSchedule) }}" class="btn btn-outline-primary"><i class="bx bx-edit me-1"></i> Edit</a>
+            @endif
             <a href="{{ route('admin.maintenance.service-schedule.index') }}" class="btn btn-outline-secondary"><i class="bx bx-arrow-back me-1"></i> Back</a>
         </div>
     </div>
