@@ -251,13 +251,17 @@
                             <label class="form-label">Receiving GST (₹)</label>
                             <input type="number" step="0.01" name="receiving_gst" class="form-control" value="0.00">
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">TDS (₹) <small class="text-muted">- Auto 1%</small></label>
-                            <input type="number" step="0.01" name="tds" id="auto_tds" class="form-control" value="0.00" readonly>
+                        <div class="col-md-3">
+                            <label class="form-label">TDS (%)</label>
+                            <input type="number" step="0.01" id="tds_percentage" class="form-control" value="1.00" placeholder="1.00">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">TDS Amount (₹)</label>
+                            <input type="number" step="0.01" name="tds" id="auto_tds" class="form-control" value="0.00" placeholder="0.00">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Deduction (₹)</label>
-                            <input type="number" step="0.01" name="deduction" class="form-control" value="0.00">
+                            <input type="number" step="0.01" name="deduction" id="modal_deduction" class="form-control" value="0.00">
                         </div>
                         <div class="col-md-12">
                             <label class="form-label">Deduction Reason</label>
@@ -279,6 +283,29 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
 <script>
     $(document).ready(function() {
+        var currentGrossBaseAmount = 0;
+
+        function calculateTdsFromPercentage() {
+            var deduction = parseFloat($('#modal_deduction').val()) || 0;
+            var baseAmount = currentGrossBaseAmount - deduction;
+            if (baseAmount < 0) baseAmount = 0;
+
+            var percentage = parseFloat($('#tds_percentage').val()) || 0;
+            var tdsAmount = (baseAmount * percentage) / 100;
+            $('#auto_tds').val(tdsAmount.toFixed(2));
+        }
+
+        function calculatePercentageFromTds() {
+            var deduction = parseFloat($('#modal_deduction').val()) || 0;
+            var baseAmount = currentGrossBaseAmount - deduction;
+            var tdsAmount = parseFloat($('#auto_tds').val()) || 0;
+
+            if (baseAmount > 0) {
+                var percentage = (tdsAmount / baseAmount) * 100;
+                $('#tds_percentage').val(percentage.toFixed(2));
+            }
+        }
+
         function fetchInvoiceDetails(invoiceId) {
             if(invoiceId) {
                 $.ajax({
@@ -291,7 +318,10 @@
                             $('#auto_branch').val(response.data.branch_name);
                             $('#auto_bill_amount').val('₹ ' + parseFloat(response.data.net_payable_amount).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
                             $('#auto_outstanding').val('₹ ' + parseFloat(response.data.outstanding_amount).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
-                            $('#auto_tds').val(response.data.auto_tds.toFixed(2));
+
+                            currentGrossBaseAmount = parseFloat(response.data.gross_base_amount) || 0;
+                            $('#tds_percentage').val('1.00');
+                            calculateTdsFromPercentage();
                         } else {
                             alert('Failed to fetch invoice details.');
                         }
@@ -301,11 +331,13 @@
                     }
                 });
             } else {
+                currentGrossBaseAmount = 0;
                 $('#auto_bill_to').val('');
                 $('#auto_company').val('');
                 $('#auto_branch').val('');
                 $('#auto_bill_amount').val('₹ 0.00');
                 $('#auto_outstanding').val('₹ 0.00');
+                $('#tds_percentage').val('1.00');
                 $('#auto_tds').val('0.00');
             }
         }
@@ -314,14 +346,29 @@
             fetchInvoiceDetails($(this).val());
         });
 
+        $(document).on('input change', '#tds_percentage', function() {
+            calculateTdsFromPercentage();
+        });
+
+        $(document).on('input change', '#auto_tds', function() {
+            calculatePercentageFromTds();
+        });
+
+        $(document).on('input change', '#modal_deduction', function() {
+            calculateTdsFromPercentage();
+        });
+
         $('#receiveAmountModal').on('hidden.bs.modal', function () {
+            currentGrossBaseAmount = 0;
             $('#invoice_id').val('');
             $('#auto_bill_to').val('');
             $('#auto_company').val('');
             $('#auto_branch').val('');
             $('#auto_bill_amount').val('₹ 0.00');
             $('#auto_outstanding').val('₹ 0.00');
+            $('#tds_percentage').val('1.00');
             $('#auto_tds').val('0.00');
+            $('#modal_deduction').val('0.00');
         });
     });
 </script>

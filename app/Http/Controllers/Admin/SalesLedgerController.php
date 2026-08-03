@@ -296,7 +296,8 @@ class SalesLedgerController extends Controller
         
         // Calculate base amount (before TDS) for auto TDS calculation
         $amountWithoutGst = $invoice->total_freight + $invoice->total_other;
-        $baseAmount = $amountWithoutGst + $invoice->total_gst - $invoice->deduction;
+        $grossBaseAmount = $amountWithoutGst + $invoice->total_gst;
+        $baseAmount = $grossBaseAmount - $invoice->deduction;
         $autoTds = round($baseAmount * 1 / 100, 2); // 1% TDS
         
         return response()->json([
@@ -310,6 +311,7 @@ class SalesLedgerController extends Controller
                 'total_gst' => $invoice->total_gst,
                 'existing_tds' => $invoice->tds,
                 'existing_deduction' => $invoice->deduction,
+                'gross_base_amount' => $grossBaseAmount,
                 'base_amount' => $baseAmount,
                 'auto_tds' => $autoTds,
                 'net_payable_amount' => $invoice->net_payable_amount,
@@ -336,11 +338,7 @@ class SalesLedgerController extends Controller
             $receivingAmount = $request->input('receiving_amount', 0);
             $receivingGst = $request->input('receiving_gst', 0);
             $deduction = $request->input('deduction', 0);
-
-            // Auto-calculate TDS as 1% of net payable (before TDS)
-            $amountWithoutGst = $invoice->total_freight + $invoice->total_other;
-            $baseAmount = $amountWithoutGst + $invoice->total_gst - $deduction;
-            $tds = round($baseAmount * 1 / 100, 2); // 1% TDS
+            $tds = $request->input('tds', 0);
 
             // Create history entry
             \App\Models\BillReceiving::create([
