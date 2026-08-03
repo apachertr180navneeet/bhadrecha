@@ -27,13 +27,26 @@
                     </div>
                 </div>
 
-                <label class="form-label fw-semibold mb-1">Permissions</label>
-                <div class="permissions-info mb-3">
-                    <div class="d-flex align-items-center gap-2 mb-2">
-                        <span class="badge bg-primary bg-opacity-10 text-primary">Module Matrix</span>
-                        <span class="text-muted small">Assign access by module and action for clearer control.</span>
+                <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-3">
+                    <div>
+                        <label class="form-label fw-semibold mb-1">Permissions</label>
+                        <div class="permissions-info">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="badge bg-primary bg-opacity-10 text-primary">Module Matrix</span>
+                                <span class="text-muted small">Assign access by module and action for clearer control.</span>
+                            </div>
+                            <div class="small">Use row selectors to grant all actions on a module, or choose actions individually.</div>
+                        </div>
                     </div>
-                    <div class="small">Use row selectors to grant all actions on a module, or choose actions individually.</div>
+                    <div style="min-width: 280px;" class="align-self-md-end mb-1">
+                        <div class="input-group input-group-merge shadow-sm">
+                            <span class="input-group-text bg-white"><i class="bx bx-search text-muted"></i></span>
+                            <input type="text" id="permission_search" class="form-control" placeholder="Search modules or permissions..." autocomplete="off">
+                            <button type="button" class="btn btn-outline-secondary d-none" id="clear_permission_search" title="Clear search">
+                                <i class="bx bx-x"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 @php
@@ -251,6 +264,54 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     updatePermissionState();
+
+    // Permission Search Filter
+    var searchInput = document.getElementById('permission_search');
+    var clearBtn = document.getElementById('clear_permission_search');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            var query = this.value.toLowerCase().trim();
+            if (clearBtn) {
+                clearBtn.classList.toggle('d-none', query === '');
+            }
+
+            var rows = document.querySelectorAll('.permissions-table tbody tr:not(#no_permission_match_row)');
+            var hasMatch = false;
+
+            rows.forEach(function(row) {
+                var text = row.textContent.toLowerCase();
+                var match = text.indexOf(query) !== -1;
+                row.style.display = match ? '' : 'none';
+                if (match) hasMatch = true;
+            });
+
+            var noMatchRow = document.getElementById('no_permission_match_row');
+            if (!hasMatch) {
+                if (!noMatchRow) {
+                    var tbody = document.querySelector('.permissions-table tbody');
+                    noMatchRow = document.createElement('tr');
+                    noMatchRow.id = 'no_permission_match_row';
+                    noMatchRow.innerHTML = '<td colspan="6" class="text-center py-4 text-muted"><i class="bx bx-search-alt-2 fs-3 d-block mb-1"></i>No modules matching "' + query + '"</td>';
+                    tbody.appendChild(noMatchRow);
+                } else {
+                    noMatchRow.querySelector('td').innerHTML = '<i class="bx bx-search-alt-2 fs-3 d-block mb-1"></i>No modules matching "' + query + '"';
+                    noMatchRow.style.display = '';
+                }
+            } else if (noMatchRow) {
+                noMatchRow.style.display = 'none';
+            }
+        });
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function() {
+            if (searchInput) {
+                searchInput.value = '';
+                searchInput.dispatchEvent(new Event('input'));
+                searchInput.focus();
+            }
+        });
+    }
 });
 </script>
 @endsection
