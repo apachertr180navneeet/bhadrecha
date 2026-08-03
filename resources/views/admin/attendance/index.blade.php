@@ -306,6 +306,7 @@
                         @endfor
                     </select>
                 </div>
+                @if(auth()->user()->isSuperAdmin() || auth()->user()->isCompanyAdmin())
                 <div class="col-md-3">
                     <label class="form-label fw-semibold text-muted small mb-1">Employee</label>
                     <select name="user_id" class="form-select form-select-sm">
@@ -315,6 +316,7 @@
                         @endforeach
                     </select>
                 </div>
+                @endif
                 <div class="col-md-2">
                     <button type="submit" class="btn btn-primary w-100 btn-sm"><i class="bx bx-filter-alt me-1"></i> Apply</button>
                 </div>
@@ -370,10 +372,12 @@
                                         <span class="fw-bold d-block text-dark">{{ $user->full_name }}</span>
                                         <small class="text-muted" style="font-size: 11px;">{{ $user->roles->first()?->name ?? 'N/A' }}</small>
                                     </div>
+                                    @if(auth()->user()->isSuperAdmin() || auth()->user()->isCompanyAdmin())
                                     <button type="button" class="btn mark-btn btn-sm" title="Mark Attendance"
                                         onclick="openMarkModal({{ $user->id }}, '{{ $user->full_name }}')">
                                         <i class="bx bx-edit" style="font-size: 14px;"></i>
                                     </button>
+                                    @endif
                                 </div>
                             </td>
                             <td><span style="font-size: 12px; color: #5d6778;">{{ $user->company?->name ?? '-' }}</span></td>

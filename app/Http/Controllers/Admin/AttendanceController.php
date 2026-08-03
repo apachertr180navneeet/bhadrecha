@@ -16,20 +16,31 @@ class AttendanceController extends Controller
         $year = $request->input('year', date('Y'));
         $employeeId = $request->input('user_id');
 
-        $users = User::with(['company:id,name', 'branch:id,name', 'roles'])
-            ->whereDoesntHave('roles', function ($q) {
-                $q->whereIn('name', ['Super Admin', 'Company Admin']);
+        $authUser = auth()->user();
+
+        $query = User::with(['company:id,name', 'branch:id,name', 'roles']);
+
+        if ($authUser->isSuperAdmin()) {
+            $query->whereDoesntHave('roles', function ($q) {
+                $q->whereIn('name', ['Super Admin']);
             });
-
-        if (!auth()->user()->isSuperAdmin()) {
-            $users->where('company_id', auth()->user()->company_id);
+            if ($request->filled('company_id')) {
+                $query->where('company_id', $request->company_id);
+            }
+        } elseif ($authUser->isCompanyAdmin()) {
+            $query->whereDoesntHave('roles', function ($q) {
+                $q->whereIn('name', ['Super Admin', 'Company Admin']);
+            })->where('company_id', $authUser->company_id);
+        } else {
+            // Regular user: can only see their own attendance
+            $query->where('id', $authUser->id);
         }
 
-        if ($employeeId) {
-            $users->where('id', $employeeId);
+        if ($employeeId && ($authUser->isSuperAdmin() || $authUser->isCompanyAdmin())) {
+            $query->where('id', $employeeId);
         }
 
-        $users = $users->orderBy('first_name')->get();
+        $users = $query->orderBy('first_name')->get();
 
         $daysInMonth = cal_days_in_month(CAL_GREGORIAN, intval($month), intval($year));
 
@@ -103,6 +114,11 @@ class AttendanceController extends Controller
 
     public function markAttendance(Request $request)
     {
+        $authUser = auth()->user();
+        if (!$authUser->isSuperAdmin() && !$authUser->isCompanyAdmin()) {
+            return back()->with('error', 'You are not authorized to mark attendance.');
+        }
+
         $request->validate([
             'user_id' => 'required|exists:users,id',
             'date' => "required|date|before_or_equal:9999-12-31",

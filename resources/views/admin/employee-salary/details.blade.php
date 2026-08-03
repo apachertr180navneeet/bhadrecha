@@ -4,13 +4,23 @@
 <style>
     /* Premium visual styles for Employee View Detail */
     .profile-banner-card {
-        border: none;
-        border-radius: 16px;
-        background: linear-gradient(135deg, #696cff 0%, #4f46e5 100%);
-        color: #ffffff;
+        border: none !important;
+        border-radius: 16px !important;
+        background: linear-gradient(135deg, #696cff 0%, #4f46e5 100%) !important;
+        background-color: #696cff !important;
+        color: #ffffff !important;
         overflow: hidden;
         position: relative;
-        box-shadow: 0 8px 24px rgba(105, 108, 255, 0.25);
+        box-shadow: 0 8px 24px rgba(105, 108, 255, 0.25) !important;
+    }
+    .profile-banner-card .card-body {
+        background: transparent !important;
+        background-color: transparent !important;
+    }
+    .profile-banner-card h4,
+    .profile-banner-card p,
+    .profile-banner-card i {
+        color: #ffffff !important;
     }
     .profile-banner-card::before {
         content: '';
@@ -32,10 +42,10 @@
         font-weight: 700;
         font-size: 32px;
         text-transform: uppercase;
-        border: 4px solid rgba(255, 255, 255, 0.2);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        background-color: rgba(255, 255, 255, 0.9);
-        color: #696cff;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        background-color: #ffffff !important;
+        color: #696cff !important;
     }
     .salary-summary-card {
         border: none;
@@ -128,9 +138,11 @@
                         </div>
                     </div>
                     <h4 class="fw-bold text-white mb-1">{{ $employee->full_name }}</h4>
-                    <span class="badge bg-label-light text-white mb-3" style="background-color: rgba(255,255,255,0.15)">
-                        {{ $role ? $role->name : 'Staff Member' }}
-                    </span>
+                    <div class="mb-3">
+                        <span class="badge px-3 py-2 text-white" style="background-color: rgba(255,255,255,0.2) !important; color: #ffffff !important; border: 1px solid rgba(255,255,255,0.3); border-radius: 20px;">
+                            {{ $role ? $role->name : 'Staff Member' }}
+                        </span>
+                    </div>
                     <p class="text-white opacity-75 mb-0 small">
                         <i class="bx bx-hash me-1"></i> EMP-{{ str_pad($employee->id, 4, '0', STR_PAD_LEFT) }}
                     </p>
