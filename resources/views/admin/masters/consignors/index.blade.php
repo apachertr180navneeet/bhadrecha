@@ -15,10 +15,18 @@
             </nav>
         </div>
         <div>
+            @canany(['create consignors', 'import consignors'])
             <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#importModal"><i class="bx bx-import me-1"></i> Import</button>
             <a href="{{ route('admin.masters.consignors.download-template') }}" class="btn btn-outline-secondary"><i class="bx bx-download me-1"></i> Template</a>
+            @endcanany
+
+            @can('delete consignors')
             <a href="{{ route('admin.masters.consignors.trashed') }}" class="btn btn-outline-danger"><i class="bx bx-trash me-1"></i> Recycle Bin </a>
+            @endcan
+
+            @can('create consignors')
             <a href="{{ route('admin.masters.consignors.create') }}" class="btn btn-primary"><i class="bx bx-plus me-1"></i> Add Consignor</a>
+            @endcan
         </div>
     </div>
 
@@ -61,12 +69,16 @@
                         @endif
                         <td class="text-nowrap"><span class="badge bg-label-{{ $consignor->status == 'active' ? 'success' : 'danger' }}">{{ ucfirst($consignor->status) }}</span></td>
                         <td class="text-center text-nowrap">
+                            @can('edit consignors')
                             <a href="{{ route('admin.masters.consignors.edit', $consignor->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
                             <a href="{{ route('admin.masters.consignors.transfer', $consignor->id) }}" class="btn btn-sm btn-icon btn-outline-info" title="Transfer"><i class="bx bx-transfer-alt"></i></a>
                             <form action="{{ route('admin.masters.consignors.toggle-status', $consignor->id) }}" method="POST" class="d-inline">@csrf
                                 <button type="submit" class="btn btn-sm btn-icon btn-outline-{{ $consignor->status == 'active' ? 'warning' : 'success' }}" title="{{ $consignor->status == 'active' ? 'Deactivate' : 'Activate' }}"><i class="bx bx-{{ $consignor->status == 'active' ? 'pause' : 'play' }}"></i></button>
                             </form>
+                            @endcan
+                            @can('delete consignors')
                             <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleDelete({{ $consignor->id }}, '{{ $consignor->name }}')" title="Delete"><i class="bx bx-trash"></i></button>
+                            @endcan
                         </td>
                     </tr>
                     @empty

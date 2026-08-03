@@ -14,8 +14,12 @@
             </nav>
         </div>
         <div>
+            @can('delete breakdowns')
             <a href="{{ route('admin.maintenance.breakdowns.trashed') }}" class="btn btn-outline-danger"><i class="bx bx-trash me-1"></i> Recycle Bin</a>
+            @endcan
+            @can('create breakdowns')
             <a href="{{ route('admin.maintenance.breakdowns.create') }}" class="btn btn-primary"><i class="bx bx-plus me-1"></i> Report Breakdown</a>
+            @endcan
         </div>
     </div>
 
@@ -110,17 +114,23 @@
                         </td>
                         <td class="text-center text-nowrap">
                             <a href="{{ route('admin.maintenance.breakdowns.show', $breakdown) }}" class="btn btn-sm btn-icon btn-outline-info" title="View"><i class="bx bx-show"></i></a>
+                            @can('edit breakdowns')
                             <a href="{{ route('admin.maintenance.breakdowns.edit', $breakdown) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
+                            @endcan
                             @if($breakdown->status !== 'resolved')
+                            @canany(['mark breakdowns resolved', 'edit breakdowns'])
                             <form method="POST" action="{{ route('admin.maintenance.breakdowns.mark-resolved', $breakdown) }}" class="d-inline">
                                 @csrf
                                 <button type="submit" class="btn btn-sm btn-icon btn-outline-success" title="Mark Resolved"><i class="bx bx-check"></i></button>
                             </form>
+                            @endcanany
                             @endif
+                            @can('delete breakdowns')
                             <form method="POST" action="{{ route('admin.maintenance.breakdowns.destroy', $breakdown) }}" class="d-inline" onsubmit="return confirm('Delete this breakdown record?')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-icon btn-outline-danger" title="Delete"><i class="bx bx-trash"></i></button>
                             </form>
+                            @endcan
                         </td>
                     </tr>
                     @empty

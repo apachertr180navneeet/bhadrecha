@@ -14,10 +14,18 @@
             </nav>
         </div>
         <div>
+            @canany(['create vendors', 'import vendors'])
             <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#importModal"><i class="bx bx-import me-1"></i> Import</button>
             <a href="{{ route('admin.masters.vendors.download-template') }}" class="btn btn-outline-secondary"><i class="bx bx-download me-1"></i> Template</a>
+            @endcanany
+
+            @can('delete vendors')
             <a href="{{ route('admin.masters.vendors.trashed') }}" class="btn btn-outline-danger"><i class="bx bx-trash me-1"></i> Recycle Bin</a>
+            @endcan
+
+            @can('create vendors')
             <a href="{{ route('admin.masters.vendors.create') }}" class="btn btn-primary"><i class="bx bx-plus me-1"></i> Add Vendor</a>
+            @endcan
         </div>
     </div>
 
@@ -75,6 +83,7 @@
                         <td>{{ $vendor->city ?? '-' }}</td>
                         <td><span class="badge bg-label-{{ $vendor->status == 'active' ? 'success' : 'danger' }}">{{ ucfirst($vendor->status) }}</span></td>
                         <td class="text-center text-nowrap">
+                            @can('edit vendors')
                             <a href="{{ route('admin.masters.vendors.edit', $vendor->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
                             <form action="{{ route('admin.masters.vendors.toggle-status', $vendor->id) }}" method="POST" class="d-inline">
                                 @csrf
@@ -82,7 +91,10 @@
                                     <i class="bx bx-{{ $vendor->status == 'active' ? 'pause' : 'play' }}"></i>
                                 </button>
                             </form>
+                            @endcan
+                            @can('delete vendors')
                             <button type="button" class="btn btn-sm btn-icon btn-outline-danger" title="Delete" onclick="handleDelete({{ $vendor->id }}, '{{ $vendor->name }}')"><i class="bx bx-trash"></i></button>
+                            @endcan
                         </td>
                     </tr>
                     @empty

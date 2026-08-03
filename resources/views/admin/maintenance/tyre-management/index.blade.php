@@ -14,9 +14,15 @@
             </nav>
         </div>
         <div>
+            @can('view tyre management')
             <a href="{{ route('admin.maintenance.tyre-management.layout') }}" class="btn btn-outline-primary"><i class="bx bx-grid-alt me-1"></i> Graphic Layout</a>
+            @endcan
+            @can('delete tyre management')
             <a href="{{ route('admin.maintenance.tyre-management.trashed') }}" class="btn btn-outline-danger"><i class="bx bx-trash me-1"></i> Recycle Bin</a>
+            @endcan
+            @can('create tyre management')
             <a href="{{ route('admin.maintenance.tyre-management.create') }}" class="btn btn-primary"><i class="bx bx-plus me-1"></i> New Tyre</a>
+            @endcan
         </div>
     </div>
 
@@ -93,11 +99,15 @@
                         </td>
                         <td class="text-center text-nowrap">
                             <a href="{{ route('admin.maintenance.tyre-management.show', $tyre) }}" class="btn btn-sm btn-icon btn-outline-info" title="View"><i class="bx bx-show"></i></a>
+                            @can('edit tyre management')
                             <a href="{{ route('admin.maintenance.tyre-management.edit', $tyre) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
+                            @endcan
+                            @can('delete tyre management')
                             <form method="POST" action="{{ route('admin.maintenance.tyre-management.destroy', $tyre) }}" class="d-inline" onsubmit="return confirm('Delete this tyre record?')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-icon btn-outline-danger" title="Delete"><i class="bx bx-trash"></i></button>
                             </form>
+                            @endcan
                         </td>
                     </tr>
                     @empty

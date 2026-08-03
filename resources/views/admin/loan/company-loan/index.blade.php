@@ -13,7 +13,9 @@
             </nav>
         </div>
         <div>
+            @can('create company loans')
             <a href="{{ route('admin.loan.company-loan.create') }}" class="btn btn-primary"><i class="bx bx-plus me-1"></i> Add Company Loan</a>
+            @endcan
         </div>
     </div>
 
@@ -94,13 +96,19 @@
                             <span class="badge bg-label-{{ $statusClass }}">{{ ucfirst($loan->status) }}</span>
                         </td>
                         <td class="text-center text-nowrap">
+                            @canany(['record company loan payments', 'edit company loans'])
                             <button type="button" class="btn btn-sm btn-icon btn-outline-success" onclick="showPayModal({{ $loan->id }}, '{{ $loan->loan_id }}', {{ $loan->emi_amount }})" title="Record Payment"><i class="bx bx-money"></i></button>
+                            @endcanany
                             <button type="button" class="btn btn-sm btn-icon btn-outline-info" onclick="showPayments({{ $loan->id }}, '{{ $loan->loan_id }}')" title="View Payments"><i class="bx bx-list-ul"></i></button>
+                            @can('edit company loans')
                             <a href="{{ route('admin.loan.company-loan.edit', $loan->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
                             <form action="{{ route('admin.loan.company-loan.toggle-status', $loan->id) }}" method="POST" class="d-inline">@csrf
                                 <button type="submit" class="btn btn-sm btn-icon btn-outline-{{ $loan->status == 'active' ? 'warning' : 'success' }}" title="Change Status"><i class="bx bx-{{ $loan->status == 'active' ? 'pause' : 'play' }}"></i></button>
                             </form>
+                            @endcan
+                            @can('delete company loans')
                             <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleDelete({{ $loan->id }}, '{{ $loan->loan_id }}')" title="Delete"><i class="bx bx-trash"></i></button>
+                            @endcan
                         </td>
                     </tr>
                     @empty

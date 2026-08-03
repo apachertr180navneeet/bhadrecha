@@ -15,11 +15,22 @@
             </nav>
         </div>
         <div>
+            @canany(['create drivers', 'import drivers'])
             <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#importModal"><i class="bx bx-import me-1"></i> Import</button>
-            <a href="{{ route('admin.masters.drivers.export') }}" class="btn btn-outline-success"><i class="bx bx-export me-1"></i> Export</a>
             <a href="{{ route('admin.masters.drivers.download-template') }}" class="btn btn-outline-secondary"><i class="bx bx-download me-1"></i> Template</a>
+            @endcanany
+
+            @canany(['view drivers', 'export drivers'])
+            <a href="{{ route('admin.masters.drivers.export') }}" class="btn btn-outline-success"><i class="bx bx-export me-1"></i> Export</a>
+            @endcanany
+
+            @can('delete drivers')
             <a href="{{ route('admin.masters.drivers.trashed') }}" class="btn btn-outline-danger"><i class="bx bx-trash me-1"></i> Recycle Bin </a>
+            @endcan
+
+            @can('create drivers')
             <a href="{{ route('admin.masters.drivers.create') }}" class="btn btn-primary"><i class="bx bx-plus me-1"></i> Add Driver</a>
+            @endcan
         </div>
     </div>
 
@@ -67,11 +78,15 @@
                             </span>
                         </td>
                         <td class="text-center text-nowrap">
+                            @can('edit drivers')
                             <a href="{{ route('admin.masters.drivers.edit', $driver->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
                             <form action="{{ route('admin.masters.drivers.toggle-status', $driver->id) }}" method="POST" class="d-inline">@csrf
                                 <button type="submit" class="btn btn-sm btn-icon btn-outline-{{ $driver->status == 'active' ? 'warning' : 'success' }}" title="{{ $driver->status == 'active' ? 'Deactivate' : 'Activate' }}"><i class="bx bx-{{ $driver->status == 'active' ? 'pause' : 'play' }}"></i></button>
                             </form>
+                            @endcan
+                            @can('delete drivers')
                             <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleDelete({{ $driver->id }}, '{{ $driver->name }}')" title="Delete"><i class="bx bx-trash"></i></button>
+                            @endcan
                         </td>
                     </tr>
                     @empty

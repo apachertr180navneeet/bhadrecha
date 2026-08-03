@@ -27,16 +27,22 @@
         </div>
 
         <div>
-
+            @canany(['create vehicles', 'import vehicles'])
             <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#importModal"><i class="bx bx-import me-1"></i> Import</button>
-
-            <a href="{{ route('admin.masters.vehicles.export') }}" class="btn btn-outline-success"><i class="bx bx-export me-1"></i> Export</a>
             <a href="{{ route('admin.masters.vehicles.download-template') }}" class="btn btn-outline-secondary"><i class="bx bx-download me-1"></i> Template</a>
+            @endcanany
 
+            @canany(['view vehicles', 'export vehicles'])
+            <a href="{{ route('admin.masters.vehicles.export') }}" class="btn btn-outline-success"><i class="bx bx-export me-1"></i> Export</a>
+            @endcanany
+
+            @can('delete vehicles')
             <a href="{{ route('admin.masters.vehicles.trashed') }}" class="btn btn-outline-danger"><i class="bx bx-trash me-1"></i> Recycle Bin </a>
+            @endcan
 
+            @can('create vehicles')
             <a href="{{ route('admin.masters.vehicles.create') }}" class="btn btn-primary"><i class="bx bx-plus me-1"></i> Add Vehicle</a>
-
+            @endcan
         </div>
 
     </div>
@@ -117,6 +123,7 @@
 
                         <td class="text-center text-nowrap">
 
+                            @can('edit vehicles')
                             <a href="{{ route('admin.masters.vehicles.edit', $vehicle->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
 
                             <form action="{{ route('admin.masters.vehicles.toggle-status', $vehicle->id) }}" method="POST" class="d-inline">@csrf
@@ -124,8 +131,11 @@
                                 <button type="submit" class="btn btn-sm btn-icon btn-outline-{{ $vehicle->status == 'active' ? 'warning' : 'success' }}" title="{{ $vehicle->status == 'active' ? 'Deactivate' : 'Activate' }}"><i class="bx bx-{{ $vehicle->status == 'active' ? 'pause' : 'play' }}"></i></button>
 
                             </form>
+                            @endcan
 
+                            @can('delete vehicles')
                             <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleDelete({{ $vehicle->id }}, '{{ $vehicle->vehicle_number }}')" title="Delete"><i class="bx bx-trash"></i></button>
+                            @endcan
 
                         </td>
 

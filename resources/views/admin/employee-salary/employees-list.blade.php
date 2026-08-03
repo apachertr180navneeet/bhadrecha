@@ -205,7 +205,7 @@
                         <th class="py-3">Company</th>
                         <th class="py-3">Branch</th>
                         <th class="py-3 text-end">Base Salary</th>
-                        @if(auth()->user()->isSuperAdmin() || auth()->user()->isCompanyAdmin())
+                        @if(auth()->user()->can('view employee salary') || auth()->user()->can('edit employee salary') || auth()->user()->isSuperAdmin() || auth()->user()->isCompanyAdmin())
                         <th class="py-3 text-center">Actions</th>
                         @endif
                     </tr>
@@ -231,15 +231,17 @@
                         <td><span class="badge bg-label-info">{{ $emp['company_name'] }}</span></td>
                         <td><span class="badge bg-label-secondary">{{ $emp['branch_name'] }}</span></td>
                         <td class="text-end fw-medium">₹{{ number_format($emp['base_salary'], 2) }}</td>
-                        @if(auth()->user()->isSuperAdmin() || auth()->user()->isCompanyAdmin())
+                        @if(auth()->user()->can('view employee salary') || auth()->user()->can('edit employee salary') || auth()->user()->isSuperAdmin() || auth()->user()->isCompanyAdmin() || auth()->id() == $emp['id'])
                         <td class="text-center">
                             <div class="d-flex justify-content-center gap-1">
                                 <a href="{{ route('admin.employee-salary.details', $emp['id']) }}" class="btn btn-sm btn-label-primary px-3 shadow-none border-0" title="View Details">
                                     <i class="bx bx-show"></i>
                                 </a>
+                                @can('edit employee salary')
                                 <button onclick="openSalaryModal({{ json_encode($emp) }})" class="btn btn-sm btn-label-success px-3 shadow-none border-0" type="button" title="Process Salary">
                                     <i class="bx bx-receipt"></i>
                                 </button>
+                                @endcan
                             </div>
                         </td>
                         @endif

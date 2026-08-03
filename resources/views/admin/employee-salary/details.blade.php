@@ -104,10 +104,10 @@
             </nav>
         </div>
         <div class="d-flex gap-2">
-            @if(auth()->user()->isSuperAdmin() || auth()->user()->isCompanyAdmin())
             <a href="{{ route('admin.employee-salary.employees-list') }}" class="btn btn-outline-secondary">
                 <i class="bx bx-chevron-left me-1"></i> Back to Directory
             </a>
+            @can('edit employee salary')
             <a href="{{ route('admin.employee-salary.revisions', $employee->id) }}" class="btn btn-info text-white">
                 <i class="bx bx-history me-1"></i> Revisions
             </a>
@@ -117,11 +117,7 @@
             <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#incentiveModal">
                 <i class="bx bx-gift me-1"></i> Incentive
             </button>
-            @else
-            <a href="{{ route('admin.dashboard') }}" class="btn btn-outline-secondary">
-                <i class="bx bx-chevron-left me-1"></i> Back to Dashboard
-            </a>
-            @endif
+            @endcan
         </div>
     </div>
 

@@ -11,12 +11,16 @@
             <p class="text-muted mb-0">Search, filter, view, download, and manage central company documents.</p>
         </div>
         <div class="d-flex gap-2">
+            @can('create documents')
             <a href="{{ route('admin.documents.create') }}" class="btn btn-primary">
                 <i class="bx bx-cloud-upload me-1"></i> Upload Document
             </a>
+            @endcan
+            @can('delete documents')
             <a href="{{ route('admin.documents.trash') }}" class="btn btn-outline-danger">
                 <i class="bx bx-trash me-1"></i> Trash
             </a>
+            @endcan
         </div>
     </div>
 

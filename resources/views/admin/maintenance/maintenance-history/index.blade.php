@@ -14,8 +14,12 @@
             </nav>
         </div>
         <div>
+            @can('delete maintenance history')
             <a href="{{ route('admin.maintenance.maintenance-history.trashed') }}" class="btn btn-outline-danger"><i class="bx bx-trash me-1"></i> Recycle Bin</a>
+            @endcan
+            @can('create maintenance history')
             <a href="{{ route('admin.maintenance.maintenance-history.create') }}" class="btn btn-primary"><i class="bx bx-plus me-1"></i> New Record</a>
+            @endcan
         </div>
     </div>
 
@@ -92,11 +96,15 @@
                         </td>
                         <td class="text-center text-nowrap">
                             <a href="{{ route('admin.maintenance.maintenance-history.show', $history) }}" class="btn btn-sm btn-icon btn-outline-info" title="View"><i class="bx bx-show"></i></a>
+                            @can('edit maintenance history')
                             <a href="{{ route('admin.maintenance.maintenance-history.edit', $history) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
+                            @endcan
+                            @can('delete maintenance history')
                             <form method="POST" action="{{ route('admin.maintenance.maintenance-history.destroy', $history) }}" class="d-inline" onsubmit="return confirm('Delete this record?')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-icon btn-outline-danger" title="Delete"><i class="bx bx-trash"></i></button>
                             </form>
+                            @endcan
                         </td>
                     </tr>
                     @empty
