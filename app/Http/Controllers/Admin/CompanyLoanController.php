@@ -14,6 +14,10 @@ class CompanyLoanController extends Controller
 {
     public function index(Request $request)
     {
+        if (!auth()->user()->can('view company loans') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $user = auth()->user();
         $query = CompanyLoan::with(['company', 'bank', 'branch', 'payments']);
 
@@ -47,6 +51,10 @@ class CompanyLoanController extends Controller
 
     public function create()
     {
+        if (!auth()->user()->can('create company loans') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $user = auth()->user();
         $banks = BankMaster::where('status', 'active')->orderBy('name')->get();
         $companies = $user->isSuperAdmin()
@@ -58,6 +66,10 @@ class CompanyLoanController extends Controller
 
     public function store(Request $request)
     {
+        if (!auth()->user()->can('create company loans') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $user = auth()->user();
         $validated = $request->validate([
             'company_id' => $user->isSuperAdmin() ? 'required|exists:companies,id' : 'nullable',
@@ -86,6 +98,10 @@ class CompanyLoanController extends Controller
 
     public function edit(CompanyLoan $companyLoan)
     {
+        if (!auth()->user()->can('edit company loans') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $user = auth()->user();
         $banks = BankMaster::where('status', 'active')->orderBy('name')->get();
         $companies = $user->isSuperAdmin()
@@ -97,6 +113,10 @@ class CompanyLoanController extends Controller
 
     public function update(Request $request, CompanyLoan $companyLoan)
     {
+        if (!auth()->user()->can('edit company loans') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $user = auth()->user();
         $validated = $request->validate([
             'company_id' => $user->isSuperAdmin() ? 'required|exists:companies,id' : 'nullable',
@@ -126,6 +146,10 @@ class CompanyLoanController extends Controller
 
     public function destroy(CompanyLoan $companyLoan)
     {
+        if (!auth()->user()->can('delete company loans') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $companyLoan->delete();
 
         return redirect()->route('admin.loan.company-loan.index')
@@ -134,6 +158,10 @@ class CompanyLoanController extends Controller
 
     public function toggleStatus(CompanyLoan $companyLoan)
     {
+        if (!auth()->user()->can('edit company loans') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $statuses = ['active', 'inactive', 'closed'];
         $currentIndex = array_search($companyLoan->status, $statuses);
         $companyLoan->status = $statuses[($currentIndex + 1) % count($statuses)];
@@ -155,6 +183,10 @@ class CompanyLoanController extends Controller
 
     public function recordPayment(Request $request, CompanyLoan $companyLoan)
     {
+        if (!auth()->user()->can('record company loan payments') && !auth()->user()->can('edit company loans') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0.01',
             'payment_date' => "required|date|before_or_equal:9999-12-31",
@@ -178,7 +210,11 @@ class CompanyLoanController extends Controller
 
     public function payments(CompanyLoan $companyLoan)
     {
-        $payments = $companyLoan->payments()->orderBy('payment_date', 'desc')->get();
+        if (!auth()->user()->can('view company loans') && !auth()->user()->isSuperAdmin()) {
+            return response()->json([], 403);
+        }
+
+        $payments = $companyLoan->payments()->latest('payment_date')->get();
         return response()->json($payments);
     }
 }

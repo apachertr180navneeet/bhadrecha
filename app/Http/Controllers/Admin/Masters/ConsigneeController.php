@@ -17,6 +17,10 @@ class ConsigneeController extends Controller
 {
     public function index(Request $request)
     {
+        if (!auth()->user()->can('view consignees') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $query = Consignee::with(['branch', 'company']);
 
         if ($request->filled('search')) {
@@ -38,12 +42,20 @@ class ConsigneeController extends Controller
 
     public function create()
     {
+        if (!auth()->user()->can('create consignees') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $branches = Branch::where('status', 'active')->get();
         return view('admin.masters.consignees.create', compact('branches'));
     }
 
     public function store(Request $request)
     {
+        if (!auth()->user()->can('create consignees') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $validated = $request->validate([
             'branch_id' => 'nullable|exists:branches,id',
             'name' => 'required|string|max:255',
@@ -79,12 +91,19 @@ class ConsigneeController extends Controller
 
     public function edit(Consignee $consignee)
     {
+        if (!auth()->user()->can('edit consignees') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $branches = Branch::where('status', 'active')->get();
         return view('admin.masters.consignees.edit', compact('consignee', 'branches'));
     }
 
     public function update(Request $request, Consignee $consignee)
     {
+        if (!auth()->user()->can('edit consignees') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
         $validated = $request->validate([
             'branch_id' => 'nullable|exists:branches,id',
             'name' => 'required|string|max:255',
@@ -109,34 +128,48 @@ class ConsigneeController extends Controller
 
     public function import(Request $request)
     {
+        if (!auth()->user()->can('create consignees') && !auth()->user()->can('import consignees') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $request->validate(['file' => 'required|mimes:xlsx,xls,csv']);
 
         $user = auth()->user();
-        $companyId = $user->isSuperAdmin()
-            ? $request->validate(['company_id' => 'required|exists:companies,id'])['company_id']
-            : $user->company_id;
+        $companyId = $request->company_id ?? ($user->isSuperAdmin() ? null : $user->company_id);
         $branchId = $request->branch_id ?? ($user->isSuperAdmin() ? null : $user->branch_id);
 
         $import = new ConsigneeImport($companyId, $branchId);
         try {
             Excel::import($import, $request->file('file'));
+
             $imported = $import->getImportedCount();
             $skipped = $import->getSkippedCount();
             $failures = $import->getFailures();
             $headings = $import->getHeadings();
 
             $message = "{$imported} consignee(s) imported successfully.";
-            if ($skipped > 0) $message .= " {$skipped} row(s) skipped (duplicate phone).";
-            if (!empty($failures)) {
-                $errs = [];
-                foreach ($failures as $f) $errs[] = "Row {$f->row()}: " . implode(', ', $f->errors());
-                $message .= ' Errors: ' . implode(' | ', array_slice($errs, 0, 5));
-                if (count($errs) > 5) $message .= ' ... and ' . (count($errs) - 5) . ' more.';
+            if ($skipped > 0) {
+                $message .= " {$skipped} row(s) skipped (missing data or duplicate phone/email).";
             }
-            if ($imported === 0 && $skipped === 0 && empty($failures))
-                $message .= ' No data found. Detected headers: ' . (!empty($headings) ? implode(', ', $headings) : 'none');
+
+            if (!empty($failures)) {
+                $errorMessages = [];
+                foreach ($failures as $failure) {
+                    $errorMessages[] = "Row {$failure->row()}: " . implode(', ', $failure->errors());
+                }
+                $message .= ' Validation errors: ' . implode(' | ', array_slice($errorMessages, 0, 5));
+                if (count($errorMessages) > 5) {
+                    $message .= ' ... and ' . (count($errorMessages) - 5) . ' more.';
+                }
+            }
+
+            if ($imported === 0 && $skipped === 0 && empty($failures)) {
+                $headingsStr = !empty($headings) ? ' Detected headers: ' . implode(', ', $headings) : ' No headers detected.';
+                $message .= ' Ensure your Excel file has data rows below the header row.' . $headingsStr;
+            }
 
             ActivityLog::log('consignees_imported', "Imported {$imported} consignees from Excel, {$skipped} skipped");
+
             return redirect()->route('admin.masters.consignees.index')->with('success', $message);
         } catch (\Exception $e) {
             return redirect()->route('admin.masters.consignees.index')->with('error', 'Import failed: ' . $e->getMessage());
@@ -145,12 +178,20 @@ class ConsigneeController extends Controller
 
     public function downloadTemplate()
     {
+        if (!auth()->user()->can('create consignees') && !auth()->user()->can('import consignees') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         ActivityLog::log('consignee_template_downloaded', 'Downloaded consignee import template');
         return Excel::download(new ConsigneeTemplateExport, 'consignee_import_template.xlsx');
     }
 
     public function transferForm(Consignee $consignee)
     {
+        if (!auth()->user()->can('edit consignees') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $companies = Company::where('status', 'active')->get();
         $branches = Branch::where('status', 'active')->get();
         return view('admin.masters.consignees.transfer', compact('consignee', 'companies', 'branches'));
@@ -158,6 +199,10 @@ class ConsigneeController extends Controller
 
     public function transfer(Request $request, Consignee $consignee)
     {
+        if (!auth()->user()->can('edit consignees') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $validated = $request->validate([
             'branch_id' => 'nullable|exists:branches,id',
         ]);
@@ -174,12 +219,20 @@ class ConsigneeController extends Controller
 
     public function trashed()
     {
+        if (!auth()->user()->can('delete consignees') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $consignees = Consignee::onlyTrashed()->with(['branch', 'company'])->paginate(15);
         return view('admin.masters.consignees.trashed', compact('consignees'));
     }
 
     public function restore($id)
     {
+        if (!auth()->user()->can('delete consignees') && !auth()->user()->can('restore consignees') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $consignee = Consignee::withTrashed()->findOrFail($id);
         $consignee->restore();
         ActivityLog::log('consignee_restored', "Restored consignee: {$consignee->name}");
@@ -188,6 +241,10 @@ class ConsigneeController extends Controller
 
     public function forceDelete($id)
     {
+        if (!auth()->user()->can('delete consignees') && !auth()->user()->can('force delete consignees') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $consignee = Consignee::withTrashed()->findOrFail($id);
         ActivityLog::log('consignee_force_deleted', "Force deleted consignee: {$consignee->name}");
         $consignee->forceDelete();
@@ -196,6 +253,10 @@ class ConsigneeController extends Controller
 
     public function destroy(Consignee $consignee)
     {
+        if (!auth()->user()->can('delete consignees') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $consignee->delete();
         ActivityLog::log('consignee_deleted', "Deleted consignee: {$consignee->name}");
         return redirect()->route('admin.masters.consignees.index')->with('success', 'Consignee deleted successfully.');
@@ -203,6 +264,10 @@ class ConsigneeController extends Controller
 
     public function toggleStatus(Consignee $consignee)
     {
+        if (!auth()->user()->can('edit consignees') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $consignee->status = $consignee->status === 'active' ? 'inactive' : 'active';
         $consignee->save();
         ActivityLog::log('consignee_status_changed', "Changed status of consignee: {$consignee->name}", $consignee);
@@ -211,6 +276,10 @@ class ConsigneeController extends Controller
 
     public function search(Request $request)
     {
+        if (!auth()->user()->can('view consignees') && !auth()->user()->isSuperAdmin()) {
+            return response()->json([], 403);
+        }
+
         $term = $request->term;
         $consignees = Consignee::where('name', 'like', "%{$term}%")
             ->orWhere('phone', 'like', "%{$term}%")
@@ -223,6 +292,9 @@ class ConsigneeController extends Controller
 
     public function quickStore(Request $request)
     {
+        if (!auth()->user()->can('create consignees') && !auth()->user()->isSuperAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'phone' => 'nullable|string|max:20',

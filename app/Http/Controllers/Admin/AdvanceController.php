@@ -98,7 +98,7 @@ class AdvanceController extends Controller
         $advance = EmployeeAdvance::with('user')->findOrFail($id);
         $current = auth()->user();
 
-        if ($current->isSuperAdmin()) {
+        if ($current->can('approve employee advances') || $current->isSuperAdmin()) {
             // ok
         } elseif ($current->isCompanyAdmin()) {
             if ($advance->user->company_id !== $current->company_id) {
@@ -126,7 +126,7 @@ class AdvanceController extends Controller
         $advance = EmployeeAdvance::with('user')->findOrFail($id);
         $current = auth()->user();
 
-        if ($current->isSuperAdmin()) {
+        if ($current->can('approve employee advances') || $current->isSuperAdmin()) {
             // ok
         } elseif ($current->isCompanyAdmin()) {
             if ($advance->user->company_id !== $current->company_id) {
@@ -154,7 +154,7 @@ class AdvanceController extends Controller
         $advance = EmployeeAdvance::findOrFail($id);
         $current = auth()->user();
 
-        if (!$current->isSuperAdmin() && !$current->isCompanyAdmin()) {
+        if (!$current->can('approve employee advances') && !$current->isSuperAdmin() && !$current->isCompanyAdmin()) {
             return back()->with('error', 'Unauthorized.');
         }
 

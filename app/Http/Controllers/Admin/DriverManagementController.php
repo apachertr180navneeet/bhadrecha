@@ -15,6 +15,10 @@ class DriverManagementController extends Controller
 {
     public function salaryManagement()
     {
+        if (!auth()->user()->can('view driver salary') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $drivers = Driver::where('status', 'active')->orderBy('name')->get();
         $salaries = DriverSalary::with('driver')->latest()->get();
         $editSalary = null;
@@ -24,6 +28,10 @@ class DriverManagementController extends Controller
 
     public function storeSalary(Request $request)
     {
+        if (!auth()->user()->can('create driver salary') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $validated = $request->validate([
             'driver_id' => 'required|exists:drivers,id',
             'salary_amount' => 'required|numeric|min:0',
@@ -39,6 +47,10 @@ class DriverManagementController extends Controller
 
     public function editSalary(DriverSalary $salary)
     {
+        if (!auth()->user()->can('edit driver salary') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $drivers = Driver::where('status', 'active')->orderBy('name')->get();
         $salaries = DriverSalary::with('driver')->latest()->get();
         $editSalary = $salary;
@@ -48,6 +60,10 @@ class DriverManagementController extends Controller
 
     public function updateSalary(Request $request, DriverSalary $salary)
     {
+        if (!auth()->user()->can('edit driver salary') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $validated = $request->validate([
             'driver_id' => 'required|exists:drivers,id',
             'salary_amount' => 'required|numeric|min:0',
@@ -63,6 +79,10 @@ class DriverManagementController extends Controller
 
     public function advanceManagement()
     {
+        if (!auth()->user()->can('view driver advances') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $drivers = Driver::where('status', 'active')->orderBy('name')->get();
         $advances = DriverAdvance::with('driver')->latest()->get();
         $editAdvance = null;
@@ -93,6 +113,10 @@ class DriverManagementController extends Controller
 
     public function storeAdvance(Request $request)
     {
+        if (!auth()->user()->can('create driver advances') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $validated = $request->validate([
             'driver_id' => 'required|exists:drivers,id',
             'amount' => 'required|numeric|min:0',
@@ -110,6 +134,10 @@ class DriverManagementController extends Controller
 
     public function editAdvance(DriverAdvance $advance)
     {
+        if (!auth()->user()->can('edit driver advances') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $drivers = Driver::where('status', 'active')->orderBy('name')->get();
         $advances = DriverAdvance::with('driver')->latest()->get();
         $editAdvance = $advance;
@@ -140,6 +168,10 @@ class DriverManagementController extends Controller
 
     public function updateAdvance(Request $request, DriverAdvance $advance)
     {
+        if (!auth()->user()->can('edit driver advances') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $validated = $request->validate([
             'driver_id' => 'required|exists:drivers,id',
             'amount' => 'required|numeric|min:0',
@@ -157,6 +189,10 @@ class DriverManagementController extends Controller
 
     public function destroyAdvance(DriverAdvance $advance)
     {
+        if (!auth()->user()->can('delete driver advances') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $advance->delete();
 
         return redirect()->route('admin.driver-management.advance')
@@ -165,6 +201,10 @@ class DriverManagementController extends Controller
 
     public function salarySlip(Request $request)
     {
+        if (!auth()->user()->can('view driver salary slips') && !auth()->user()->can('generate driver salary slips') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $drivers = Driver::where('status', 'active')->orderBy('name')->get();
         $month = (int) $request->input('month', now()->month);
         $year = (int) $request->input('year', now()->year);
@@ -291,6 +331,10 @@ class DriverManagementController extends Controller
 
     public function destroySalarySlip(SalarySlip $salarySlip)
     {
+        if (!auth()->user()->can('delete driver salary slips') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $salarySlip->delete();
 
         return redirect()->route('admin.driver-management.salary-slip')
@@ -299,6 +343,10 @@ class DriverManagementController extends Controller
 
     public function salarySlipList()
     {
+        if (!auth()->user()->can('view driver salary slips') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $slips = SalarySlip::with('driver')->latest('year')->latest('month')->get();
 
         return view('admin.driver-management.salary-slip-list', compact('slips'));

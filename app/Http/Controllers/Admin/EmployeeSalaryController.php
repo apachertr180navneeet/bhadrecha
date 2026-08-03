@@ -17,7 +17,7 @@ class EmployeeSalaryController extends Controller
 {
     public function index(Request $request)
     {
-        if (!auth()->user()->isSuperAdmin() && !auth()->user()->isCompanyAdmin()) {
+        if (!auth()->user()->can('view employee salary') && !auth()->user()->isSuperAdmin() && !auth()->user()->isCompanyAdmin()) {
             return redirect()->route('admin.employee-salary.details', auth()->id());
         }
 
@@ -161,6 +161,10 @@ class EmployeeSalaryController extends Controller
 
     public function details($id)
     {
+        if (intval($id) !== auth()->id() && !auth()->user()->can('view employee salary') && !auth()->user()->isSuperAdmin() && !auth()->user()->isCompanyAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $employee = User::with(['company', 'branch', 'roles', 'salary'])->findOrFail($id);
         $role = $employee->roles->first();
         $salaryPayments = SalaryPayment::where('user_id', $id)
@@ -172,6 +176,10 @@ class EmployeeSalaryController extends Controller
 
     public function editStructure($id)
     {
+        if (!auth()->user()->can('edit employee salary') && !auth()->user()->isSuperAdmin() && !auth()->user()->isCompanyAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $employee = User::with(['company', 'branch', 'roles', 'salary'])->findOrFail($id);
         $role = $employee->roles->first();
         return view('admin.employee-salary.edit-structure', compact('employee', 'role'));
@@ -179,6 +187,10 @@ class EmployeeSalaryController extends Controller
 
     public function updateStructure(Request $request, $id)
     {
+        if (!auth()->user()->can('edit employee salary') && !auth()->user()->isSuperAdmin() && !auth()->user()->isCompanyAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $employee = User::findOrFail($id);
 
         $request->validate([
@@ -228,6 +240,10 @@ class EmployeeSalaryController extends Controller
 
     public function revisions($id)
     {
+        if (intval($id) !== auth()->id() && !auth()->user()->can('view employee salary') && !auth()->user()->isSuperAdmin() && !auth()->user()->isCompanyAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $employee = User::with(['company', 'branch', 'roles', 'salary'])->findOrFail($id);
         $role = $employee->roles->first();
         $revisions = SalaryRevision::where('user_id', $id)
@@ -240,6 +256,10 @@ class EmployeeSalaryController extends Controller
 
     public function applyRevision(Request $request, $id)
     {
+        if (!auth()->user()->can('edit employee salary') && !auth()->user()->isSuperAdmin() && !auth()->user()->isCompanyAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $employee = User::findOrFail($id);
 
         $request->validate([
@@ -275,6 +295,10 @@ class EmployeeSalaryController extends Controller
 
     public function storeIncentive(Request $request, $id)
     {
+        if (!auth()->user()->can('edit employee salary') && !auth()->user()->isSuperAdmin() && !auth()->user()->isCompanyAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $employee = User::findOrFail($id);
 
         $request->validate([
@@ -295,6 +319,10 @@ class EmployeeSalaryController extends Controller
 
     public function processSalary(Request $request, $id)
     {
+        if (!auth()->user()->can('edit employee salary') && !auth()->user()->isSuperAdmin() && !auth()->user()->isCompanyAdmin()) {
+            return response()->json(['error' => 'Unauthorized action.'], 403);
+        }
+
         $employee = User::findOrFail($id);
 
         $request->validate([

@@ -15,6 +15,10 @@ class TyreManagementController extends Controller
 {
     public function index()
     {
+        if (!auth()->user()->can('view tyre management') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $tyres = TyreManagement::with('vehicle', 'branch')
             ->latest()
             ->paginate(15);
@@ -26,6 +30,10 @@ class TyreManagementController extends Controller
 
     public function create()
     {
+        if (!auth()->user()->can('create tyre management') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $vehicles = Vehicle::orderBy('vehicle_number')->get();
         $brands = TyreBrand::where('status', 'active')->orderBy('name')->get();
         $models = TyreModel::where('status', 'active')->orderBy('name')->get();
@@ -36,6 +44,10 @@ class TyreManagementController extends Controller
 
     public function store(Request $request)
     {
+        if (!auth()->user()->can('create tyre management') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $validated = $request->validate([
             'vehicle_id' => 'required|exists:vehicles,id',
             'tyre_position' => 'required|string|max:255',
@@ -71,6 +83,10 @@ class TyreManagementController extends Controller
 
     public function show(TyreManagement $tyreManagement)
     {
+        if (!auth()->user()->can('view tyre management') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $tyreManagement->load('vehicle', 'branch', 'company');
 
         return view('admin.maintenance.tyre-management.show', compact('tyreManagement'));
@@ -78,6 +94,10 @@ class TyreManagementController extends Controller
 
     public function edit(TyreManagement $tyreManagement)
     {
+        if (!auth()->user()->can('edit tyre management') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $vehicles = Vehicle::orderBy('vehicle_number')->get();
         $brands = TyreBrand::where('status', 'active')->orderBy('name')->get();
         $models = TyreModel::where('status', 'active')->orderBy('name')->get();
@@ -88,6 +108,10 @@ class TyreManagementController extends Controller
 
     public function update(Request $request, TyreManagement $tyreManagement)
     {
+        if (!auth()->user()->can('edit tyre management') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $validated = $request->validate([
             'vehicle_id' => 'required|exists:vehicles,id',
             'tyre_position' => 'required|string|max:255',
@@ -119,6 +143,10 @@ class TyreManagementController extends Controller
 
     public function destroy(TyreManagement $tyreManagement)
     {
+        if (!auth()->user()->can('delete tyre management') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $tyreManagement->delete();
 
         ActivityLog::log('tyre_deleted', "Tyre record deleted", $tyreManagement);
@@ -129,6 +157,10 @@ class TyreManagementController extends Controller
 
     public function trashed()
     {
+        if (!auth()->user()->can('delete tyre management') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $tyres = TyreManagement::onlyTrashed()->with('vehicle')->latest()->paginate(15);
 
         return view('admin.maintenance.tyre-management.trashed', compact('tyres'));
@@ -136,6 +168,10 @@ class TyreManagementController extends Controller
 
     public function restore($id)
     {
+        if (!auth()->user()->can('delete tyre management') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $tyre = TyreManagement::onlyTrashed()->findOrFail($id);
         $tyre->restore();
 
@@ -147,6 +183,10 @@ class TyreManagementController extends Controller
 
     public function forceDelete($id)
     {
+        if (!auth()->user()->can('delete tyre management') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $tyre = TyreManagement::onlyTrashed()->findOrFail($id);
         $tyre->forceDelete();
 
@@ -158,6 +198,10 @@ class TyreManagementController extends Controller
 
     public function graphicLayout(Request $request)
     {
+        if (!auth()->user()->can('view tyre management') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $vehicles = Vehicle::orderBy('vehicle_number')->get();
         $selectedVehicleId = $request->get('vehicle_id') ?: ($vehicles->first()?->id);
 
@@ -192,6 +236,10 @@ class TyreManagementController extends Controller
 
     public function getVehicleTyres(Vehicle $vehicle)
     {
+        if (!auth()->user()->can('view tyre management') && !auth()->user()->isSuperAdmin()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
         $vehicleTyres = TyreManagement::where('vehicle_id', $vehicle->id)
             ->where('status', 'active')
             ->get();
@@ -215,6 +263,10 @@ class TyreManagementController extends Controller
 
     public function updatePosition(Request $request)
     {
+        if (!auth()->user()->can('edit tyre management') && !auth()->user()->isSuperAdmin()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
         $request->validate([
             'tyre_id' => 'required|exists:tyre_management,id',
             'vehicle_id' => 'required|exists:vehicles,id',

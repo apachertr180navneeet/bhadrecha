@@ -63,11 +63,11 @@ class RolePermissionSeeder extends Seeder
                 'view vehicle loans', 'create vehicle loans', 'edit vehicle loans', 'delete vehicle loans'
             ],
             'maintenance' => [
-                'view service schedules', 'create service schedules', 'edit service schedules', 'delete service schedules', 'mark service schedules completed',
-                'view spare parts', 'create spare parts', 'edit spare parts', 'delete spare parts',
-                'view maintenance history', 'create maintenance history', 'edit maintenance history', 'delete maintenance history',
-                'view breakdowns', 'create breakdowns', 'edit breakdowns', 'delete breakdowns', 'mark breakdowns resolved',
-                'view tyre management', 'create tyre management', 'edit tyre management', 'delete tyre management'
+                'view service schedules', 'create service schedules', 'edit service schedules', 'delete service schedules', 'restore service schedules', 'force delete service schedules', 'mark service schedules completed',
+                'view spare parts', 'create spare parts', 'edit spare parts', 'delete spare parts', 'restore spare parts', 'force delete spare parts',
+                'view maintenance history', 'create maintenance history', 'edit maintenance history', 'delete maintenance history', 'restore maintenance history', 'force delete maintenance history',
+                'view breakdowns', 'create breakdowns', 'edit breakdowns', 'delete breakdowns', 'restore breakdowns', 'force delete breakdowns', 'mark breakdowns resolved',
+                'view tyre management', 'create tyre management', 'edit tyre management', 'delete tyre management', 'restore tyre management', 'force delete tyre management'
             ],
             'reports' => [
                 'view reports', 'export reports',
@@ -143,7 +143,7 @@ class RolePermissionSeeder extends Seeder
                 'view bill formats', 'create bill formats', 'edit bill formats', 'delete bill formats'
             ],
             'documents' => [
-                'view documents', 'upload documents', 'edit documents', 'delete documents', 'restore documents', 'download documents',
+                'view documents', 'create documents', 'upload documents', 'edit documents', 'delete documents', 'restore documents', 'force delete documents', 'download documents',
                 'view activity', 'manage categories', 'manage folders', 'view document reports', 'manage document trash'
             ],
             'settings' => [

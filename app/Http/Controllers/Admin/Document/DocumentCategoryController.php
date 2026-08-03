@@ -21,6 +21,10 @@ class DocumentCategoryController extends Controller
 
     public function index(Request $request)
     {
+        if (!auth()->user()->can('view document categories') && !auth()->user()->can('view documents') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $user = auth()->user();
         $companyId = $request->get('company_id', session('active_company_id', $user->company_id));
 
@@ -43,6 +47,10 @@ class DocumentCategoryController extends Controller
 
     public function store(StoreDocumentCategoryRequest $request)
     {
+        if (!auth()->user()->can('create document categories') && !auth()->user()->can('create documents') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $user = auth()->user();
         $data = $request->validated();
         if (!$user->isSuperAdmin()) {
@@ -66,6 +74,10 @@ class DocumentCategoryController extends Controller
 
     public function update(StoreDocumentCategoryRequest $request, DocumentCategory $category)
     {
+        if (!auth()->user()->can('edit document categories') && !auth()->user()->can('edit documents') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $data = $request->validated();
         $data['slug'] = Str::slug($data['name']);
 
@@ -85,6 +97,10 @@ class DocumentCategoryController extends Controller
 
     public function destroy(DocumentCategory $category)
     {
+        if (!auth()->user()->can('delete document categories') && !auth()->user()->can('delete documents') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $this->documentService->logActivity(
             null,
             $category->company_id,

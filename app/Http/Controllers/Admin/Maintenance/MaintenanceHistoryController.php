@@ -15,6 +15,10 @@ class MaintenanceHistoryController extends Controller
 {
     public function index()
     {
+        if (!auth()->user()->can('view maintenance history') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $histories = MaintenanceHistory::with('vehicle', 'branch', 'vendor')
             ->latest()
             ->paginate(15);
@@ -26,6 +30,10 @@ class MaintenanceHistoryController extends Controller
 
     public function create()
     {
+        if (!auth()->user()->can('create maintenance history') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $vehicles = Vehicle::orderBy('vehicle_number')->get();
         $serviceSchedules = ServiceSchedule::where('status', 'completed')->latest()->get();
         $spareParts = SparePart::latest()->get();
@@ -36,6 +44,10 @@ class MaintenanceHistoryController extends Controller
 
     public function store(Request $request)
     {
+        if (!auth()->user()->can('create maintenance history') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $validated = $request->validate([
             'vehicle_id' => 'required|exists:vehicles,id',
             'service_schedule_id' => 'nullable|exists:service_schedules,id',
@@ -67,6 +79,10 @@ class MaintenanceHistoryController extends Controller
 
     public function show(MaintenanceHistory $maintenanceHistory)
     {
+        if (!auth()->user()->can('view maintenance history') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $maintenanceHistory->load('vehicle', 'serviceSchedule', 'sparePart', 'vendor', 'branch', 'company');
 
         return view('admin.maintenance.maintenance-history.show', compact('maintenanceHistory'));
@@ -74,6 +90,10 @@ class MaintenanceHistoryController extends Controller
 
     public function edit(MaintenanceHistory $maintenanceHistory)
     {
+        if (!auth()->user()->can('edit maintenance history') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $vehicles = Vehicle::orderBy('vehicle_number')->get();
         $serviceSchedules = ServiceSchedule::where('status', 'completed')->latest()->get();
         $spareParts = SparePart::latest()->get();
@@ -84,6 +104,10 @@ class MaintenanceHistoryController extends Controller
 
     public function update(Request $request, MaintenanceHistory $maintenanceHistory)
     {
+        if (!auth()->user()->can('edit maintenance history') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $validated = $request->validate([
             'vehicle_id' => 'required|exists:vehicles,id',
             'service_schedule_id' => 'nullable|exists:service_schedules,id',
@@ -111,6 +135,10 @@ class MaintenanceHistoryController extends Controller
 
     public function destroy(MaintenanceHistory $maintenanceHistory)
     {
+        if (!auth()->user()->can('delete maintenance history') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $maintenanceHistory->delete();
 
         ActivityLog::log('maintenance_history_deleted', "Maintenance history record deleted", $maintenanceHistory);
@@ -121,6 +149,10 @@ class MaintenanceHistoryController extends Controller
 
     public function trashed()
     {
+        if (!auth()->user()->can('delete maintenance history') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $histories = MaintenanceHistory::onlyTrashed()->with('vehicle')->latest()->paginate(15);
 
         return view('admin.maintenance.maintenance-history.trashed', compact('histories'));
@@ -128,6 +160,10 @@ class MaintenanceHistoryController extends Controller
 
     public function restore($id)
     {
+        if (!auth()->user()->can('delete maintenance history') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $history = MaintenanceHistory::onlyTrashed()->findOrFail($id);
         $history->restore();
 
@@ -139,6 +175,10 @@ class MaintenanceHistoryController extends Controller
 
     public function forceDelete($id)
     {
+        if (!auth()->user()->can('delete maintenance history') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $history = MaintenanceHistory::onlyTrashed()->findOrFail($id);
         $history->forceDelete();
 

@@ -27,6 +27,10 @@ class DocumentController extends Controller
 
     public function index(Request $request)
     {
+        if (!auth()->user()->can('view documents') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $user = auth()->user();
 
         if ($request->ajax() || $request->wantsJson() || $request->has('draw') || strtolower($request->header('X-Requested-With', '')) === 'xmlhttprequest') {
@@ -49,6 +53,10 @@ class DocumentController extends Controller
 
     protected function getDataTable(Request $request)
     {
+        if (!auth()->user()->can('view documents') && !auth()->user()->isSuperAdmin()) {
+            return response()->json(['draw' => intval($request->input('draw', 1)), 'recordsTotal' => 0, 'recordsFiltered' => 0, 'data' => []]);
+        }
+
         try {
             $user = auth()->user();
             $query = Document::query()->with(['category', 'folder', 'uploader', 'company', 'branch']);
@@ -197,6 +205,10 @@ class DocumentController extends Controller
 
     public function create(Request $request)
     {
+        if (!auth()->user()->can('create documents') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $user = auth()->user();
         $companyId = $request->get('company_id', session('active_company_id', $user->company_id));
 
@@ -218,6 +230,10 @@ class DocumentController extends Controller
 
     public function store(StoreDocumentRequest $request)
     {
+        if (!auth()->user()->can('create documents') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $user = auth()->user();
         $data = $request->validated();
 
@@ -234,12 +250,20 @@ class DocumentController extends Controller
 
     public function show(Document $document)
     {
+        if (!auth()->user()->can('view documents') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $document->load(['category', 'folder', 'uploader', 'company', 'branch', 'versions.uploader', 'downloads.user', 'activities.user']);
         return view('admin.documents.show', compact('document'));
     }
 
     public function edit(Document $document)
     {
+        if (!auth()->user()->can('edit documents') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $companyId = $document->company_id;
         $categories = DocumentCategory::forCompany($companyId)->active()->get();
         $folders = DocumentFolder::forCompany($companyId)->active()->get();
@@ -251,6 +275,10 @@ class DocumentController extends Controller
 
     public function update(UpdateDocumentRequest $request, Document $document)
     {
+        if (!auth()->user()->can('edit documents') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $data = $request->validated();
 
         if (!empty($data['tags'])) {
@@ -269,6 +297,10 @@ class DocumentController extends Controller
 
     public function destroy(Document $document)
     {
+        if (!auth()->user()->can('delete documents') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $this->documentService->logActivity($document->id, $document->company_id, auth()->id(), 'delete', "Moved document '{$document->name}' to Trash");
         $document->delete();
 
@@ -278,6 +310,10 @@ class DocumentController extends Controller
 
     public function download(Document $document)
     {
+        if (!auth()->user()->can('view documents') && !auth()->user()->can('download documents') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         if (!Storage::disk('local')->exists($document->storage_path)) {
             return back()->with('error', 'File not found on storage server.');
         }
@@ -289,6 +325,10 @@ class DocumentController extends Controller
 
     public function preview(Document $document)
     {
+        if (!auth()->user()->can('view documents') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         if (!Storage::disk('local')->exists($document->storage_path)) {
             return back()->with('error', 'File not found on storage server.');
         }
@@ -307,6 +347,10 @@ class DocumentController extends Controller
 
     public function trash(Request $request)
     {
+        if (!auth()->user()->can('delete documents') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $user = auth()->user();
         $companyId = $request->get('company_id', session('active_company_id', $user->company_id));
 
@@ -325,6 +369,10 @@ class DocumentController extends Controller
 
     public function restore($id)
     {
+        if (!auth()->user()->can('delete documents') && !auth()->user()->can('restore documents') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $document = Document::onlyTrashed()->findOrFail($id);
         $document->restore();
 
@@ -335,9 +383,8 @@ class DocumentController extends Controller
 
     public function forceDelete($id)
     {
-        $user = auth()->user();
-        if (!$user->isSuperAdmin()) {
-            return back()->with('error', 'Only Super Admin can permanently delete documents.');
+        if (!auth()->user()->can('force delete documents') && !auth()->user()->isSuperAdmin()) {
+            return back()->with('error', 'Only Super Admin or authorized users can permanently delete documents.');
         }
 
         $document = Document::onlyTrashed()->findOrFail($id);

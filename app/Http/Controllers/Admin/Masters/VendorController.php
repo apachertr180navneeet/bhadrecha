@@ -15,6 +15,10 @@ class VendorController extends Controller
 {
     public function index(Request $request)
     {
+        if (!auth()->user()->can('view vendors') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $query = Vendor::query();
 
         if ($request->filled('search')) {
@@ -38,11 +42,19 @@ class VendorController extends Controller
 
     public function create()
     {
+        if (!auth()->user()->can('create vendors') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         return view('admin.masters.vendors.create');
     }
 
     public function store(Request $request)
     {
+        if (!auth()->user()->can('create vendors') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $validated = $request->validate([
             'vendor_code' => ['nullable', 'string', 'max:50', Rule::unique('vendors', 'vendor_code')],
             'name' => 'required|string|max:255',
@@ -73,11 +85,19 @@ class VendorController extends Controller
 
     public function edit(Vendor $vendor)
     {
+        if (!auth()->user()->can('edit vendors') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         return view('admin.masters.vendors.edit', compact('vendor'));
     }
 
     public function update(Request $request, Vendor $vendor)
     {
+        if (!auth()->user()->can('edit vendors') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $validated = $request->validate([
             'vendor_code' => ['nullable', 'string', 'max:50', Rule::unique('vendors', 'vendor_code')->ignore($vendor->id)],
             'name' => 'required|string|max:255',
@@ -103,6 +123,10 @@ class VendorController extends Controller
 
     public function destroy(Vendor $vendor)
     {
+        if (!auth()->user()->can('delete vendors') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $vendor->delete();
 
         ActivityLog::log('vendor_deleted', "Deleted vendor: {$vendor->name}");
@@ -113,6 +137,10 @@ class VendorController extends Controller
 
     public function import(Request $request)
     {
+        if (!auth()->user()->can('create vendors') && !auth()->user()->can('import vendors') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $request->validate(['file' => 'required|mimes:xlsx,xls,csv']);
 
         $user = auth()->user();
@@ -161,12 +189,20 @@ class VendorController extends Controller
 
     public function downloadTemplate()
     {
+        if (!auth()->user()->can('create vendors') && !auth()->user()->can('import vendors') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         ActivityLog::log('vendor_template_downloaded', 'Downloaded vendor import template');
         return Excel::download(new VendorTemplateExport, 'vendor_import_template.xlsx');
     }
 
     public function toggleStatus(Vendor $vendor)
     {
+        if (!auth()->user()->can('edit vendors') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $vendor->status = $vendor->status === 'active' ? 'inactive' : 'active';
         $vendor->save();
 
@@ -177,12 +213,20 @@ class VendorController extends Controller
 
     public function trashed()
     {
+        if (!auth()->user()->can('delete vendors') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $vendors = Vendor::onlyTrashed()->latest()->paginate(15);
         return view('admin.masters.vendors.trashed', compact('vendors'));
     }
 
     public function restore($id)
     {
+        if (!auth()->user()->can('delete vendors') && !auth()->user()->can('restore vendors') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $vendor = Vendor::withTrashed()->findOrFail($id);
         $vendor->restore();
 
@@ -194,6 +238,10 @@ class VendorController extends Controller
 
     public function forceDelete($id)
     {
+        if (!auth()->user()->can('delete vendors') && !auth()->user()->can('force delete vendors') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $vendor = Vendor::withTrashed()->findOrFail($id);
         $name = $vendor->name;
         $vendor->forceDelete();

@@ -17,6 +17,10 @@ class ConsignorController extends Controller
 {
     public function index(Request $request)
     {
+        if (!auth()->user()->can('view consignors') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $query = Consignor::with(['branch', 'company']);
 
         if ($request->filled('search')) {
@@ -39,12 +43,20 @@ class ConsignorController extends Controller
 
     public function create()
     {
+        if (!auth()->user()->can('create consignors') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $branches = Branch::where('status', 'active')->get();
         return view('admin.masters.consignors.create', compact('branches'));
     }
 
     public function store(Request $request)
     {
+        if (!auth()->user()->can('create consignors') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $validated = $request->validate([
             'branch_id' => 'nullable|exists:branches,id',
             'vendor_code' => ['nullable', 'string', 'max:50', Rule::unique('consignors', 'vendor_code')],
@@ -81,12 +93,19 @@ class ConsignorController extends Controller
 
     public function edit(Consignor $consignor)
     {
+        if (!auth()->user()->can('edit consignors') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $branches = Branch::where('status', 'active')->get();
         return view('admin.masters.consignors.edit', compact('consignor', 'branches'));
     }
 
     public function update(Request $request, Consignor $consignor)
     {
+        if (!auth()->user()->can('edit consignors') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
         $validated = $request->validate([
             'branch_id' => 'nullable|exists:branches,id',
             'vendor_code' => ['nullable', 'string', 'max:50', Rule::unique('consignors', 'vendor_code')->ignore($consignor->id)],
@@ -112,12 +131,14 @@ class ConsignorController extends Controller
 
     public function import(Request $request)
     {
+        if (!auth()->user()->can('create consignors') && !auth()->user()->can('import consignors') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $request->validate(['file' => 'required|mimes:xlsx,xls,csv']);
 
         $user = auth()->user();
-        $companyId = $user->isSuperAdmin()
-            ? $request->validate(['company_id' => 'required|exists:companies,id'])['company_id']
-            : $user->company_id;
+        $companyId = $request->company_id ?? ($user->isSuperAdmin() ? null : $user->company_id);
         $branchId = $request->branch_id ?? ($user->isSuperAdmin() ? null : $user->branch_id);
 
         $import = new ConsignorImport($companyId, $branchId);
@@ -162,12 +183,20 @@ class ConsignorController extends Controller
 
     public function downloadTemplate()
     {
+        if (!auth()->user()->can('create consignors') && !auth()->user()->can('import consignors') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         ActivityLog::log('consignor_template_downloaded', 'Downloaded consignor import template');
         return Excel::download(new ConsignorTemplateExport, 'consignor_import_template.xlsx');
     }
 
     public function transferForm(Consignor $consignor)
     {
+        if (!auth()->user()->can('edit consignors') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $companies = Company::where('status', 'active')->get();
         $branches = Branch::where('status', 'active')->get();
         return view('admin.masters.consignors.transfer', compact('consignor', 'companies', 'branches'));
@@ -175,6 +204,10 @@ class ConsignorController extends Controller
 
     public function transfer(Request $request, Consignor $consignor)
     {
+        if (!auth()->user()->can('edit consignors') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $validated = $request->validate([
             'branch_id' => 'nullable|exists:branches,id',
         ]);
@@ -191,12 +224,20 @@ class ConsignorController extends Controller
 
     public function trashed()
     {
+        if (!auth()->user()->can('delete consignors') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $consignors = Consignor::onlyTrashed()->with(['branch', 'company'])->paginate(15);
         return view('admin.masters.consignors.trashed', compact('consignors'));
     }
 
     public function restore($id)
     {
+        if (!auth()->user()->can('delete consignors') && !auth()->user()->can('restore consignors') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $consignor = Consignor::withTrashed()->findOrFail($id);
         $consignor->restore();
         ActivityLog::log('consignor_restored', "Restored consignor: {$consignor->name}");
@@ -205,6 +246,10 @@ class ConsignorController extends Controller
 
     public function forceDelete($id)
     {
+        if (!auth()->user()->can('delete consignors') && !auth()->user()->can('force delete consignors') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $consignor = Consignor::withTrashed()->findOrFail($id);
         ActivityLog::log('consignor_force_deleted', "Force deleted consignor: {$consignor->name}");
         $consignor->forceDelete();
@@ -213,6 +258,10 @@ class ConsignorController extends Controller
 
     public function destroy(Consignor $consignor)
     {
+        if (!auth()->user()->can('delete consignors') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $consignor->delete();
         ActivityLog::log('consignor_deleted', "Deleted consignor: {$consignor->name}");
         return redirect()->route('admin.masters.consignors.index')->with('success', 'Consignor deleted successfully.');
@@ -220,6 +269,10 @@ class ConsignorController extends Controller
 
     public function toggleStatus(Consignor $consignor)
     {
+        if (!auth()->user()->can('edit consignors') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $consignor->status = $consignor->status === 'active' ? 'inactive' : 'active';
         $consignor->save();
         ActivityLog::log('consignor_status_changed', "Changed status of consignor: {$consignor->name}", $consignor);
@@ -228,6 +281,10 @@ class ConsignorController extends Controller
 
     public function search(Request $request)
     {
+        if (!auth()->user()->can('view consignors') && !auth()->user()->isSuperAdmin()) {
+            return response()->json([], 403);
+        }
+
         $term = $request->term;
         $consignors = Consignor::where('name', 'like', "%{$term}%")
             ->orWhere('phone', 'like', "%{$term}%")
@@ -241,6 +298,9 @@ class ConsignorController extends Controller
 
     public function quickStore(Request $request)
     {
+        if (!auth()->user()->can('create consignors') && !auth()->user()->isSuperAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'phone' => 'nullable|string|max:20',

@@ -14,6 +14,10 @@ class SparePartController extends Controller
 {
     public function index()
     {
+        if (!auth()->user()->can('view spare parts') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $parts = SparePart::with('vehicle', 'supplier')->latest()->paginate(15);
         $vehicles = Vehicle::orderBy('vehicle_number')->get();
 
@@ -22,6 +26,10 @@ class SparePartController extends Controller
 
     public function create()
     {
+        if (!auth()->user()->can('create spare parts') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $vehicles = Vehicle::orderBy('vehicle_number')->get();
         $suppliers = Supplier::where('status', 'active')->orderBy('name')->get();
 
@@ -30,6 +38,10 @@ class SparePartController extends Controller
 
     public function store(Request $request)
     {
+        if (!auth()->user()->can('create spare parts') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'part_number' => 'nullable|string|max:255',
@@ -68,6 +80,10 @@ class SparePartController extends Controller
 
     public function show(SparePart $sparePart)
     {
+        if (!auth()->user()->can('view spare parts') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $sparePart->load('vehicle', 'supplier');
 
         return view('admin.maintenance.spare-part.show', compact('sparePart'));
@@ -75,6 +91,10 @@ class SparePartController extends Controller
 
     public function edit(SparePart $sparePart)
     {
+        if (!auth()->user()->can('edit spare parts') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $vehicles = Vehicle::orderBy('vehicle_number')->get();
         $suppliers = Supplier::where('status', 'active')->orderBy('name')->get();
 
@@ -83,6 +103,10 @@ class SparePartController extends Controller
 
     public function update(Request $request, SparePart $sparePart)
     {
+        if (!auth()->user()->can('edit spare parts') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'part_number' => 'nullable|string|max:255',
@@ -131,6 +155,10 @@ class SparePartController extends Controller
 
     public function destroy(SparePart $sparePart)
     {
+        if (!auth()->user()->can('delete spare parts') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $sparePart->delete();
 
         ActivityLog::log('spare_part_deleted', "Spare part deleted: {$sparePart->name}", $sparePart);
@@ -141,6 +169,10 @@ class SparePartController extends Controller
 
     public function trashed()
     {
+        if (!auth()->user()->can('delete spare parts') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $parts = SparePart::onlyTrashed()->with('vehicle', 'supplier')->latest()->paginate(15);
 
         return view('admin.maintenance.spare-part.trashed', compact('parts'));
@@ -148,6 +180,10 @@ class SparePartController extends Controller
 
     public function restore($id)
     {
+        if (!auth()->user()->can('delete spare parts') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $part = SparePart::onlyTrashed()->findOrFail($id);
         $part->restore();
 
@@ -159,6 +195,10 @@ class SparePartController extends Controller
 
     public function forceDelete($id)
     {
+        if (!auth()->user()->can('delete spare parts') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $part = SparePart::onlyTrashed()->findOrFail($id);
         $part->forceDelete();
 

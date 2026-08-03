@@ -17,6 +17,10 @@ class DriverController extends Controller
 {
     public function index(Request $request)
     {
+        if (!auth()->user()->can('view drivers') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $query = Driver::query();
 
         if ($request->filled('search')) {
@@ -39,11 +43,19 @@ class DriverController extends Controller
 
     public function create()
     {
+        if (!auth()->user()->can('create drivers') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         return view('admin.masters.drivers.create');
     }
 
     public function store(Request $request)
     {
+        if (!auth()->user()->can('create drivers') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $validated = $request->validate([
             'driver_id' => 'nullable|string|max:50|unique:drivers,driver_id',
             'name' => 'required|string|max:255',
@@ -62,11 +74,11 @@ class DriverController extends Controller
             'pan_back' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
-        $validated['status'] = 'active';
-
         $documentFields = ['license_front', 'license_back', 'aadhar_front', 'aadhar_back', 'pan_front', 'pan_back'];
-        $driver = Driver::create(array_diff_key($validated, array_flip($documentFields)));
+        $driverData = array_diff_key($validated, array_flip($documentFields));
+        $driverData['status'] = 'active';
 
+        $driver = Driver::create($driverData);
         $this->uploadDocuments($request, $driver);
         $driver->refresh();
 
@@ -77,16 +89,24 @@ class DriverController extends Controller
 
     public function edit(Driver $driver)
     {
+        if (!auth()->user()->can('edit drivers') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         return view('admin.masters.drivers.edit', compact('driver'));
     }
 
     public function update(Request $request, Driver $driver)
     {
+        if (!auth()->user()->can('edit drivers') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $validated = $request->validate([
             'driver_id' => ['nullable', 'string', 'max:50', Rule::unique('drivers', 'driver_id')->ignore($driver->id)],
             'name' => 'required|string|max:255',
             'phone' => ['required', 'string', 'max:10', Rule::unique('drivers', 'phone')->ignore($driver->id)],
-            'license_number' => 'required|string|max:50|unique:drivers,license_number,' . $driver->id,
+            'license_number' => ['required', 'string', 'max:50', Rule::unique('drivers', 'license_number')->ignore($driver->id)],
             'license_expiry' => "nullable|date|before_or_equal:9999-12-31",
             'address' => 'nullable|string',
             'city' => 'nullable|string|max:100',
@@ -101,9 +121,8 @@ class DriverController extends Controller
         ]);
 
         $documentFields = ['license_front', 'license_back', 'aadhar_front', 'aadhar_back', 'pan_front', 'pan_back'];
-        $this->uploadDocuments($request, $driver);
-
         $driver->update(array_diff_key($validated, array_flip($documentFields)));
+        $this->uploadDocuments($request, $driver);
         $driver->refresh();
         ActivityLog::log('driver_updated', "Updated driver: {$driver->name}", $driver);
 
@@ -112,6 +131,10 @@ class DriverController extends Controller
 
     public function import(Request $request)
     {
+        if (!auth()->user()->can('import drivers') && !auth()->user()->can('create drivers') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $request->validate(['file' => 'required|mimes:xlsx,xls,csv']);
 
         $import = new DriverImport;
@@ -123,7 +146,7 @@ class DriverController extends Controller
             $headings = $import->getHeadings();
 
             $message = "{$imported} driver(s) imported successfully.";
-            if ($skipped > 0) $message .= " {$skipped} row(s) skipped (duplicate phone or license).";
+            if ($skipped > 0) $message .= " {$skipped} row(s) skipped (duplicate phone/license).";
             if (!empty($failures)) {
                 $errs = [];
                 foreach ($failures as $f) $errs[] = "Row {$f->row()}: " . implode(', ', $f->errors());
@@ -142,24 +165,40 @@ class DriverController extends Controller
 
     public function downloadTemplate()
     {
+        if (!auth()->user()->can('create drivers') && !auth()->user()->can('import drivers') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         ActivityLog::log('driver_template_downloaded', 'Downloaded driver import template');
         return Excel::download(new DriverTemplateExport, 'driver_import_template.xlsx');
     }
 
     public function export()
     {
+        if (!auth()->user()->can('export drivers') && !auth()->user()->can('view drivers') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         ActivityLog::log('drivers_exported', 'Exported drivers to Excel');
         return Excel::download(new DriversExport, 'drivers_export.xlsx');
     }
 
     public function trashed()
     {
+        if (!auth()->user()->can('delete drivers') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $drivers = Driver::onlyTrashed()->paginate(15);
         return view('admin.masters.drivers.trashed', compact('drivers'));
     }
 
     public function restore($id)
     {
+        if (!auth()->user()->can('delete drivers') && !auth()->user()->can('restore drivers') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $driver = Driver::withTrashed()->findOrFail($id);
         $driver->restore();
         ActivityLog::log('driver_restored', "Restored driver: {$driver->name}");
@@ -168,6 +207,10 @@ class DriverController extends Controller
 
     public function forceDelete($id)
     {
+        if (!auth()->user()->can('delete drivers') && !auth()->user()->can('force delete drivers') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $driver = Driver::withTrashed()->findOrFail($id);
         ActivityLog::log('driver_force_deleted', "Force deleted driver: {$driver->name}");
         $driver->forceDelete();
@@ -176,6 +219,10 @@ class DriverController extends Controller
 
     public function getDetailsByName(Request $request)
     {
+        if (!auth()->user()->can('view drivers') && !auth()->user()->isSuperAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
         $driver = Driver::where('name', $request->driver_name)
             ->orWhere('phone', $request->driver_name)
             ->orWhere('driver_id', $request->driver_name)
@@ -191,6 +238,10 @@ class DriverController extends Controller
 
     public function search(Request $request)
     {
+        if (!auth()->user()->can('view drivers') && !auth()->user()->isSuperAdmin()) {
+            return response()->json([], 403);
+        }
+
         $term = $request->term;
         $drivers = Driver::where('name', 'like', "%{$term}%")
             ->orWhere('phone', 'like', "%{$term}%")
@@ -204,6 +255,10 @@ class DriverController extends Controller
 
     public function quickStore(Request $request)
     {
+        if (!auth()->user()->can('create drivers') && !auth()->user()->isSuperAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
         $validated = $request->validate([
             'driver_id' => 'nullable|string|max:50',
             'name' => 'required|string|max:255',
@@ -229,6 +284,10 @@ class DriverController extends Controller
 
     public function destroy(Driver $driver)
     {
+        if (!auth()->user()->can('delete drivers') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $driver->delete();
         ActivityLog::log('driver_deleted', "Deleted driver: {$driver->name}");
         return redirect()->route('admin.masters.drivers.index')->with('success', 'Driver deleted successfully.');
@@ -236,6 +295,10 @@ class DriverController extends Controller
 
     public function toggleStatus(Driver $driver)
     {
+        if (!auth()->user()->can('edit drivers') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $driver->status = $driver->status === 'active' ? 'inactive' : 'active';
         $driver->save();
         ActivityLog::log('driver_status_changed', "Changed status of driver: {$driver->name}", $driver);

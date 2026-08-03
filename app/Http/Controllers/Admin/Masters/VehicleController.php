@@ -17,6 +17,10 @@ class VehicleController extends Controller
 {
     public function index(Request $request)
     {
+        if (!auth()->user()->can('view vehicles') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $query = Vehicle::query();
 
         if ($request->filled('search')) {
@@ -38,11 +42,18 @@ class VehicleController extends Controller
 
     public function create()
     {
+        if (!auth()->user()->can('create vehicles') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         return view('admin.masters.vehicles.create');
     }
 
     public function store(Request $request)
     {
+        if (!auth()->user()->can('create vehicles') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
         $validated = $request->validate([
             'vehicle_number' => 'required|string|max:20|unique:vehicles,vehicle_number',
             'vehicle_type' => 'nullable|string|max:50',
@@ -71,13 +82,30 @@ class VehicleController extends Controller
         return redirect()->route('admin.masters.vehicles.index')->with('success', 'Vehicle created successfully.');
     }
 
+    public function show(Vehicle $vehicle)
+    {
+        if (!auth()->user()->can('view vehicles') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        return view('admin.masters.vehicles.show', compact('vehicle'));
+    }
+
     public function edit(Vehicle $vehicle)
     {
+        if (!auth()->user()->can('edit vehicles') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         return view('admin.masters.vehicles.edit', compact('vehicle'));
     }
 
     public function update(Request $request, Vehicle $vehicle)
     {
+        if (!auth()->user()->can('edit vehicles') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $validated = $request->validate([
             'vehicle_number' => 'required|string|max:20|unique:vehicles,vehicle_number,' . $vehicle->id,
             'vehicle_type' => 'nullable|string|max:50',
@@ -106,6 +134,10 @@ class VehicleController extends Controller
 
     public function import(Request $request)
     {
+        if (!auth()->user()->can('import vehicles') && !auth()->user()->can('create vehicles') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $request->validate(['file' => 'required|mimes:xlsx,xls,csv']);
 
         $import = new VehicleImport;
@@ -136,24 +168,40 @@ class VehicleController extends Controller
 
     public function downloadTemplate()
     {
+        if (!auth()->user()->can('create vehicles') && !auth()->user()->can('import vehicles') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         ActivityLog::log('vehicle_template_downloaded', 'Downloaded vehicle import template');
         return Excel::download(new VehicleTemplateExport, 'vehicle_import_template.xlsx');
     }
 
     public function export()
     {
+        if (!auth()->user()->can('export vehicles') && !auth()->user()->can('view vehicles') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         ActivityLog::log('vehicles_exported', 'Exported vehicles to Excel');
         return Excel::download(new VehiclesExport, 'vehicles_export.xlsx');
     }
 
     public function trashed()
     {
+        if (!auth()->user()->can('delete vehicles') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $vehicles = Vehicle::onlyTrashed()->paginate(15);
         return view('admin.masters.vehicles.trashed', compact('vehicles'));
     }
 
     public function restore($id)
     {
+        if (!auth()->user()->can('delete vehicles') && !auth()->user()->can('restore vehicles') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $vehicle = Vehicle::withTrashed()->findOrFail($id);
         $vehicle->restore();
         ActivityLog::log('vehicle_restored', "Restored vehicle: {$vehicle->vehicle_number}");
@@ -162,6 +210,10 @@ class VehicleController extends Controller
 
     public function forceDelete($id)
     {
+        if (!auth()->user()->can('delete vehicles') && !auth()->user()->can('force delete vehicles') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $vehicle = Vehicle::withTrashed()->findOrFail($id);
         ActivityLog::log('vehicle_force_deleted', "Force deleted vehicle: {$vehicle->vehicle_number}");
         $vehicle->forceDelete();
@@ -170,6 +222,10 @@ class VehicleController extends Controller
 
     public function destroy(Vehicle $vehicle)
     {
+        if (!auth()->user()->can('delete vehicles') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $vehicle->delete();
         ActivityLog::log('vehicle_deleted', "Deleted vehicle: {$vehicle->vehicle_number}");
         return redirect()->route('admin.masters.vehicles.index')->with('success', 'Vehicle deleted successfully.');
@@ -177,6 +233,10 @@ class VehicleController extends Controller
 
     public function toggleStatus(Vehicle $vehicle)
     {
+        if (!auth()->user()->can('edit vehicles') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $vehicle->status = $vehicle->status === 'active' ? 'inactive' : 'active';
         $vehicle->save();
         ActivityLog::log('vehicle_status_changed', "Changed status of vehicle: {$vehicle->vehicle_number}", $vehicle);
@@ -185,6 +245,10 @@ class VehicleController extends Controller
 
     public function getDetailsByNumber(Request $request)
     {
+        if (!auth()->user()->can('view vehicles') && !auth()->user()->isSuperAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
         $vehicle = Vehicle::where('vehicle_number', $request->vehicle_number)->first();
         if ($vehicle) {
             $inUse = Bulty::where('vehicle_id', $vehicle->id)
@@ -201,6 +265,10 @@ class VehicleController extends Controller
 
     public function search(Request $request)
     {
+        if (!auth()->user()->can('view vehicles') && !auth()->user()->isSuperAdmin()) {
+            return response()->json([], 403);
+        }
+
         $term = $request->term;
         $excludeIds = Bulty::whereHas('trip', fn($q) => $q->where('status', 'pending'))
             ->pluck('vehicle_id')
@@ -239,6 +307,10 @@ class VehicleController extends Controller
 
     public function quickStore(Request $request)
     {
+        if (!auth()->user()->can('create vehicles') && !auth()->user()->isSuperAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
         $validated = $request->validate([
             'vehicle_number' => 'required|string|max:20|unique:vehicles,vehicle_number',
             'vehicle_type' => 'nullable|string|max:50',

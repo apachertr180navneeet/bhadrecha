@@ -15,6 +15,10 @@ class BreakdownController extends Controller
 {
     public function index()
     {
+        if (!auth()->user()->can('view breakdowns') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $breakdowns = Breakdown::with('vehicle', 'driver', 'vendor')
             ->latest()
             ->paginate(15);
@@ -26,6 +30,10 @@ class BreakdownController extends Controller
 
     public function create()
     {
+        if (!auth()->user()->can('create breakdowns') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $vehicles = Vehicle::orderBy('vehicle_number')->get();
         $drivers = Driver::where('status', 'active')->orderBy('name')->get();
         $vendors = Vendor::where('status', 'active')->orderBy('name')->get();
@@ -35,6 +43,10 @@ class BreakdownController extends Controller
 
     public function store(Request $request)
     {
+        if (!auth()->user()->can('create breakdowns') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $validated = $request->validate([
             'vehicle_id' => 'required|exists:vehicles,id',
             'driver_id' => 'nullable|exists:drivers,id',
@@ -71,6 +83,10 @@ class BreakdownController extends Controller
 
     public function show(Breakdown $breakdown)
     {
+        if (!auth()->user()->can('view breakdowns') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $breakdown->load('vehicle', 'driver', 'vendor', 'branch', 'company');
 
         return view('admin.maintenance.breakdowns.show', compact('breakdown'));
@@ -78,6 +94,10 @@ class BreakdownController extends Controller
 
     public function edit(Breakdown $breakdown)
     {
+        if (!auth()->user()->can('edit breakdowns') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $vehicles = Vehicle::orderBy('vehicle_number')->get();
         $drivers = Driver::where('status', 'active')->orderBy('name')->get();
         $vendors = Vendor::where('status', 'active')->orderBy('name')->get();
@@ -87,6 +107,10 @@ class BreakdownController extends Controller
 
     public function update(Request $request, Breakdown $breakdown)
     {
+        if (!auth()->user()->can('edit breakdowns') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $validated = $request->validate([
             'vehicle_id' => 'required|exists:vehicles,id',
             'driver_id' => 'nullable|exists:drivers,id',
@@ -123,6 +147,10 @@ class BreakdownController extends Controller
 
     public function destroy(Breakdown $breakdown)
     {
+        if (!auth()->user()->can('delete breakdowns') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $breakdown->delete();
 
         ActivityLog::log('breakdown_deleted', "Breakdown record deleted", $breakdown);
@@ -133,6 +161,10 @@ class BreakdownController extends Controller
 
     public function trashed()
     {
+        if (!auth()->user()->can('delete breakdowns') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $breakdowns = Breakdown::onlyTrashed()->with('vehicle')->latest()->paginate(15);
 
         return view('admin.maintenance.breakdowns.trashed', compact('breakdowns'));
@@ -140,6 +172,10 @@ class BreakdownController extends Controller
 
     public function restore($id)
     {
+        if (!auth()->user()->can('delete breakdowns') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $breakdown = Breakdown::onlyTrashed()->findOrFail($id);
         $breakdown->restore();
 
@@ -151,6 +187,10 @@ class BreakdownController extends Controller
 
     public function forceDelete($id)
     {
+        if (!auth()->user()->can('delete breakdowns') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $breakdown = Breakdown::onlyTrashed()->findOrFail($id);
         $breakdown->forceDelete();
 
@@ -162,6 +202,10 @@ class BreakdownController extends Controller
 
     public function markResolved(Breakdown $breakdown)
     {
+        if (!auth()->user()->can('mark breakdowns resolved') && !auth()->user()->can('edit breakdowns') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $breakdown->update([
             'status' => 'resolved',
             'resolved_at' => now(),

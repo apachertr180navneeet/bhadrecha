@@ -14,8 +14,12 @@
             </nav>
         </div>
         <div>
+            @if(auth()->user()->can('delete spare parts') || auth()->user()->isSuperAdmin())
             <a href="{{ route('admin.maintenance.spare-part.trashed') }}" class="btn btn-outline-danger"><i class="bx bx-trash me-1"></i> Recycle Bin</a>
+            @endif
+            @if(auth()->user()->can('create spare parts') || auth()->user()->isSuperAdmin())
             <a href="{{ route('admin.maintenance.spare-part.create') }}" class="btn btn-primary"><i class="bx bx-plus me-1"></i> New Part</a>
+            @endif
         </div>
     </div>
 
@@ -89,12 +93,18 @@
                         <td>{{ $part->part_change_date?->format('d-m-Y') ?? '-' }}</td>
                         <td>{{ $part->supplier?->name ?? '-' }}</td>
                         <td class="text-center text-nowrap">
+                            @if(auth()->user()->can('view spare parts') || auth()->user()->isSuperAdmin())
                             <a href="{{ route('admin.maintenance.spare-part.show', $part) }}" class="btn btn-sm btn-icon btn-outline-info" title="View"><i class="bx bx-show"></i></a>
+                            @endif
+                            @if(auth()->user()->can('edit spare parts') || auth()->user()->isSuperAdmin())
                             <a href="{{ route('admin.maintenance.spare-part.edit', $part) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
+                            @endif
+                            @if(auth()->user()->can('delete spare parts') || auth()->user()->isSuperAdmin())
                             <form method="POST" action="{{ route('admin.maintenance.spare-part.destroy', $part) }}" class="d-inline" onsubmit="return confirm('Delete this part?')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-icon btn-outline-danger" title="Delete"><i class="bx bx-trash"></i></button>
                             </form>
+                            @endif
                         </td>
                     </tr>
                     @empty

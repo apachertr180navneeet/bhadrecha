@@ -23,6 +23,10 @@ class DocumentFolderController extends Controller
 
     public function index(Request $request)
     {
+        if (!auth()->user()->can('view document folders') && !auth()->user()->can('view documents') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $user = auth()->user();
         $companyId = $request->get('company_id', session('active_company_id', $user->company_id));
 
@@ -51,6 +55,10 @@ class DocumentFolderController extends Controller
 
     public function store(StoreDocumentFolderRequest $request)
     {
+        if (!auth()->user()->can('create document folders') && !auth()->user()->can('create documents') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $user = auth()->user();
         $data = $request->validated();
         if (!$user->isSuperAdmin() || empty($data['company_id'])) {
@@ -74,6 +82,10 @@ class DocumentFolderController extends Controller
 
     public function update(StoreDocumentFolderRequest $request, DocumentFolder $folder)
     {
+        if (!auth()->user()->can('edit document folders') && !auth()->user()->can('edit documents') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $user = auth()->user();
         $data = $request->validated();
         if (!$user->isSuperAdmin() || empty($data['company_id'])) {
@@ -97,6 +109,10 @@ class DocumentFolderController extends Controller
 
     public function destroy(DocumentFolder $folder)
     {
+        if (!auth()->user()->can('delete document folders') && !auth()->user()->can('delete documents') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $this->documentService->logActivity(
             null,
             $folder->company_id,
