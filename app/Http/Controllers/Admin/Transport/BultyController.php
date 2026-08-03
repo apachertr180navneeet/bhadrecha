@@ -27,6 +27,10 @@ class BultyController extends Controller
 {
     public function index(Request $request)
     {
+        if (!auth()->user()->can('view bulties')) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $query = Bulty::with(['company', 'branch', 'consignor', 'consignee', 'originCity', 'destinationCity', 'bultyItems', 'vehicle', 'driver']);
 
         if ($request->filled('search')) {
@@ -114,6 +118,10 @@ class BultyController extends Controller
 
     public function create()
     {
+        if (!auth()->user()->can('create bulties')) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $companies = [];
         if (auth()->user()->isSuperAdmin()) {
             $companies = Company::where('status', 'active')->get();
@@ -185,6 +193,10 @@ class BultyController extends Controller
 
     public function show(Bulty $bulty)
     {
+        if (!auth()->user()->can('view bulties')) {
+            abort(403, 'Unauthorized action.');
+        }
+
         if (!$bulty->share_token) {
             $bulty->share_token = (string) \Illuminate\Support\Str::uuid();
             $bulty->save();
@@ -206,6 +218,10 @@ class BultyController extends Controller
 
     public function edit(Bulty $bulty)
     {
+        if (!auth()->user()->can('edit bulties')) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $companies = [];
         if (auth()->user()->isSuperAdmin()) {
             $companies = Company::where('status', 'active')->get();
@@ -226,6 +242,10 @@ class BultyController extends Controller
 
     public function update(Request $request, Bulty $bulty)
     {
+        if (!auth()->user()->can('edit bulties')) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $request->validate([
             'material_document' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
             'pod_document' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
@@ -291,17 +311,20 @@ class BultyController extends Controller
         return redirect()->route('admin.transport.bulties.show', $bulty)->with('success', 'Bulty updated successfully.');
     }
 
-    private function authorizeBultyAction(Bulty $bulty): void
+    private function authorizeBultyAction(Bulty $bulty, ?string $permission = null): void
     {
         $user = auth()->user();
-        if (!$user->hasAnyRole(['Super Admin', 'Company Admin', 'Branch Manager']) && !in_array($user->role, ['admin'])) {
-            abort(403, 'Unauthorized action.');
+        if (!$user) {
+            abort(401);
+        }
+        if ($permission && !$user->can($permission)) {
+            abort(403, 'Unauthorized action. You do not have the required permission.');
         }
     }
 
     public function approveDocument(Bulty $bulty)
     {
-        $this->authorizeBultyAction($bulty);
+        $this->authorizeBultyAction($bulty, 'approve bulty documents');
 
         $bulty->material_document_status = true;
         $bulty->status = 'dispatched';
@@ -314,7 +337,7 @@ class BultyController extends Controller
 
     public function rejectDocument(Bulty $bulty)
     {
-        $this->authorizeBultyAction($bulty);
+        $this->authorizeBultyAction($bulty, 'approve bulty documents');
 
         if ($bulty->material_document) {
             $relativePath = str_replace(asset('uploads/'), '', $bulty->material_document);
@@ -332,7 +355,7 @@ class BultyController extends Controller
 
     public function approvePodDocument(Bulty $bulty)
     {
-        $this->authorizeBultyAction($bulty);
+        $this->authorizeBultyAction($bulty, 'approve bulty pod');
 
         if (!$bulty->pod_document) {
             return back()->with('error', 'Cannot approve POD: no POD document uploaded.');
@@ -349,7 +372,7 @@ class BultyController extends Controller
 
     public function rejectPodDocument(Bulty $bulty)
     {
-        $this->authorizeBultyAction($bulty);
+        $this->authorizeBultyAction($bulty, 'approve bulty pod');
 
         if ($bulty->pod_document) {
             $relativePath = str_replace(asset('uploads/'), '', $bulty->pod_document);
@@ -462,7 +485,7 @@ class BultyController extends Controller
 
     public function reject(Bulty $bulty)
     {
-        $this->authorizeBultyAction($bulty);
+        $this->authorizeBultyAction($bulty, 'cancel bulties');
 
         if (!in_array($bulty->status, ['pending', 'planned'])) {
             return back()->with('error', 'Only bilties with Pending or Planned status can be rejected.');
@@ -481,6 +504,10 @@ class BultyController extends Controller
 
     public function trashed()
     {
+        if (!auth()->user()->can('restore bulties') && !auth()->user()->can('force delete bulties')) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $bulties = Bulty::onlyTrashed()->with(['branch', 'consignor', 'consignee', 'originCity', 'destinationCity', 'bultyItems'])
             ->orderBy('deleted_at', 'desc')->paginate(15);
 
@@ -489,7 +516,8 @@ class BultyController extends Controller
 
     public function restore($id)
     {
-        $this->authorizeBultyAction(Bulty::withTrashed()->findOrFail($id));
+        $bulty = Bulty::withTrashed()->findOrFail($id);
+        $this->authorizeBultyAction($bulty, 'restore bulties');
 
         $bulty = Bulty::withTrashed()->findOrFail($id);
         $bulty->restore();
@@ -502,7 +530,7 @@ class BultyController extends Controller
     public function forceDelete($id)
     {
         $bulty = Bulty::withTrashed()->findOrFail($id);
-        $this->authorizeBultyAction($bulty);
+        $this->authorizeBultyAction($bulty, 'force delete bulties');
 
         $lrNo = $bulty->lr_no;
 
@@ -526,7 +554,7 @@ class BultyController extends Controller
 
     public function destroy(Bulty $bulty)
     {
-        $this->authorizeBultyAction($bulty);
+        $this->authorizeBultyAction($bulty, 'delete bulties');
 
         if (!in_array($bulty->status, ['pending', 'planned'])) {
             return back()->with('error', 'Only bilties with Pending or Planned status can be deleted.');

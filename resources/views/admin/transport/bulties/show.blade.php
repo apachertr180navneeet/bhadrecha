@@ -221,20 +221,26 @@
                     </a>
                     @endif
 
+                    @can('edit bulties')
                     <a href="{{ route('admin.transport.bulties.edit', $bulty->id) }}" class="btn btn-primary action-btn">
                         <i class="bx bx-edit-alt me-1"></i> Edit
                     </a>
+                    @endcan
+                    @can('cancel bulties')
                     @if(in_array($bulty->status, ['pending', 'planned']))
                     <button type="button" class="btn btn-outline-danger action-btn" onclick="handleReject({{ $bulty->id }}, '{{ $bulty->lr_no }}')">
                         <i class="bx bx-x-circle me-1"></i> Reject
                     </button>
                     @endif
+                    @endcan
+                    @can('print bulties')
                     <a href="{{ route('admin.transport.bulties.print-bill', $bulty->id) }}" target="_blank" class="btn btn-secondary action-btn">
                         <i class="bx bx-printer me-1"></i> Print Bill
                     </a>
                     <a href="{{ route('admin.transport.bulties.pdf', $bulty->id) }}" class="btn btn-danger action-btn">
                         <i class="bx bxs-file-pdf me-1"></i> PDF
                     </a>
+                    @endcan
                 </div>
             </div>
         </div>

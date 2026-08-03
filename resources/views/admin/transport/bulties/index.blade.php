@@ -13,10 +13,14 @@
             </nav>
         </div>
         <div>
+            @canany(['restore bulties', 'force delete bulties'])
             <a href="{{ route('admin.transport.bulties.trashed') }}" class="btn btn-outline-danger"><i class="bx bx-trash me-1"></i> Recycle Bin</a>
+            @endcanany
+            @can('create bulties')
             <a href="{{ route('admin.transport.bulties.create') }}" class="btn btn-primary">
                 <i class="bx bx-plus me-1"></i> New Bilty
             </a>
+            @endcan
         </div>
     </div>
 
@@ -144,19 +148,29 @@
                             <span class="badge bg-label-{{ $color }}">{{ ucfirst(str_replace('_', ' ', $bulty->status)) }}</span>
                         </td>
                         <td class="text-end">
+                            @canany(['view bulties', 'edit bulties', 'cancel bulties', 'delete bulties'])
                             <div class="dropdown">
                                 <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown" data-bs-boundary="viewport"><i class="bx bx-dots-vertical-rounded"></i></button>
                                 <div class="dropdown-menu dropdown-menu-end">
+                                    @can('view bulties')
                                     <a class="dropdown-item" href="{{ route('admin.transport.bulties.show', $bulty->id) }}"><i class="bx bx-show me-1"></i> View</a>
+                                    @endcan
+                                    @can('edit bulties')
                                     <a class="dropdown-item" href="{{ route('admin.transport.bulties.edit', $bulty->id) }}"><i class="bx bx-edit me-1"></i> Edit</a>
+                                    @endcan
+                                    @can('cancel bulties')
                                     @if(in_array($bulty->status, ['pending', 'planned']))
                                     <button type="button" class="dropdown-item text-danger" onclick="handleReject({{ $bulty->id }}, '{{ $bulty->lr_no }}')"><i class="bx bx-x-circle me-1"></i> Reject</button>
                                     @endif
+                                    @endcan
+                                    @can('delete bulties')
                                     @if(in_array($bulty->status, ['pending', 'planned']))
                                     <button type="button" class="dropdown-item text-danger" onclick="handleDelete({{ $bulty->id }}, '{{ $bulty->lr_no }}')"><i class="bx bx-trash me-1"></i> Delete</button>
                                     @endif
+                                    @endcan
                                 </div>
                             </div>
+                            @endcanany
                         </td>
                     </tr>
                     @empty

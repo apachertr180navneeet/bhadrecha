@@ -45,13 +45,19 @@
                         <td>₹{{ number_format($bulty->total_amount, 2) }}</td>
                         <td class="text-nowrap">{{ $bulty->deleted_at->format('d M Y, h:i A') }}</td>
                         <td class="text-nowrap">
+                            @canany(['restore bulties', 'force delete bulties'])
                             <div class="dropdown">
                                 <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="bx bx-dots-vertical-rounded"></i></button>
                                 <div class="dropdown-menu">
+                                    @can('restore bulties')
                                     <button type="button" class="dropdown-item" onclick="handleRestore({{ $bulty->id }}, '{{ $bulty->lr_no }}')"><i class="bx bx-reset me-1"></i> Restore</button>
+                                    @endcan
+                                    @can('force delete bulties')
                                     <button type="button" class="dropdown-item text-danger" onclick="handleForceDelete({{ $bulty->id }}, '{{ $bulty->lr_no }}')"><i class="bx bx-trash me-1"></i> Permanently Delete</button>
+                                    @endcan
                                 </div>
                             </div>
+                            @endcanany
                         </td>
                     </tr>
                     @empty

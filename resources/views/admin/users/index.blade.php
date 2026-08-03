@@ -76,17 +76,25 @@
                             <td>{{ $user->roles->pluck('name')->implode(', ') }}</td>
                             <td><span class="badge bg-label-{{ $user->status == 'active' ? 'success' : 'danger' }}">{{ ucfirst($user->status) }}</span></td>
                             <td>
+                                @canany(['view users', 'edit users', 'delete users'])
                                 <div class="dropdown">
                                     <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="bx bx-dots-vertical-rounded"></i></button>
                                     <div class="dropdown-menu">
+                                        @can('view users')
                                         <a class="dropdown-item" href="{{ route('admin.users.show', $user->id) }}"><i class="bx bx-show me-1"></i> View</a>
+                                        @endcan
+                                        @can('edit users')
                                         <a class="dropdown-item" href="{{ route('admin.users.edit', $user->id) }}"><i class="bx bx-edit-alt me-1"></i> Edit</a>
                                         <form action="{{ route('admin.users.toggle-status', $user->id) }}" method="POST" class="d-inline">@csrf
                                             <button type="submit" class="dropdown-item"><i class="bx bx-{{ $user->status == 'active' ? 'pause' : 'play' }} me-1"></i> {{ $user->status == 'active' ? 'Deactivate' : 'Activate' }}</button>
                                         </form>
+                                        @endcan
+                                        @can('delete users')
                                         <button type="button" class="dropdown-item text-danger" onclick="handleDelete({{ $user->id }}, '{{ $user->first_name }} {{ $user->last_name }}')"><i class="bx bx-trash me-1"></i> Delete</button>
+                                        @endcan
                                     </div>
                                 </div>
+                                @endcanany
                             </td>
                         </tr>
                     @empty

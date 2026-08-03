@@ -30,15 +30,21 @@
                         <td class="text-center">{{ $role->users->count() }}</td>
                         <td>{{ $role->created_at->format('d M Y') }}</td>
                         <td>
+                            @canany(['edit roles', 'delete roles'])
                             <div class="dropdown">
                                 <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="bx bx-dots-vertical-rounded"></i></button>
                                 <div class="dropdown-menu">
+                                    @can('edit roles')
                                     <a class="dropdown-item" href="{{ route('admin.roles.edit', $role->id) }}"><i class="bx bx-edit me-1"></i> Edit</a>
+                                    @endcan
+                                    @can('delete roles')
                                     @if($role->users->count() == 0)
                                     <button type="button" class="dropdown-item text-danger" onclick="handleDelete({{ $role->id }}, '{{ $role->name }}')"><i class="bx bx-trash me-1"></i> Delete</button>
                                     @endif
+                                    @endcan
                                 </div>
                             </div>
+                            @endcanany
                         </td>
                     </tr>
                     @empty
