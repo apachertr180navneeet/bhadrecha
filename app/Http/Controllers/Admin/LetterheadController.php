@@ -16,6 +16,10 @@ class LetterheadController extends Controller
 {
     public function index(Request $request)
     {
+        if (!auth()->user()->can('view letterheads')) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $query = Letterhead::with('company', 'creator');
 
         if ($request->filled('search')) {
@@ -48,6 +52,10 @@ class LetterheadController extends Controller
 
     public function create()
     {
+        if (!auth()->user()->can('create letterheads')) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $companies = Company::where('status', 'active')->orderBy('name')->get();
         
         // Auto generate default letter_no
@@ -59,6 +67,10 @@ class LetterheadController extends Controller
 
     public function store(Request $request)
     {
+        if (!auth()->user()->can('create letterheads')) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $validated = $request->validate([
             'company_id' => 'required|exists:companies,id',
             'letter_no' => 'required|string|max:100|unique:letterheads,letter_no',
@@ -102,6 +114,10 @@ class LetterheadController extends Controller
 
     public function edit(Letterhead $letterhead)
     {
+        if (!auth()->user()->can('edit letterheads')) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $companies = Company::where('status', 'active')->orderBy('name')->get();
         return view('admin.letterheads.edit', compact('letterhead', 'companies'));
     }
@@ -162,6 +178,10 @@ class LetterheadController extends Controller
 
     public function sendMail(Request $request, Letterhead $letterhead)
     {
+        if (!auth()->user()->can('send letterheads mail') && !auth()->user()->can('view letterheads')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+        }
+
         $request->validate([
             'email' => 'required|email|max:255',
         ]);

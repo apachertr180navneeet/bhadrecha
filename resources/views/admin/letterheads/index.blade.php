@@ -13,9 +13,11 @@
             </div>
         </div>
         <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
+            @can('create letterheads')
             <a href="{{ route('admin.letterheads.create') }}" class="btn btn-primary btn-sm shadow-sm font-weight-bold">
                 <i class="bx bx-plus-circle me-1"></i> Create New Letterhead
             </a>
+            @endcan
         </div>
     </div>
 
@@ -126,6 +128,7 @@
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm" role="group">
                                         <!-- View / Print PDF -->
+                                        @can('view letterheads')
                                         <a href="{{ route('admin.letterheads.pdf', $lh->id) }}" target="_blank" class="btn btn-outline-primary" title="View / Print PDF">
                                             <i class="bx bx-show"></i>
                                         </a>
@@ -134,8 +137,10 @@
                                         <a href="{{ route('admin.letterheads.pdf', ['letterhead' => $lh->id, 'action' => 'download']) }}" class="btn btn-outline-info" title="Download PDF">
                                             <i class="bx bx-download"></i>
                                         </a>
+                                        @endcan
 
                                         <!-- Send Email Modal Button -->
+                                        @canany(['send letterheads mail', 'view letterheads'])
                                         <button type="button" class="btn btn-outline-success btn-send-mail" 
                                                 data-id="{{ $lh->id }}" 
                                                 data-ref="{{ $lh->letter_no }}"
@@ -143,13 +148,17 @@
                                                 title="Send Mail to Recipient">
                                             <i class="bx bx-paper-plane"></i>
                                         </button>
+                                        @endcanany
 
                                         <!-- Edit -->
+                                        @can('edit letterheads')
                                         <a href="{{ route('admin.letterheads.edit', $lh->id) }}" class="btn btn-outline-warning" title="Edit Letterhead">
                                             <i class="bx bx-edit-alt"></i>
                                         </a>
+                                        @endcan
 
                                         <!-- Delete -->
+                                        @can('delete letterheads')
                                         <form action="{{ route('admin.letterheads.destroy', $lh->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this letterhead?');">
                                             @csrf
                                             @method('DELETE')
@@ -157,6 +166,7 @@
                                                 <i class="bx bx-trash"></i>
                                             </button>
                                         </form>
+                                        @endcan
                                     </div>
                                 </td>
                             </tr>

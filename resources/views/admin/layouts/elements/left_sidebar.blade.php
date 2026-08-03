@@ -63,7 +63,7 @@
             </a>
         </li>
 
-        @canany(['view bulties', 'view trips', 'view billing'])
+        @canany(['view bulties', 'view trips', 'view billing', 'view letterheads'])
             <li class="menu-divider"></li>
             <li class="menu-header small text-uppercase">
                 <span class="menu-header-text">Transport Operations</span>
@@ -119,6 +119,9 @@
                     <div data-i18n="Toll Bills">Toll Bills</div>
                 </a>
             </li>
+        @endcan
+
+        @can('view letterheads')
             <li class="menu-item {{ request()->is('admin/letterheads*') ? 'active' : '' }}">
                 <a href="{{ route('admin.letterheads.index') }}" class="menu-link">
                     <i class="menu-icon tf-icons bx bx-envelope-open"></i>
