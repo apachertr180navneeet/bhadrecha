@@ -163,6 +163,7 @@
                             </div>
                         </div>
 
+                        @can('send letterheads mail')
                         <div class="form-group border-top pt-3">
                             <div class="form-check">
                                 <input type="checkbox" class="form-check-input" id="send_mail_now" name="send_mail_now" value="1">
@@ -171,6 +172,7 @@
                                 </label>
                             </div>
                         </div>
+                        @endcan
 
                         <div class="mt-4">
                             <button type="submit" class="btn btn-primary btn-block font-weight-bold py-2 shadow-sm w-100">

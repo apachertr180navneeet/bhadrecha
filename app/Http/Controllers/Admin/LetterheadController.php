@@ -92,7 +92,7 @@ class LetterheadController extends Controller
 
         ActivityLog::log('letterhead_created', "Created Letterhead #{$letterhead->letter_no} for {$letterhead->recipient_name}", $letterhead);
 
-        if ($request->has('send_mail_now') && !empty($letterhead->recipient_email)) {
+        if ($request->has('send_mail_now') && !empty($letterhead->recipient_email) && auth()->user()->can('send letterheads mail')) {
             try {
                 Mail::to($letterhead->recipient_email)->send(new LetterheadMail($letterhead));
                 return redirect()->route('admin.letterheads.index')
@@ -178,7 +178,7 @@ class LetterheadController extends Controller
 
     public function sendMail(Request $request, Letterhead $letterhead)
     {
-        if (!auth()->user()->can('send letterheads mail') && !auth()->user()->can('view letterheads')) {
+        if (!auth()->user()->can('send letterheads mail')) {
             return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
         }
 

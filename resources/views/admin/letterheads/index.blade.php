@@ -140,7 +140,7 @@
                                         @endcan
 
                                         <!-- Send Email Modal Button -->
-                                        @canany(['send letterheads mail', 'view letterheads'])
+                                        @can('send letterheads mail')
                                         <button type="button" class="btn btn-outline-success btn-send-mail" 
                                                 data-id="{{ $lh->id }}" 
                                                 data-ref="{{ $lh->letter_no }}"
@@ -148,7 +148,7 @@
                                                 title="Send Mail to Recipient">
                                             <i class="bx bx-paper-plane"></i>
                                         </button>
-                                        @endcanany
+                                        @endcan
 
                                         <!-- Edit -->
                                         @can('edit letterheads')
