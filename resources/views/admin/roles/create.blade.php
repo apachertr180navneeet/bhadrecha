@@ -13,11 +13,15 @@
                 </ol>
             </nav>
         </div>
+        <div class="d-flex gap-2">
+            <a href="{{ route('admin.roles.index') }}" class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" form="role-form" class="btn btn-primary"><i class="bx bx-save me-1"></i> Save Role</button>
+        </div>
     </div>
 
     <div class="card">
         <div class="card-body">
-            <form action="{{ route('admin.roles.store') }}" method="POST">
+            <form id="role-form" action="{{ route('admin.roles.store') }}" method="POST">
                 @csrf
                 <div class="row g-3 mb-4">
                     <div class="col-md-6">
@@ -113,33 +117,30 @@
                 </div>
 
                 @if(count($otherPermissions))
-                    <div class="card mb-3 border shadow-sm">
+                    <div class="card mb-3 border shadow-sm" id="other_permissions_container">
                         <div class="card-header bg-light fw-semibold">Other Permissions</div>
                         <div class="card-body">
                             <div class="row g-3">
                                 @foreach($otherPermissions as $entity => $perms)
-                                    <div class="col-12">
-                                        <div class="fw-semibold mb-2">{{ ucwords($entity) }}</div>
-                                    </div>
-                                    @foreach($perms as $perm)
-                                        <div class="col-auto">
-                                            <div class="form-check">
-                                                <input class="form-check-input permissions-checkbox" type="checkbox" name="permissions[]" value="{{ $perm->id }}" id="perm_{{ $perm->id }}" {{ in_array($perm->id, $selectedPermissions) ? 'checked' : '' }}>
-                                                <label class="form-check-label" for="perm_{{ $perm->id }}">{{ ucfirst($perm->name) }}</label>
-                                            </div>
+                                    <div class="col-12 other-permission-group" data-entity="{{ strtolower($entity) }}">
+                                        <div class="fw-semibold mb-2 text-primary">{{ ucwords($entity) }}</div>
+                                        <div class="row g-2">
+                                            @foreach($perms as $perm)
+                                                <div class="col-md-3 col-sm-6 other-permission-item">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input permissions-checkbox" type="checkbox" name="permissions[]" value="{{ $perm->id }}" id="perm_{{ $perm->id }}" {{ in_array($perm->id, $selectedPermissions) ? 'checked' : '' }}>
+                                                        <label class="form-check-label text-wrap" for="perm_{{ $perm->id }}">{{ ucfirst($perm->name) }}</label>
+                                                    </div>
+                                                </div>
+                                            @endforeach
                                         </div>
-                                    @endforeach
+                                    </div>
                                 @endforeach
                             </div>
                         </div>
                     </div>
                 @endif
                 @error('permissions')<div class="text-danger small mb-3">{{ $message }}</div>@enderror
-
-                <div class="mt-4 d-grid gap-2 d-md-flex justify-content-md-end">
-                    <a href="{{ route('admin.roles.index') }}" class="btn btn-outline-secondary">Cancel</a>
-                    <button type="submit" class="btn btn-primary"><i class="bx bx-save me-1"></i> Save</button>
-                </div>
             </form>
         </div>
     </div>
@@ -265,7 +266,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     updatePermissionState();
 
-    // Permission Search Filter
+    // Permission Search Filter (Module Matrix + Other Permissions)
     var searchInput = document.getElementById('permission_search');
     var clearBtn = document.getElementById('clear_permission_search');
     if (searchInput) {
@@ -275,18 +276,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 clearBtn.classList.toggle('d-none', query === '');
             }
 
+            // 1. Filter Module Matrix Table Rows
             var rows = document.querySelectorAll('.permissions-table tbody tr:not(#no_permission_match_row)');
-            var hasMatch = false;
+            var hasMatrixMatch = false;
 
             rows.forEach(function(row) {
                 var text = row.textContent.toLowerCase();
                 var match = text.indexOf(query) !== -1;
                 row.style.display = match ? '' : 'none';
-                if (match) hasMatch = true;
+                if (match) hasMatrixMatch = true;
             });
 
             var noMatchRow = document.getElementById('no_permission_match_row');
-            if (!hasMatch) {
+            if (!hasMatrixMatch) {
                 if (!noMatchRow) {
                     var tbody = document.querySelector('.permissions-table tbody');
                     noMatchRow = document.createElement('tr');
@@ -299,6 +301,37 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } else if (noMatchRow) {
                 noMatchRow.style.display = 'none';
+            }
+
+            // 2. Filter Other Permissions
+            var otherGroups = document.querySelectorAll('.other-permission-group');
+            var hasAnyOtherMatch = false;
+
+            otherGroups.forEach(function(group) {
+                var groupText = group.getAttribute('data-entity') || '';
+                var items = group.querySelectorAll('.other-permission-item');
+                var groupHasMatch = false;
+
+                items.forEach(function(item) {
+                    var itemText = item.textContent.toLowerCase();
+                    var itemMatch = groupText.indexOf(query) !== -1 || itemText.indexOf(query) !== -1;
+                    item.style.display = itemMatch ? '' : 'none';
+                    if (itemMatch) {
+                        groupHasMatch = true;
+                        hasAnyOtherMatch = true;
+                    }
+                });
+
+                group.style.display = groupHasMatch ? '' : 'none';
+            });
+
+            var otherContainer = document.getElementById('other_permissions_container');
+            if (otherContainer) {
+                if (query !== '' && !hasAnyOtherMatch) {
+                    otherContainer.style.display = 'none';
+                } else {
+                    otherContainer.style.display = '';
+                }
             }
         });
     }
