@@ -118,7 +118,20 @@
 </head>
 <body>
 
-<?php $company = $bulty->company ?? null; ?>
+<?php 
+    $company = $bulty->company ?? null; 
+    $sigPath = null;
+    if ($company && !empty($company->digital_signature)) {
+        $cleanSig = ltrim($company->digital_signature, '/');
+        if (file_exists(public_path($cleanSig))) {
+            $sigPath = public_path($cleanSig);
+        } elseif (file_exists(public_path('uploads/' . $cleanSig))) {
+            $sigPath = public_path('uploads/' . $cleanSig);
+        } elseif (\Illuminate\Support\Str::startsWith($cleanSig, ['http://', 'https://'])) {
+            $sigPath = $cleanSig;
+        }
+    }
+?>
 
 <!-- MASTER WRAPPER TABLE -->
 <table class="bilty-wrapper">
@@ -332,10 +345,12 @@
                     <td style="width: 50%; padding: 8px; vertical-align: top; text-align: right;">
                         <div>For <strong>{{ strtoupper($company->name ?? '') }}</strong></div>
                         
-                        <table style="width: 100%; margin-top: 25px; border: none;">
+                        <table style="width: 100%; margin-top: 10px; border: none;">
                             <tr>
                                 <td style="text-align: right; vertical-align: middle; border: none; font-weight: 800; font-size: 11px; padding-right: 10px;">
-                                    
+                                    @if($sigPath)
+                                        <img src="{{ $sigPath }}" alt="Digital Signature" style="max-height: 45px; max-width: 140px; object-fit: contain;">
+                                    @endif
                                 </td>
                                 <td style="text-align: right; vertical-align: middle; border: none; font-size: 7.5px; width: 80px;">
                                     signed by<br>
