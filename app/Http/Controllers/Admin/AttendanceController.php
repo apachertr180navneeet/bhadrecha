@@ -27,17 +27,12 @@ class AttendanceController extends Controller
             if ($request->filled('company_id')) {
                 $query->where('company_id', $request->company_id);
             }
-        } elseif ($authUser->isCompanyAdmin()) {
-            $query->whereDoesntHave('roles', function ($q) {
-                $q->whereIn('name', ['Super Admin', 'Company Admin']);
-            })->where('company_id', $authUser->company_id);
+            if ($employeeId) {
+                $query->where('id', $employeeId);
+            }
         } else {
-            // Regular user: can only see their own attendance
+            // Non-super admins see ONLY their own logged-in employee record
             $query->where('id', $authUser->id);
-        }
-
-        if ($employeeId && ($authUser->isSuperAdmin() || $authUser->isCompanyAdmin())) {
-            $query->where('id', $employeeId);
         }
 
         $users = $query->orderBy('first_name')->get();
@@ -63,10 +58,6 @@ class AttendanceController extends Controller
 
     public function checkIn(Request $request)
     {
-        if (auth()->user()->isAdmin()) {
-            return back()->with('error', 'Admins are not required to check in.');
-        }
-
         $request->validate(['date' => "required|date|before_or_equal:9999-12-31"]);
 
         $attendance = Attendance::firstOrCreate(
@@ -88,10 +79,6 @@ class AttendanceController extends Controller
 
     public function checkOut(Request $request)
     {
-        if (auth()->user()->isAdmin()) {
-            return back()->with('error', 'Admins are not required to check out.');
-        }
-
         $request->validate(['date' => "required|date|before_or_equal:9999-12-31"]);
 
         $attendance = Attendance::where('user_id', auth()->id())
@@ -115,8 +102,8 @@ class AttendanceController extends Controller
     public function markAttendance(Request $request)
     {
         $authUser = auth()->user();
-        if (!$authUser->isSuperAdmin() && !$authUser->isCompanyAdmin()) {
-            return back()->with('error', 'You are not authorized to mark attendance.');
+        if (!$authUser->isSuperAdmin() && $request->user_id != $authUser->id) {
+            return back()->with('error', 'You are only authorized to mark attendance for yourself.');
         }
 
         $request->validate([

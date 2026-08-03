@@ -139,13 +139,12 @@
     }
 
     .mark-btn {
-        opacity: 0;
+        opacity: 1;
         transition: all 0.25s ease;
         border-radius: 8px;
-        padding: 2px 8px;
-    }
-    tr:hover .mark-btn {
-        opacity: 1;
+        padding: 4px 8px;
+        background: rgba(105, 108, 255, 0.08);
+        color: #696cff;
     }
     .mark-btn:hover {
         background: #696cff;
@@ -212,8 +211,10 @@
                 </ol>
             </nav>
         </div>
-        @if(!auth()->user()->isAdmin())
         <div class="d-flex gap-2">
+            <button type="button" class="btn btn-primary rounded-pill px-4" onclick="openMarkModal({{ auth()->id() }}, '{{ auth()->user()->full_name }}')">
+                <i class="bx bx-edit me-1"></i> Mark Attendance
+            </button>
             <form method="POST" action="{{ route('admin.attendance.check-in') }}" style="display:inline">
                 @csrf
                 <input type="hidden" name="date" value="{{ date('Y-m-d') }}">
@@ -225,7 +226,6 @@
                 <button type="submit" class="btn btn-warning text-white rounded-pill px-4"><i class="bx bx-log-out me-1"></i> Check Out</button>
             </form>
         </div>
-        @endif
     </div>
 
     <div class="row g-4 mb-4">
@@ -306,7 +306,7 @@
                         @endfor
                     </select>
                 </div>
-                @if(auth()->user()->isSuperAdmin() || auth()->user()->isCompanyAdmin())
+                @if(auth()->user()->isSuperAdmin())
                 <div class="col-md-3">
                     <label class="form-label fw-semibold text-muted small mb-1">Employee</label>
                     <select name="user_id" class="form-select form-select-sm">
@@ -372,12 +372,10 @@
                                         <span class="fw-bold d-block text-dark">{{ $user->full_name }}</span>
                                         <small class="text-muted" style="font-size: 11px;">{{ $user->roles->first()?->name ?? 'N/A' }}</small>
                                     </div>
-                                    @if(auth()->user()->isSuperAdmin() || auth()->user()->isCompanyAdmin())
                                     <button type="button" class="btn mark-btn btn-sm" title="Mark Attendance"
                                         onclick="openMarkModal({{ $user->id }}, '{{ $user->full_name }}')">
                                         <i class="bx bx-edit" style="font-size: 14px;"></i>
                                     </button>
-                                    @endif
                                 </div>
                             </td>
                             <td><span style="font-size: 12px; color: #5d6778;">{{ $user->company?->name ?? '-' }}</span></td>
