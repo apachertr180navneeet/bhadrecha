@@ -54,9 +54,11 @@
         </div>
         <div>
             @if(!request()->routeIs('admin.reports.*'))
+            @can('create adblue outstanding')
             <button type="button" class="btn btn-primary" onclick="openPaymentModal()">
                 <i class="bx bx-plus me-1"></i> Record AdBlue Payment (Credit)
             </button>
+            @endcan
             @endif
         </div>
     </div>
@@ -339,12 +341,16 @@
                                     @if(!request()->routeIs('admin.reports.*'))
                                     <td class="text-center">
                                         <div class="d-flex justify-content-center gap-1">
+                                            @can('edit adblue outstanding')
                                             <button class="btn btn-sm btn-icon btn-outline-warning" onclick="editPayment({{ $p->id }})" title="Edit">
                                                 <i class="bx bx-edit"></i>
                                             </button>
+                                            @endcan
+                                            @can('delete adblue outstanding')
                                             <button class="btn btn-sm btn-icon btn-outline-danger" onclick="deletePayment({{ $p->id }})" title="Delete">
                                                 <i class="bx bx-trash"></i>
                                             </button>
+                                            @endcan
                                         </div>
                                     </td>
                                     @endif

@@ -72,9 +72,15 @@ class RolePermissionSeeder extends Seeder
             'reports' => [
                 'view reports', 'export reports',
                 'view vehicle report', 'view driver trip report', 'view customer ledger', 'view sales ledger', 'view tds report',
-                'view trip reports', 'view bilty advance details', 'view fuel report', 'view adblue report', 'view fuel outstanding', 'view adblue outstanding',
+                'view trip reports', 'view bilty advance details', 'view fuel report', 'view adblue report',
                 'view vehicle utilization', 'view mis report', 'view expense management', 'view vehicle document report',
                 'view gst tax report', 'view profit loss report'
+            ],
+            'fuel_outstanding' => [
+                'view fuel outstanding', 'create fuel outstanding', 'edit fuel outstanding', 'delete fuel outstanding'
+            ],
+            'adblue_outstanding' => [
+                'view adblue outstanding', 'create adblue outstanding', 'edit adblue outstanding', 'delete adblue outstanding'
             ],
             'consignors' => [
                 'view consignors', 'create consignors', 'edit consignors', 'delete consignors', 'restore consignors', 'force delete consignors', 'transfer consignors', 'import consignors'
@@ -196,7 +202,9 @@ class RolePermissionSeeder extends Seeder
             'manage categories', 'manage folders', 'view document reports', 'view activity', 'manage document trash',
             'view customer ledger', 'view sales ledger', 'view tds report',
             'view trip reports', 'view bilty advance details',
-            'view fuel report', 'view adblue report', 'view fuel outstanding', 'view adblue outstanding',
+            'view fuel report', 'view adblue report',
+            'view fuel outstanding', 'create fuel outstanding', 'edit fuel outstanding', 'delete fuel outstanding',
+            'view adblue outstanding', 'create adblue outstanding', 'edit adblue outstanding', 'delete adblue outstanding',
             'view vehicle report', 'view driver trip report',
         ])->get();
         $branchManager->syncPermissions($branchManagerPermissions);
@@ -231,7 +239,9 @@ class RolePermissionSeeder extends Seeder
             'manage categories', 'manage folders', 'view document reports', 'view activity', 'manage document trash',
             'view customer ledger', 'view sales ledger', 'view tds report',
             'view trip reports', 'view bilty advance details',
-            'view fuel report', 'view adblue report', 'view fuel outstanding', 'view adblue outstanding',
+            'view fuel report', 'view adblue report',
+            'view fuel outstanding', 'create fuel outstanding', 'edit fuel outstanding', 'delete fuel outstanding',
+            'view adblue outstanding', 'create adblue outstanding', 'edit adblue outstanding', 'delete adblue outstanding',
             'view vehicle report', 'view driver trip report',
             'view vehicle utilization', 'view mis report', 'view expense management',
             'view vehicle document report', 'view gst tax report', 'view profit loss report',

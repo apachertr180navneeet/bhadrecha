@@ -629,6 +629,10 @@ class TripController extends Controller
 
     public function fuelOutstanding(Request $request)
     {
+        if (!auth()->user()->can('view fuel outstanding')) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $vehicleList = Vehicle::orderBy('vehicle_number')->get();
         $fuelCompanies = FuelCompany::orderBy('name')->get();
         $fuelPumps = FuelPump::with('fuelCompany')->orderBy('name')->get();
@@ -1096,6 +1100,13 @@ class TripController extends Controller
 
     public function storeFuelPayment(Request $request)
     {
+        if (!auth()->user()->can('create fuel outstanding')) {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+            }
+            abort(403, 'Unauthorized action.');
+        }
+
         $validated = $request->validate([
             'company_id' => 'nullable|exists:companies,id',
             'date' => 'required|date|before_or_equal:9999-12-31',
@@ -1142,12 +1153,23 @@ class TripController extends Controller
 
     public function editFuelPayment($id)
     {
+        if (!auth()->user()->can('edit fuel outstanding')) {
+            return response()->json(['message' => 'Unauthorized action.'], 403);
+        }
+
         $payment = FuelPumpPayment::with('company')->findOrFail($id);
         return response()->json($payment);
     }
 
     public function updateFuelPayment(Request $request, $id)
     {
+        if (!auth()->user()->can('edit fuel outstanding')) {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+            }
+            abort(403, 'Unauthorized action.');
+        }
+
         $payment = FuelPumpPayment::findOrFail($id);
 
         $validated = $request->validate([
@@ -1175,6 +1197,10 @@ class TripController extends Controller
 
     public function destroyFuelPayment($id)
     {
+        if (!auth()->user()->can('delete fuel outstanding')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+        }
+
         $payment = FuelPumpPayment::findOrFail($id);
         $payment->delete();
 
@@ -1183,6 +1209,10 @@ class TripController extends Controller
 
     public function adblueOutstanding(Request $request)
     {
+        if (!auth()->user()->can('view adblue outstanding')) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $vehicleList = Vehicle::orderBy('vehicle_number')->get();
         $adblueCompanies = AdBlueCompany::orderBy('name')->get();
         
