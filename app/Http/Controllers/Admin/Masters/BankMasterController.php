@@ -15,11 +15,11 @@ class BankMasterController extends Controller
     public function __construct()
     {
         $this->middleware(function ($request, $next) {
-            if (!auth()->user() || !auth()->user()->isSuperAdmin()) {
+            if (!auth()->user() || (!auth()->user()->can('view banks') && !auth()->user()->isSuperAdmin())) {
                 abort(403);
             }
             return $next($request);
-        });
+        })->except(['quickStore']);
     }
 
     public function index(Request $request)

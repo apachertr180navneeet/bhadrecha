@@ -13,6 +13,10 @@ class RoleController extends Controller
 {
     public function index()
     {
+        if (!auth()->user()->can('view roles') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $roles = Role::with('permissions')->orderBy('name')->paginate(15);
         return view('admin.roles.index', compact('roles'));
     }

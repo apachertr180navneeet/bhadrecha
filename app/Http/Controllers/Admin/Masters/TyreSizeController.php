@@ -13,6 +13,10 @@ class TyreSizeController extends Controller
 {
     public function index(Request $request)
     {
+        if (!auth()->user()->can('view tyre sizes') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $query = TyreSize::with('brand', 'model');
 
         if ($request->filled('search')) {

@@ -104,7 +104,7 @@
                         <tr>
                             <td>{{ $loop->iteration }}</td>
                             <td>{{ $doc['vehicle_number'] }}</td>
-                            <td>{{ $doc['company_name'] }}</td>
+                            <td>{{ $doc['company_name'] ?? 'N/A' }}</td>
                             <td>{{ $doc['document'] }}</td>
                             <td>{{ \Carbon\Carbon::parse($doc['expiry_date'])->format('d-m-Y') }}</td>
                             <td>

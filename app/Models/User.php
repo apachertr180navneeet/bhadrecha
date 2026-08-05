@@ -128,12 +128,12 @@ class User extends Authenticatable implements JWTSubject
 
     public function isSuperAdmin()
     {
-        return $this->hasRole('Super Admin') || in_array(strtolower(trim($this->role ?? '')), ['super admin', 'super_admin', 'superadmin', 'admin']);
+        return $this->hasRole('Super Admin') || in_array(strtolower(trim($this->role ?? '')), ['super admin', 'super_admin', 'superadmin']);
     }
 
     public function isCompanyAdmin()
     {
-        return $this->hasRole('Company Admin') || in_array(strtolower(trim($this->role ?? '')), ['company admin', 'company_admin']);
+        return $this->hasRole('Company Admin') || in_array(strtolower(trim($this->role ?? '')), ['company admin', 'company_admin', 'admin']);
     }
 
     public function isBranchManager()

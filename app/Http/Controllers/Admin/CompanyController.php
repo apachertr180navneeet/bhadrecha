@@ -17,6 +17,10 @@ class CompanyController extends Controller
 {
     public function index()
     {
+        if (!auth()->user()->can('view companies') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $companies = Company::withCount('branches', 'users')
             ->orderBy('name')
             ->paginate(15);

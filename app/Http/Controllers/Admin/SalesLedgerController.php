@@ -9,6 +9,10 @@ class SalesLedgerController extends Controller
 {
     public function index(Request $request)
     {
+        if (!auth()->user()->can('view sales ledger') && !auth()->user()->can('view reports') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $user = auth()->user();
         $companyId = $user->isSuperAdmin()
             ? ($request->filled('company_id') ? $request->company_id : session('current_company_id'))
@@ -185,6 +189,10 @@ class SalesLedgerController extends Controller
 
     public function tdsReport(Request $request)
     {
+        if (!auth()->user()->can('view tds report') && !auth()->user()->can('view reports') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $user = auth()->user();
         $companyId = $user->isSuperAdmin()
             ? ($request->filled('company_id') ? $request->company_id : session('current_company_id'))
@@ -237,6 +245,10 @@ class SalesLedgerController extends Controller
 
     public function history(Request $request)
     {
+        if (!auth()->user()->can('view sales ledger') && !auth()->user()->can('view reports') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $user = auth()->user();
         $companyId = $user->isSuperAdmin()
             ? ($request->filled('company_id') ? $request->company_id : session('current_company_id'))

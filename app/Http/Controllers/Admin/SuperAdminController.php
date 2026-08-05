@@ -91,12 +91,20 @@ class SuperAdminController extends Controller
             'pollution_expiry' => 'Pollution Certificate',
         ];
         $thresholdDate = $threshold->toDateString();
+        $companyName = 'N/A';
+        if ($companyId && $companyId !== 'all') {
+            $comp = Company::find($companyId);
+            $companyName = $comp ? $comp->name : 'N/A';
+        } else {
+            $companyName = 'All Companies';
+        }
+
         $unionSql = '';
         $unionBindings = [];
         $first = true;
         foreach ($vehicleFields as $field => $label) {
-            $sql = "(SELECT v.id as vehicle_id, v.vehicle_number, 'N/A' as company_name, ? as document, ? as document_field, v.$field as expiry_date, DATEDIFF(?, v.$field) as days_left FROM vehicles v WHERE v.status = 'active' AND v.$field IS NOT NULL AND v.$field <= ?)";
-            $unionBindings = array_merge($unionBindings, [$label, $field, $thresholdDate, $thresholdDate]);
+            $sql = "(SELECT v.id as vehicle_id, v.vehicle_number, ? as company_name, ? as document, ? as document_field, v.$field as expiry_date, DATEDIFF(?, v.$field) as days_left FROM vehicles v WHERE v.status = 'active' AND v.$field IS NOT NULL AND v.$field <= ?)";
+            $unionBindings = array_merge($unionBindings, [$companyName, $label, $field, $thresholdDate, $thresholdDate]);
             if ($first) {
                 $unionSql = $sql;
                 $first = false;

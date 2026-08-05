@@ -15,7 +15,7 @@ class PackagingController extends Controller
     public function __construct()
     {
         $this->middleware(function ($request, $next) {
-            if (!auth()->user() || !auth()->user()->isSuperAdmin()) {
+            if (!auth()->user() || (!auth()->user()->can('view packagings') && !auth()->user()->isSuperAdmin())) {
                 abort(403);
             }
             return $next($request);

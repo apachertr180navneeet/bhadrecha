@@ -16,6 +16,10 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
+        if (!auth()->user()->can('view users') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $query = User::with(['company', 'branch', 'roles'])
             ->whereDoesntHave('roles', function($q) {
                 $q->where('name', 'Super Admin');

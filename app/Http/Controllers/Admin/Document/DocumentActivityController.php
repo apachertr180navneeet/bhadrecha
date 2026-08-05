@@ -11,6 +11,10 @@ class DocumentActivityController extends Controller
 {
     public function index(Request $request)
     {
+        if (!auth()->user()->can('view activity') && !auth()->user()->can('view activity logs') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $user = auth()->user();
         $companyId = $request->get('company_id', session('active_company_id', $user->company_id));
 

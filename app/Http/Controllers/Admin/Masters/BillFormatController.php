@@ -15,6 +15,10 @@ class BillFormatController extends Controller
 {
     public function index(Request $request)
     {
+        if (!auth()->user()->can('view bill formats') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         try {
             $query = BillFormat::with(['company', 'depot', 'party', 'gstMaster', 'user'])
                 ->orderBy('company_id')->orderBy('format_name');

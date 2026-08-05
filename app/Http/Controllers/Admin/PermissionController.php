@@ -13,6 +13,10 @@ class PermissionController extends Controller
 {
     public function index()
     {
+        if (!auth()->user()->can('view permissions') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $permissions = Permission::orderBy('name')->paginate(20);
         $groupedPermissions = Permission::all()->groupBy(function($perm) {
             $parts = explode('-', $perm->name);

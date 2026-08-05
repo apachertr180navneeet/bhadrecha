@@ -15,6 +15,10 @@ class SupplierController extends Controller
 {
     public function index(Request $request)
     {
+        if (!auth()->user()->can('view suppliers') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $query = Supplier::query();
 
         if ($request->filled('search')) {

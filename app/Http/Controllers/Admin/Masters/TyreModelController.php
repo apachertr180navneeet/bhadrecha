@@ -12,6 +12,10 @@ class TyreModelController extends Controller
 {
     public function index(Request $request)
     {
+        if (!auth()->user()->can('view tyre models') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $query = TyreModel::with('brand');
 
         if ($request->filled('search')) {

@@ -14,6 +14,10 @@ class BranchController extends Controller
 {
     public function index()
     {
+        if (!auth()->user()->can('view branches') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $companies = Company::where('status', 'active')->get();
         $branches = Branch::with(['company', 'users'])
             ->withCount('users')

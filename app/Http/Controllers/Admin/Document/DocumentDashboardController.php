@@ -21,6 +21,10 @@ class DocumentDashboardController extends Controller
 
     public function index(Request $request)
     {
+        if (!auth()->user()->can('view documents') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $user = auth()->user();
         $companyId = $request->get('company_id', session('active_company_id', $user->company_id));
 

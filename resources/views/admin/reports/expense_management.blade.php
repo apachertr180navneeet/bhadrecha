@@ -31,9 +31,7 @@
                         <label class="form-label">Vehicle</label>
                         <select name="vehicle_id" class="form-select select2">
                             <option value="">All Vehicles</option>
-                            @foreach(\App\Models\Vehicle::where('status', 'active')
-                                ->when($companyId && $companyId !== 'all', fn($q) => $q->where('company_id', $companyId))
-                                ->get() as $vehicle)
+                            @foreach(\App\Models\Vehicle::where('status', 'active')->orderBy('vehicle_number')->get() as $vehicle)
                                 <option value="{{ $vehicle->id }}" {{ request('vehicle_id') == $vehicle->id ? 'selected' : '' }}>
                                     {{ $vehicle->vehicle_number }}
                                 </option>

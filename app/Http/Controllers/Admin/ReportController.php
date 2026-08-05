@@ -842,6 +842,24 @@ class ReportController extends Controller
 
     public function vehicleDocumentReport(Request $request)
     {
+        if (!auth()->user()->can('view vehicle document report') && !auth()->user()->can('view reports') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $user = auth()->user();
+        $companyName = 'N/A';
+        if ($user->isSuperAdmin()) {
+            $companyId = $request->filled('company_id') ? $request->company_id : session('current_company_id');
+            if ($companyId && $companyId !== 'all') {
+                $comp = Company::find($companyId);
+                $companyName = $comp ? $comp->name : 'N/A';
+            } else {
+                $companyName = 'All Companies';
+            }
+        } else {
+            $companyName = $user->company ? $user->company->name : 'N/A';
+        }
+
         $thresholdDays = $request->filled('threshold_days') ? (int)$request->threshold_days : 30;
 
         $documentFields = [
@@ -897,7 +915,11 @@ class ReportController extends Controller
                 }
             }
             $documents = collect(DB::select($unionSql, $unionBindings))
-                ->map(fn($d) => (array) $d)
+                ->map(function ($d) use ($companyName) {
+                    $arr = (array) $d;
+                    $arr['company_name'] = $companyName;
+                    return $arr;
+                })
                 ->sortBy('days_left')
                 ->values();
         }
@@ -1204,6 +1226,10 @@ class ReportController extends Controller
 
     public function gstTaxReport(Request $request)
     {
+        if (!auth()->user()->can('view gst tax report') && !auth()->user()->can('view reports') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $user = auth()->user();
         $companyId = $user->isSuperAdmin()
             ? ($request->filled('company_id') ? $request->company_id : session('current_company_id'))
@@ -1276,6 +1302,10 @@ class ReportController extends Controller
 
     public function profitLossReport(Request $request)
     {
+        if (!auth()->user()->can('view profit loss report') && !auth()->user()->can('view reports') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $user = auth()->user();
         $companyId = $user->isSuperAdmin()
             ? ($request->filled('company_id') ? $request->company_id : session('current_company_id'))
@@ -2109,6 +2139,20 @@ class ReportController extends Controller
 
     public function exportVehicleDocuments(Request $request, $format = 'excel')
     {
+        $user = auth()->user();
+        $companyName = 'N/A';
+        if ($user->isSuperAdmin()) {
+            $companyId = $request->filled('company_id') ? $request->company_id : session('current_company_id');
+            if ($companyId && $companyId !== 'all') {
+                $comp = Company::find($companyId);
+                $companyName = $comp ? $comp->name : 'N/A';
+            } else {
+                $companyName = 'All Companies';
+            }
+        } else {
+            $companyName = $user->company ? $user->company->name : 'N/A';
+        }
+
         $thresholdDays = $request->filled('threshold_days') ? (int)$request->threshold_days : 30;
         $documentFields = ['insurance_expiry' => 'Insurance','fitness_expiry' => 'Fitness Certificate','permit_expiry' => 'Permit','pollution_expiry' => 'Pollution Certificate'];
         $selectedDoc = $request->input('document_type');
@@ -2116,14 +2160,14 @@ class ReportController extends Controller
         if ($request->filled('vehicle_id')) $query->where('id', $request->vehicle_id);
         $documents = collect();
         $threshold = now()->addDays($thresholdDays);
-        $query->chunk(100, function ($vehicles) use (&$documents, $documentFields, $selectedDoc, $threshold) {
+        $query->chunk(100, function ($vehicles) use (&$documents, $documentFields, $selectedDoc, $threshold, $companyName) {
             foreach ($vehicles as $vehicle) {
                 foreach ($documentFields as $field => $label) {
                     if ($selectedDoc && $selectedDoc !== $field) continue;
                     $expiryDate = $vehicle->$field;
                     if ($expiryDate && $expiryDate <= $threshold) {
                         $documents->push(['vehicle_number' => $vehicle->vehicle_number, 'vehicle_id' => $vehicle->id,
-                            'company_name' => 'N/A', 'document' => $label,
+                            'company_name' => $companyName, 'document' => $label,
                             'document_field' => $field, 'expiry_date' => $expiryDate, 'days_left' => now()->diffInDays($expiryDate, false)]);
                     }
                 }

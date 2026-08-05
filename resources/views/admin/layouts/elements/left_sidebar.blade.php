@@ -63,7 +63,7 @@
             </a>
         </li>
 
-        @canany(['view bulties', 'view trips', 'view billing', 'view letterheads'])
+        @canany(['view bulties', 'view trips', 'view fuel outstanding', 'view adblue outstanding', 'view billing', 'view letterheads'])
             <li class="menu-divider"></li>
             <li class="menu-header small text-uppercase">
                 <span class="menu-header-text">Transport Operations</span>
@@ -86,12 +86,18 @@
                     <div data-i18n="Trips">Trips</div>
                 </a>
             </li>
+        @endcan
+
+        @can('view fuel outstanding')
             <li class="menu-item {{ request()->is('admin/transport/trips/fuel-outstanding*') ? 'active' : '' }}">
                 <a href="{{ route('admin.transport.trips.fuel-outstanding') }}" class="menu-link">
                     <i class="menu-icon tf-icons bx bx-gas-pump"></i>
                     <div data-i18n="Fuel Outstanding">Fuel Outstanding</div>
                 </a>
             </li>
+        @endcan
+
+        @can('view adblue outstanding')
             <li class="menu-item {{ request()->is('admin/transport/trips/adblue-outstanding*') ? 'active' : '' }}">
                 <a href="{{ route('admin.transport.trips.adblue-outstanding') }}" class="menu-link">
                     <i class="menu-icon tf-icons bx bx-water"></i>
@@ -107,19 +113,25 @@
                     <div data-i18n="Generate Bill">Generate Bill</div>
                 </a>
             </li>
+        @endcan
+
+        @canany(['view invoices', 'view billing'])
             <li class="menu-item {{ request()->is('admin/transport/invoices*') ? 'active' : '' }}">
                 <a href="{{ route('admin.transport.invoices.index') }}" class="menu-link">
                     <i class="menu-icon tf-icons bx bx-history"></i>
                     <div data-i18n="Invoice History">Invoice History</div>
                 </a>
             </li>
+        @endcanany
+
+        @canany(['view toll bills', 'view billing'])
             <li class="menu-item {{ request()->is('admin/transport/toll-bills*') ? 'active' : '' }}">
                 <a href="{{ route('admin.transport.toll-bills.index') }}" class="menu-link">
                     <i class="menu-icon tf-icons bx bx-calculator"></i>
                     <div data-i18n="Toll Bills">Toll Bills</div>
                 </a>
             </li>
-        @endcan
+        @endcanany
 
         @can('view letterheads')
             <li class="menu-item {{ request()->is('admin/letterheads*') ? 'active' : '' }}">
@@ -399,14 +411,15 @@
                             </a>
                         </li>
                     @endcan
-                    @canany(['view adblue report', 'view adblue outstanding', 'view reports'])
+                    @can('view adblue report')
                         <li class="menu-item {{ (request()->is('admin/reports/adblue') || request()->is('admin/reports/adblue/*')) && !request()->is('admin/reports/adblue-outstanding*') ? 'active' : '' }}">
                             <a href="{{ route('admin.reports.adblue') }}" class="menu-link">
                                 <i class="menu-icon tf-icons bx bx-droplet"></i>
                                 <div data-i18n="AdBlue Report">AdBlue Report</div>
                             </a>
                         </li>
-                    @endcanany
+                    @endcan
+
                     @can('view fuel outstanding')
                         <li class="menu-item {{ request()->is('admin/reports/fuel-outstanding*') ? 'active' : '' }}">
                             <a href="{{ route('admin.reports.fuel-outstanding') }}" class="menu-link">
@@ -475,18 +488,14 @@
             </li>
         @endcanany
 
-        @canany(['view consignors', 'view consignees', 'view vehicles', 'view drivers', 'view companies', 'view
-            branches', 'view gst', 'view cities', 'view packagings', 'view units', 'view fuel pumps', 'view items', 'view
-            suppliers', 'view vendors', 'view banks', 'view bank branches', 'view bill formats'])
+        @canany(['view consignors', 'view consignees', 'view vehicles', 'view drivers', 'view companies', 'view branches', 'view gst', 'view cities', 'view packagings', 'view units', 'view fuel pumps', 'view fuel companies', 'view adblue companies', 'view tyre brands', 'view tyre models', 'view tyre sizes', 'view items', 'view suppliers', 'view vendors', 'view banks', 'view bank branches', 'view bill formats'])
             <li class="menu-divider"></li>
             <li class="menu-header small text-uppercase">
                 <span class="menu-header-text">Masters</span>
             </li>
         @endcanany
 
-        @canany(['view consignors', 'view consignees', 'view vehicles', 'view drivers', 'view companies', 'view
-            branches', 'view gst', 'view cities', 'view packagings', 'view units', 'view fuel pumps', 'view items', 'view
-            suppliers', 'view vendors', 'view banks', 'view bank branches', 'view bill formats'])
+        @canany(['view consignors', 'view consignees', 'view vehicles', 'view drivers', 'view companies', 'view branches', 'view gst', 'view cities', 'view packagings', 'view units', 'view fuel pumps', 'view fuel companies', 'view adblue companies', 'view tyre brands', 'view tyre models', 'view tyre sizes', 'view items', 'view suppliers', 'view vendors', 'view banks', 'view bank branches', 'view bill formats'])
             <li
                 class="menu-item {{ request()->is('admin/masters/*') || request()->is('admin/companies*') || request()->is('admin/branches*') ? 'active open' : '' }} has-sub">
                 <a href="javascript:void(0);" class="menu-link menu-toggle">
