@@ -347,7 +347,7 @@ class DocumentController extends Controller
 
     public function trash(Request $request)
     {
-        if (!auth()->user()->can('delete documents') && !auth()->user()->isSuperAdmin()) {
+        if (!auth()->user()->can('delete documents') && !auth()->user()->can('manage document trash') && !auth()->user()->isSuperAdmin()) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -399,6 +399,10 @@ class DocumentController extends Controller
 
     public function bulkAction(Request $request)
     {
+        if (!auth()->user()->can('view documents') && !auth()->user()->can('edit documents') && !auth()->user()->can('delete documents') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $action = $request->input('action');
         $documentIds = $request->input('document_ids', []);
 

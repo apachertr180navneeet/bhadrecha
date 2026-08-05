@@ -758,7 +758,7 @@
                 </li>
             @endcan
 
-            @canany(['view document reports', 'view documents'])
+            @can('view document reports')
                 <li class="menu-item {{ request()->is('admin/documents/reports/expiry*') ? 'active' : '' }}">
                     <a href="{{ route('admin.documents.reports.expiry') }}" class="menu-link">
                         <i class="menu-icon tf-icons bx bx-time-five"></i>
@@ -772,25 +772,25 @@
                         <div data-i18n="Storage Usage">Storage Usage</div>
                     </a>
                 </li>
-            @endcanany
+            @endcan
 
-            @canany(['view activity', 'view activity logs'])
+            @can('view activity')
                 <li class="menu-item {{ request()->is('admin/documents/activity-logs*') ? 'active' : '' }}">
                     <a href="{{ route('admin.documents.activity-logs') }}" class="menu-link">
                         <i class="menu-icon tf-icons bx bx-list-check"></i>
                         <div data-i18n="Doc Audit Logs">Doc Audit Trail</div>
                     </a>
                 </li>
-            @endcanany
+            @endcan
 
-            @canany(['manage document trash', 'delete documents'])
+            @can('manage document trash')
                 <li class="menu-item {{ request()->is('admin/documents/trash*') ? 'active' : '' }}">
                     <a href="{{ route('admin.documents.trash') }}" class="menu-link">
                         <i class="menu-icon tf-icons bx bx-trash"></i>
                         <div data-i18n="Doc Trash">Doc Trash Bin</div>
                     </a>
                 </li>
-            @endcanany
+            @endcan
         @endcanany
 
 

@@ -21,6 +21,10 @@ class DocumentVersionController extends Controller
 
     public function store(UploadVersionRequest $request, Document $document)
     {
+        if (!auth()->user()->can('upload documents') && !auth()->user()->can('create documents') && !auth()->user()->can('edit documents') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $file = $request->file('document_file');
         $changelog = $request->input('changelog');
 
@@ -32,6 +36,9 @@ class DocumentVersionController extends Controller
 
     public function download(DocumentVersion $version)
     {
+        if (!auth()->user()->can('view documents') && !auth()->user()->can('download documents') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
         if (!Storage::disk('local')->exists($version->storage_path)) {
             return back()->with('error', 'Version file not found on storage.');
         }

@@ -555,7 +555,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
         }
     })->name('run.migration');
 
-    Route::get('seed-roles-permissions', function () {
+    Route::get('no', function () {
         try {
             Artisan::call('db:seed', ['--class' => 'RolePermissionSeeder', '--force' => true]);
             $output = Artisan::output();
