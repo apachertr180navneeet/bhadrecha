@@ -641,6 +641,12 @@ class BillingController extends Controller
         $targetInvoice = $invoice;
         $metaData = $this->resolveTollInvoiceMetaData($invoice, $request);
         
+        $firstBulty = $targetInvoice->bulties->first();
+        $originState = $targetInvoice->company && $targetInvoice->company->state ? $targetInvoice->company->state : ($firstBulty && $firstBulty->originCity ? ($firstBulty->originCity->state ?? 'RAJASTHAN') : 'RAJASTHAN');
+        $placeOfSupply = $metaData['custom_place_of_supply'] ?: ($targetInvoice->custom_place_of_supply ?: ($firstBulty && $firstBulty->destinationCity ? ($firstBulty->destinationCity->state ?? 'RAJASTHAN') : 'RAJASTHAN'));
+        $isSameState = self::isSameGstState($originState, $placeOfSupply);
+        $gstType = $isSameState ? 'CGST_SGST' : 'IGST';
+
         if ($invoice->invoice_type !== 'toll') {
             $grandTollSum = 0;
             foreach ($invoice->bulties as $bulty) {
@@ -650,9 +656,13 @@ class BillingController extends Controller
             }
             
             $gstRate = $invoice->gstMaster ? floatval($invoice->gstMaster->percentage) : 18.00;
-            $calculatedGst = $grandTollSum * ($gstRate / 100);
+            $calculatedGst = round($grandTollSum * ($gstRate / 100), 2);
             $grandTotal = $grandTollSum + $calculatedGst;
             $amountInWords = self::convertNumberToWords($grandTotal);
+
+            $cgstVal = $gstType === 'CGST_SGST' ? round($calculatedGst / 2, 2) : 0.00;
+            $sgstVal = $gstType === 'CGST_SGST' ? round($calculatedGst / 2, 2) : 0.00;
+            $igstVal = $gstType === 'IGST' ? $calculatedGst : 0.00;
             
             $customBillNo = $request->bill_number;
             $prefix = 'INV-TOLL';
@@ -683,6 +693,10 @@ class BillingController extends Controller
                 'to_city_name' => $invoice->to_city_name,
                 'total_freight' => $grandTollSum,
                 'total_gst' => $calculatedGst,
+                'gst_type' => $gstType,
+                'cgst_amount' => $cgstVal,
+                'sgst_amount' => $sgstVal,
+                'igst_amount' => $igstVal,
                 'total_other' => 0,
                 'invoice_no' => $invoiceNo,
                 'bill_number' => $request->bill_number ?? $invoiceNo,
@@ -756,7 +770,7 @@ class BillingController extends Controller
         }
 
         $gstRate = $targetInvoice->gstMaster ? floatval($targetInvoice->gstMaster->percentage) : 18.00;
-        $calculatedGst = $grandTollSum * ($gstRate / 100);
+        $calculatedGst = round($grandTollSum * ($gstRate / 100), 2);
         $grandTotal = $grandTollSum + $calculatedGst;
         $amountInWords = self::convertNumberToWords($grandTotal);
 
@@ -764,12 +778,14 @@ class BillingController extends Controller
         $originState = $targetInvoice->company && $targetInvoice->company->state ? $targetInvoice->company->state : ($firstBulty && $firstBulty->originCity ? ($firstBulty->originCity->state ?? 'RAJASTHAN') : 'RAJASTHAN');
         $placeOfSupply = $targetInvoice->custom_place_of_supply ?: ($firstBulty && $firstBulty->destinationCity ? ($firstBulty->destinationCity->state ?? 'RAJASTHAN') : 'RAJASTHAN');
         $isSameState = self::isSameGstState($originState, $placeOfSupply);
+        $gstType = $isSameState ? 'CGST_SGST' : 'IGST';
 
-        $cgstVal = $isSameState ? ($calculatedGst / 2) : 0;
-        $sgstVal = $isSameState ? ($calculatedGst / 2) : 0;
-        $igstVal = !$isSameState ? $calculatedGst : 0;
+        $cgstVal = $gstType === 'CGST_SGST' ? round($calculatedGst / 2, 2) : 0.00;
+        $sgstVal = $gstType === 'CGST_SGST' ? round($calculatedGst / 2, 2) : 0.00;
+        $igstVal = $gstType === 'IGST' ? $calculatedGst : 0.00;
 
         $targetInvoice->update([
+            'gst_type' => $gstType,
             'total_freight' => $grandTollSum,
             'total_gst' => $calculatedGst,
             'cgst_amount' => $cgstVal,
@@ -796,14 +812,25 @@ class BillingController extends Controller
             return true;
         }
 
-        $cleanOrigin = strtoupper(trim(preg_replace('/[^A-Z]/i', '', preg_replace('/^\d+[-_\s]*/', '', (string)$originState))));
-        $cleanSupply = strtoupper(trim(preg_replace('/[^A-Z]/i', '', preg_replace('/^\d+[-_\s]*/', '', (string)$placeOfSupply))));
+        $originStr = strtoupper(trim((string)$originState));
+        $supplyStr = strtoupper(trim((string)$placeOfSupply));
 
-        if (empty($cleanOrigin) || empty($cleanSupply)) {
+        if ($originStr === $supplyStr) {
             return true;
         }
 
-        return $cleanOrigin === $cleanSupply;
+        if (is_numeric($originStr) && is_numeric($supplyStr)) {
+            return intval($originStr) === intval($supplyStr);
+        }
+
+        $cleanOrigin = strtoupper(trim(preg_replace('/[^A-Z]/i', '', preg_replace('/^\d+[-_\s]*/', '', $originStr))));
+        $cleanSupply = strtoupper(trim(preg_replace('/[^A-Z]/i', '', preg_replace('/^\d+[-_\s]*/', '', $supplyStr))));
+
+        if (!empty($cleanOrigin) && !empty($cleanSupply)) {
+            return $cleanOrigin === $cleanSupply;
+        }
+
+        return false;
     }
 
     public static function convertNumberToWords($amount)

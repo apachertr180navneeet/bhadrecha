@@ -39,7 +39,7 @@
     // State calculation
     $originState = $invoice->company && $invoice->company->state ? $invoice->company->state : ($firstBulty && $firstBulty->originCity ? ($firstBulty->originCity->state ?? 'RAJASTHAN') : 'RAJASTHAN');
     $isSameState = \App\Http\Controllers\Admin\Transport\BillingController::isSameGstState($originState, $placeOfSupply);
-    $gstType = $invoice->gst_type ?? ($isSameState ? 'CGST_SGST' : 'IGST');
+    $gstType = $isSameState ? 'CGST_SGST' : 'IGST';
 
     $gstRate = $invoice->gstMaster ? floatval($invoice->gstMaster->percentage) : 18.00;
 
@@ -74,7 +74,7 @@
         }
     }
 
-    $calculatedGst = $grandTollSum * ($gstRate / 100);
+    $calculatedGst = round($grandTollSum * ($gstRate / 100), 2);
     $grandTotal = $grandTollSum + $calculatedGst;
     $amountInWords = \App\Http\Controllers\Admin\Transport\BillingController::convertNumberToWords($grandTotal);
 @endphp
@@ -118,36 +118,26 @@
                             <td style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center;">{{ $invoice->invoice_date->format('d/m/Y') }}</td>
                         </tr>
                         <tr>
-                            <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px; vertical-align: top;">Address-</td>
-                            <td style="border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px; vertical-align: top; font-weight: bold;">
+                            <td rowspan="5" style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px; vertical-align: top;">COMPANY ADDRESS</td>
+                            <td rowspan="5" style="border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px; vertical-align: top; font-weight: bold;">
                                 {!! $partyAddress !!}
                             </td>
                             <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">STATE VENDOR CODE</td>
                             <td style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center;">{{ $invoice->state_vendor_code ?? $invoice->consignor->vendor_code ?? '' }}</td>
                         </tr>
                         <tr>
-                            <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">DISTRICT | STATE &amp; CODE</td>
-                            <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px; text-transform: uppercase;">
-                                {{ $partyCity }} | {{ $partyState }} &nbsp;&nbsp; CODE: {{ $stateCode }}
-                            </td>
                             <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">VENDOR CODE</td>
                             <td style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center;">{{ $invoice->vendor_code ?? $invoice->consignor->vendor_code ?? '' }}</td>
                         </tr>
                         <tr>
-                            <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">GSTN | PAN NO</td>
-                            <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px; text-transform: uppercase;">
-                                GSTN:- {{ $partyGst }}, PAN NO:- {{ $partyPan }}
-                            </td>
                             <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">VENDOR NAME</td>
                             <td style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center; text-transform: uppercase;">{{ $invoice->vendor_name ?? $companyName }}</td>
                         </tr>
                         <tr>
-                            <td colspan="2" style="border-top: 1px solid #000; border-right: 1px solid #000;"></td>
                             <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">BILL NO.</td>
                             <td style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center; color: #d00; font-size: 12px;">{{ $invoice->bill_number ?? $invoice->invoice_no }}</td>
                         </tr>
                         <tr>
-                            <td colspan="2" style="border-top: 1px solid #000; border-right: 1px solid #000;"></td>
                             <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">EPOD Status:-</td>
                             <td style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center;">{{ $invoice->epod_status ?? 'N' }}</td>
                         </tr>

@@ -35,7 +35,7 @@
     // State & GST Type calculation
     $originState = $invoice->company && $invoice->company->state ? $invoice->company->state : ($firstBulty && $firstBulty->originCity ? ($firstBulty->originCity->state ?? 'RAJASTHAN') : 'RAJASTHAN');
     $isSameState = \App\Http\Controllers\Admin\Transport\BillingController::isSameGstState($originState, $placeOfSupply);
-    $gstType = $invoice->gst_type ?? ($isSameState ? 'CGST_SGST' : 'IGST');
+    $gstType = $isSameState ? 'CGST_SGST' : 'IGST';
 
     $gstRate = $invoice->gstMaster ? floatval($invoice->gstMaster->percentage) : 18.00;
 
@@ -70,10 +70,10 @@
         }
     }
 
-    $calculatedGst = $grandTollSum * ($gstRate / 100);
-    $cgstVal = $calculatedGst / 2;
-    $sgstVal = $calculatedGst / 2;
-    $igstVal = $calculatedGst;
+    $calculatedGst = round($grandTollSum * ($gstRate / 100), 2);
+    $cgstVal = $gstType === 'CGST_SGST' ? round($calculatedGst / 2, 2) : 0.00;
+    $sgstVal = $gstType === 'CGST_SGST' ? round($calculatedGst / 2, 2) : 0.00;
+    $igstVal = $gstType === 'IGST' ? $calculatedGst : 0.00;
 
     $grandTotal = $grandTollSum + $calculatedGst;
     $amountInWords = \App\Http\Controllers\Admin\Transport\BillingController::convertNumberToWords($grandTotal);
@@ -187,38 +187,26 @@
                             <td style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center;">{{ $invoice->invoice_date->format('d/m/Y') }}</td>
                         </tr>
                         <tr>
-                            <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px; vertical-align: top;">Address-</td>
-                            <td id="billing_address_cell" contenteditable="true" style="border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px; vertical-align: top; font-weight: bold; outline: none;" title="Click to edit address">
+                            <td rowspan="5" style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px; vertical-align: top;">COMPANY ADDRESS</td>
+                            <td rowspan="5" id="billing_address_cell" contenteditable="true" style="border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px; vertical-align: top; font-weight: bold; outline: none;" title="Click to edit address">
                                 {!! $partyAddress !!}
                             </td>
                             <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">STATE VENDOR CODE</td>
-                            <td id="state_vendor_code_cell" style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center;">{{ $invoice->state_vendor_code ?? $invoice->state_vendor_code ?? '' }}</td>
+                            <td id="state_vendor_code_cell" style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center;">{{ $invoice->state_vendor_code ?? '' }}</td>
                         </tr>
                         <tr>
-                            <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">DISTRICT | STATE&CODE</td>
-                            <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px; text-transform: uppercase;">
-                                <span id="custom_district_cell" contenteditable="true" style="outline: none;" title="Click to edit district">{{ $partyCity }}</span>
-                                | <span id="custom_state_cell" contenteditable="true" style="outline: none;" title="Click to edit state">{{ $partyState }}</span>
-                                &nbsp;&nbsp; CODE: <span id="custom_state_code_cell" contenteditable="true" style="outline: none;" title="Click to edit state code">{{ $stateCode }}</span>
-                            </td>
                             <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">VENDOR CODE</td>
-                            <td id="vendor_code_cell" style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center;">{{ $invoice->vendor_code ?? $invoice->vendor_code ?? '' }}</td>
+                            <td id="vendor_code_cell" style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center;">{{ $invoice->vendor_code ?? '' }}</td>
                         </tr>
                         <tr>
-                            <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">GSTN | PAN NO</td>
-                            <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px; text-transform: uppercase;">
-                                GSTN:- <span id="custom_gstn_cell" contenteditable="true" style="outline: none;" title="Click to edit GSTN">{{ $partyGst }}</span>, PAN NO:- <span id="custom_pan_no_cell" contenteditable="true" style="outline: none;" title="Click to edit PAN number">{{ $partyPan }}</span>
-                            </td>
                             <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">VENDOR NAME</td>
-                            <td id="vendor_name_cell" style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center; text-transform: uppercase;">{{ $invoice->vendor_name ?? $invoice->vendor_name ?? '' }}</td>
+                            <td id="vendor_name_cell" style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center; text-transform: uppercase;">{{ $invoice->vendor_name ?? '' }}</td>
                         </tr>
                         <tr>
-                            <td colspan="2" style="border-top: 1px solid #000; border-right: 1px solid #000;"></td>
                             <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">BILL NO.</td>
                             <td id="bill_number_cell" contenteditable="true" style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center; color: #d00; font-size: 12px; outline: none;" title="Click to edit bill number">{{ $invoice->bill_number ?? '' }}</td>
                         </tr>
                         <tr>
-                            <td colspan="2" style="border-top: 1px solid #000; border-right: 1px solid #000;"></td>
                             <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">EPOD Status:-</td>
                             <td id="epod_status_cell" style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center;">{{ $invoice->epod_status ?? 'N' }}</td>
                         </tr>
