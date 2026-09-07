@@ -188,6 +188,7 @@ class TripController extends Controller
             'adblue_details.*.rate' => 'nullable|numeric|min:0',
             'adblue_details.*.amount' => 'nullable|numeric|min:0',
             'adblue_details.*.km' => 'nullable|numeric|min:0',
+            'adblue_details.*.payment_type' => 'nullable|string|in:credit,debit,cash',
 
             'other_details' => 'nullable|array',
             'other_details.*.title' => 'nullable|string|max:255',
@@ -360,6 +361,7 @@ class TripController extends Controller
             'adblue_details.*.rate' => 'nullable|numeric|min:0',
             'adblue_details.*.amount' => 'nullable|numeric|min:0',
             'adblue_details.*.km' => 'nullable|numeric|min:0',
+            'adblue_details.*.payment_type' => 'nullable|string|in:credit,debit,cash',
 
             'other_details' => 'nullable|array',
             'other_details.*.title' => 'nullable|string|max:255',
@@ -1326,7 +1328,7 @@ class TripController extends Controller
         $openingBalanceAll = 0.0;
 
         if ($request->filled('date_from')) {
-            $opAdBlueQuery = TripAdBlueDetail::query()->where('date', '<', $request->date_from);
+            $opAdBlueQuery = TripAdBlueDetail::query()->where(function ($q) { $q->whereNull('payment_type')->orWhere('payment_type', 'credit'); })->where('date', '<', $request->date_from);
             $opPaymentQuery = AdBlueCompanyPayment::query()->withoutGlobalScope('company')->where('date', '<', $request->date_from);
 
             if ($targetCompanyId) {
@@ -1365,7 +1367,7 @@ class TripController extends Controller
         }
 
         // 2. Calculate Summary Table (Overview) of all companies for the selected period
-        $adblueQuery = TripAdBlueDetail::query();
+        $adblueQuery = TripAdBlueDetail::query()->where(function ($q) { $q->whereNull('payment_type')->orWhere('payment_type', 'credit'); });
         $paymentQuery = AdBlueCompanyPayment::query()->withoutGlobalScope('company');
 
         if ($targetCompanyId) {
@@ -1459,7 +1461,8 @@ class TripController extends Controller
 
         // 3. Detailed Ledger
         $ledgerItems = [];
-        $adblueLedgerQuery = TripAdBlueDetail::with(['trip.builty.vehicle', 'adblueCompany']);
+        $adblueLedgerQuery = TripAdBlueDetail::with(['trip.builty.vehicle', 'adblueCompany'])
+            ->where(function ($q) { $q->whereNull('payment_type')->orWhere('payment_type', 'credit'); });
         $paymentLedgerQuery = AdBlueCompanyPayment::with(['adblueCompany', 'company'])->withoutGlobalScope('company');
 
         if ($targetCompanyId) {
@@ -1495,7 +1498,7 @@ class TripController extends Controller
         // Calculate single overall opening balance for the ledger view
         $singleOpeningBalance = 0.0;
         if ($request->filled('date_from')) {
-            $singleOpAdBlueQuery = TripAdBlueDetail::query()->where('date', '<', $request->date_from);
+            $singleOpAdBlueQuery = TripAdBlueDetail::query()->where(function ($q) { $q->whereNull('payment_type')->orWhere('payment_type', 'credit'); })->where('date', '<', $request->date_from);
             $singleOpPaymentQuery = AdBlueCompanyPayment::query()->withoutGlobalScope('company')->where('date', '<', $request->date_from);
 
             if ($targetCompanyId) {
