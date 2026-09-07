@@ -275,13 +275,22 @@ class VehicleController extends Controller
         }
 
         if ($vehicle) {
-            $inUse = Bulty::where('vehicle_id', $vehicle->id)
-                ->whereHas('trip', fn($q) => $q->where('status', 'pending'))
-                ->exists();
+            $openBultyQuery = Bulty::where('vehicle_id', $vehicle->id)
+                ->whereHas('trip', fn($q) => $q->where('status', 'pending'));
+
+            if ($request->filled('exclude_bulty_id')) {
+                $openBultyQuery->where('id', '!=', $request->exclude_bulty_id);
+            }
+
+            $openBulty = $openBultyQuery->first();
+            $inUse = (bool) $openBulty;
+
             return response()->json([
                 'success' => true,
                 'vehicle' => $vehicle,
                 'in_use' => $inUse,
+                'open_lr_no' => $openBulty ? $openBulty->lr_no : null,
+                'open_bulty_id' => $openBulty ? $openBulty->id : null,
             ]);
         }
         return response()->json(['success' => false, 'message' => 'Vehicle not found']);
@@ -296,8 +305,12 @@ class VehicleController extends Controller
         $term = trim($request->term ?? '');
         $cleanTerm = preg_replace('/[^A-Za-z0-9]/', '', $term);
 
-        $excludeIds = Bulty::whereHas('trip', fn($q) => $q->where('status', 'pending'))
-            ->pluck('vehicle_id')
+        $excludeQuery = Bulty::whereHas('trip', fn($q) => $q->where('status', 'pending'));
+        if ($request->filled('exclude_bulty_id')) {
+            $excludeQuery->where('id', '!=', $request->exclude_bulty_id);
+        }
+
+        $excludeIds = $excludeQuery->pluck('vehicle_id')
             ->filter()
             ->unique();
 

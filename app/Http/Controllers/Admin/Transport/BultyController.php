@@ -170,11 +170,11 @@ class BultyController extends Controller
             $validated['consignee_pod'] = asset('uploads/' . $path);
         }
         if (!empty($validated['vehicle_id'])) {
-            $vehicleInUse = Bulty::where('vehicle_id', $validated['vehicle_id'])
+            $conflictingBulty = Bulty::where('vehicle_id', $validated['vehicle_id'])
                 ->whereHas('trip', fn($q) => $q->where('status', 'pending'))
-                ->exists();
-            if ($vehicleInUse) {
-                return back()->withErrors(['vehicle_id' => 'This vehicle already has an open trip on another bilty. Close the trip first.'])->withInput();
+                ->first();
+            if ($conflictingBulty) {
+                return back()->withErrors(['vehicle_id' => "This vehicle already has an open trip on Bilty LR: {$conflictingBulty->lr_no}. Please complete or close that trip first."])->withInput();
             }
         }
 
@@ -267,12 +267,12 @@ class BultyController extends Controller
         }
 
         if (!empty($validated['vehicle_id'])) {
-            $vehicleInUse = Bulty::where('vehicle_id', $validated['vehicle_id'])
+            $conflictingBulty = Bulty::where('vehicle_id', $validated['vehicle_id'])
                 ->where('id', '!=', $bulty->id)
                 ->whereHas('trip', fn($q) => $q->where('status', 'pending'))
-                ->exists();
-            if ($vehicleInUse) {
-                return back()->withErrors(['vehicle_id' => 'This vehicle already has an open trip on another bilty. Close the trip first.'])->withInput();
+                ->first();
+            if ($conflictingBulty) {
+                return back()->withErrors(['vehicle_id' => "This vehicle already has an open trip on Bilty LR: {$conflictingBulty->lr_no}. Please complete or close that trip first."])->withInput();
             }
         }
 

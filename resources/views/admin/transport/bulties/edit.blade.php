@@ -1236,7 +1236,7 @@
                 $.ajax({
                     url: "{{ route('admin.masters.vehicles.search') }}",
                     method: 'GET',
-                    data: { term: term },
+                    data: { term: term, exclude_bulty_id: '{{ $bulty->id }}' },
                     success: function(vehicles) {
                         if (vehicles.length > 0) {
                             let html = '';
@@ -1293,15 +1293,16 @@
                     $.ajax({
                         url: "{{ route('admin.masters.vehicles.fetch-details') }}",
                         method: 'GET',
-                        data: { vehicle_number: vehicleNum },
+                        data: { vehicle_number: vehicleNum, exclude_bulty_id: '{{ $bulty->id }}' },
                         success: function(response) {
                             $('#vehicle_loader').addClass('d-none');
                             if (response.success) {
                                 if (response.in_use) {
+                                    const lrMsg = response.open_lr_no ? ` on Bilty <strong>${response.open_lr_no}</strong>` : ' on another bilty';
                                     Swal.fire({
                                         icon: 'warning',
                                         title: 'Vehicle In Use',
-                                        text: 'This vehicle already has an open trip on another bilty. Close the trip first before using it again.',
+                                        html: `This vehicle already has an open trip${lrMsg}. Please close or complete that trip before using it.`,
                                         confirmButtonColor: '#ef4444'
                                     });
                                     $('#vehicle_number').val('').removeClass('is-valid');

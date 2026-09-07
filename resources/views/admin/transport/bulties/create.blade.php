@@ -1244,10 +1244,11 @@
                             $('#vehicle_loader').addClass('d-none');
                             if (response.success) {
                                 if (response.in_use) {
+                                    const lrMsg = response.open_lr_no ? ` on Bilty <strong>${response.open_lr_no}</strong>` : ' on another bilty';
                                     Swal.fire({
                                         icon: 'warning',
                                         title: 'Vehicle In Use',
-                                        text: 'This vehicle already has an open trip on another bilty. Close the trip first before using it again.',
+                                        html: `This vehicle already has an open trip${lrMsg}. Please close or complete that trip before using it.`,
                                         confirmButtonColor: '#ef4444'
                                     });
                                     $('#vehicle_number').val('').removeClass('is-valid');

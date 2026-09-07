@@ -556,6 +556,23 @@
             </div>
         </div>
 
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body">
+                <h6 class="fw-bold mb-3">Trip Status</h6>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Status</label>
+                        <select name="status" class="form-select">
+                            <option value="pending" {{ old('status', $trip->status ?? 'pending') == 'pending' ? 'selected' : '' }}>Pending (Trip in progress)</option>
+                            <option value="complete" {{ old('status', $trip->status ?? 'pending') == 'complete' ? 'selected' : '' }}>Complete (Trip finished)</option>
+                            <option value="reject" {{ old('status', $trip->status ?? 'pending') == 'reject' ? 'selected' : '' }}>Reject</option>
+                        </select>
+                        <div class="form-text">Setting status to Complete marks the trip finished and frees the vehicle for new bilties.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="d-flex justify-content-end gap-2 mb-4">
             <a href="{{ route('admin.transport.trips.index') }}" class="btn btn-outline-secondary">Cancel</a>
             <button type="submit" class="btn btn-primary"><i class="bx bx-save me-1"></i> Update Trip</button>
