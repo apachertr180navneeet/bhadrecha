@@ -171,6 +171,7 @@ class BultyController extends Controller
         }
         if (!empty($validated['vehicle_id'])) {
             $conflictingBulty = Bulty::where('vehicle_id', $validated['vehicle_id'])
+                ->whereNotIn('status', ['delivered', 'rejected'])
                 ->whereHas('trip', fn($q) => $q->where('status', 'pending'))
                 ->first();
             if ($conflictingBulty) {
@@ -269,6 +270,7 @@ class BultyController extends Controller
         if (!empty($validated['vehicle_id'])) {
             $conflictingBulty = Bulty::where('vehicle_id', $validated['vehicle_id'])
                 ->where('id', '!=', $bulty->id)
+                ->whereNotIn('status', ['delivered', 'rejected'])
                 ->whereHas('trip', fn($q) => $q->where('status', 'pending'))
                 ->first();
             if ($conflictingBulty) {
@@ -298,20 +300,24 @@ class BultyController extends Controller
             $validated['pod_document'] = asset('uploads/' . $path);
             $validated['pod_document_status'] = false;
         }
+        if ($request->hasFile('consignor_pod')) {
+            $path = $request->file('consignor_pod')->store('pods', 'uploads');
+            $validated['consignor_pod'] = asset('uploads/' . $path);
+        }
+        if ($request->hasFile('consignee_pod')) {
+            $path = $request->file('consignee_pod')->store('pods', 'uploads');
+            $validated['consignee_pod'] = asset('uploads/' . $path);
+        }
 
         DB::transaction(function () use ($bulty, $validated, $items, $request) {
             $bulty->update($validated);
-
-            if ($this->hasSubmittedItems($items)) {
-                $this->syncItems($bulty, $items);
-            }
-
+            $this->syncItems($bulty, $items);
             $this->syncBultyDetail($bulty, $request);
         });
 
         ActivityLog::log('bulty_updated', "Updated bulty: {$bulty->lr_no}", $bulty);
 
-        return redirect()->route('admin.transport.bulties.show', $bulty)->with('success', 'Bulty updated successfully.');
+        return redirect()->route('admin.transport.bulties.index')->with('success', 'Bulty updated successfully. LR No: ' . $bulty->lr_no);
     }
 
     private function authorizeBultyAction(Bulty $bulty, ?string $permission = null): void
@@ -325,22 +331,26 @@ class BultyController extends Controller
         }
     }
 
-    public function approveDocument(Bulty $bulty)
+    public function approveMaterialDocument(Bulty $bulty)
     {
-        $this->authorizeBultyAction($bulty, 'approve bulty documents');
+        $this->authorizeBultyAction($bulty, 'approve bulty material document');
+
+        if (!$bulty->material_document) {
+            return back()->with('error', 'Cannot approve material document: no document uploaded.');
+        }
 
         $bulty->material_document_status = true;
         $bulty->status = 'dispatched';
         $bulty->save();
 
-        ActivityLog::log('document_approved', "Approved material document for bulty: {$bulty->lr_no}", $bulty);
+        ActivityLog::log('material_document_approved', "Approved material document for bulty: {$bulty->lr_no}", $bulty);
 
         return back()->with('success', 'Material document approved successfully. Status updated to Dispatched.');
     }
 
-    public function rejectDocument(Bulty $bulty)
+    public function rejectMaterialDocument(Bulty $bulty)
     {
-        $this->authorizeBultyAction($bulty, 'approve bulty documents');
+        $this->authorizeBultyAction($bulty, 'approve bulty material document');
 
         if ($bulty->material_document) {
             $relativePath = str_replace(asset('uploads/'), '', $bulty->material_document);
@@ -351,9 +361,9 @@ class BultyController extends Controller
         $bulty->material_document_status = false;
         $bulty->save();
 
-        ActivityLog::log('document_rejected', "Rejected material document for bulty: {$bulty->lr_no}", $bulty);
+        ActivityLog::log('material_document_rejected', "Rejected material document for bulty: {$bulty->lr_no}", $bulty);
 
-        return back()->with('success', 'Material document rejected. Driver can re-upload.');
+        return back()->with('success', 'Material document rejected and removed.');
     }
 
     public function approvePodDocument(Bulty $bulty)
@@ -367,6 +377,10 @@ class BultyController extends Controller
         $bulty->pod_document_status = true;
         $bulty->status = 'delivered';
         $bulty->save();
+
+        if ($bulty->trip) {
+            $bulty->trip->update(['status' => 'complete']);
+        }
 
         ActivityLog::log('pod_approved', "Approved POD for bulty: {$bulty->lr_no}", $bulty);
 
