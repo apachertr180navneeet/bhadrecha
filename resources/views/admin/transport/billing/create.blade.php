@@ -38,6 +38,8 @@
                                     <th>Consignee</th>
                                     <th>From → To</th>
                                     <th class="text-end">Freight (₹)</th>
+                                    <th class="text-end">Damage (₹)</th>
+                                    <th class="text-end">Shortage (₹)</th>
                                     <th class="text-end">GST (₹)</th>
                                     <th class="text-end">Other (₹)</th>
                                     <th class="text-end">Total (₹)</th>
@@ -45,7 +47,7 @@
                             </thead>
                             <tbody>
                                 @foreach($bulties as $bulty)
-                                <tr data-bulty-id="{{ $bulty->id }}" data-original-gst="{{ $bulty->gst_amount }}" data-original-total="{{ $bulty->total_amount }}" data-freight="{{ $bulty->freight_charges }}" data-other="{{ $bulty->other_charges }}">
+                                <tr data-bulty-id="{{ $bulty->id }}" data-original-gst="{{ $bulty->gst_amount }}" data-original-total="{{ $bulty->total_amount }}" data-freight="{{ $bulty->freight_charges }}" data-other="{{ $bulty->other_charges }}" data-damage="{{ $bulty->damage_amount ?? 0 }}" data-shortage="{{ $bulty->shortage_amount ?? 0 }}">
                                     <td><strong>{{ $bulty->lr_no }}</strong></td>
                                     <td>{{ $bulty->lr_date->format('d M Y') }}</td>
                                     <td>{{ $bulty->consignor->name ?? '-' }}</td>
@@ -56,9 +58,14 @@
                                         {{ $bulty->destinationCity->name ?? '-' }}
                                     </td>
                                     <td class="text-end col-freight">{{ number_format(floatval($bulty->total_amount), 2) }}</td>
+                                    <td class="text-end col-damage text-danger">{{ number_format(floatval($bulty->damage_amount ?? 0), 2) }}</td>
+                                    <td class="text-end col-shortage text-danger">{{ number_format(floatval($bulty->shortage_amount ?? 0), 2) }}</td>
                                     <td class="text-end col-gst">{{ number_format($bulty->gst_amount, 2) }}</td>
                                     <td class="text-end col-other">{{ number_format($bulty->other_charges, 2) }}</td>
-                                    <td class="text-end col-total"><strong>{{ number_format(floatval($bulty->total_amount) + floatval($bulty->gst_amount) + floatval($bulty->other_charges), 2) }}</strong></td>
+                                    @php
+                                        $rowNetTotal = floatval($bulty->total_amount) - floatval($bulty->damage_amount ?? 0) - floatval($bulty->shortage_amount ?? 0) + floatval($bulty->gst_amount) + floatval($bulty->other_charges);
+                                    @endphp
+                                    <td class="text-end col-total"><strong>{{ number_format($rowNetTotal, 2) }}</strong></td>
                                 </tr>
                                 @endforeach
                             </tbody>
@@ -66,6 +73,8 @@
                                 <tr>
                                     <th colspan="5" class="text-end">Total:</th>
                                     <th class="text-end" id="sum-selected-freight">{{ number_format($totals['freight'], 2) }}</th>
+                                    <th class="text-end" id="sum-selected-damage">{{ number_format($totals['damage'] ?? 0, 2) }}</th>
+                                    <th class="text-end" id="sum-selected-shortage">{{ number_format($totals['shortage'] ?? 0, 2) }}</th>
                                     <th class="text-end" id="sum-selected-gst">{{ number_format($totals['gst'], 2) }}</th>
                                     <th class="text-end" id="sum-selected-other">{{ number_format($totals['other'], 2) }}</th>
                                     <th class="text-end" id="sum-selected-total">{{ number_format($totals['grand'], 2) }}</th>
@@ -1434,18 +1443,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     other = parseFloat(bulty.other_charges || 0);
                 }
 
+                const damageAmount = parseFloat(bulty.damage_amount || 0);
+                const shortageAmount = parseFloat(bulty.shortage_amount || 0);
+                const netFreight = Math.max(0, freight - damageAmount - shortageAmount);
+
                 let bultyGst = parseFloat(bulty.gst_amount || 0);
                 
                 if (gstPercentage !== null) {
-                    bultyGst = freight * (gstPercentage / 100);
+                    bultyGst = netFreight * (gstPercentage / 100);
                 }
                 
-                const totalWithoutGst = freight + other;
+                const totalWithoutGst = netFreight + other;
                 const total = totalWithoutGst + bultyGst;
-                const damageAmount = parseFloat(bulty.damage_amount || 0);
-                const shortageAmount = parseFloat(bulty.shortage_amount || 0);
-                const netTotal = total - damageAmount - shortageAmount;
-                const totalAmountWithoutGst = totalWithoutGst - damageAmount - shortageAmount;
+                const netTotal = total;
+                const totalAmountWithoutGst = totalWithoutGst;
                 
                 totalAmountSum += netTotal;
                 freightSum += freight;
@@ -1458,7 +1469,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 const selectedTr = document.querySelector(`tr[data-bulty-id="${bulty.id}"]`);
                 if (selectedTr) {
                     selectedTr.querySelector('.col-freight').textContent = freight.toFixed(2);
+                    if (selectedTr.querySelector('.col-damage')) {
+                        selectedTr.querySelector('.col-damage').textContent = damageAmount.toFixed(2);
+                    }
+                    if (selectedTr.querySelector('.col-shortage')) {
+                        selectedTr.querySelector('.col-shortage').textContent = shortageAmount.toFixed(2);
+                    }
                     selectedTr.querySelector('.col-gst').textContent = bultyGst.toFixed(2);
+                    selectedTr.querySelector('.col-other').textContent = other.toFixed(2);
                     selectedTr.querySelector('.col-total').innerHTML = `<strong>${netTotal.toFixed(2)}</strong>`;
                 }
                 
@@ -1506,7 +1524,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const netFreightSum = freightSum - damageSum - shortageSum;
             const sumSelFreight = document.getElementById('sum-selected-freight');
             if (sumSelFreight) {
-                sumSelFreight.textContent = netFreightSum.toFixed(2);
+                sumSelFreight.textContent = freightSum.toFixed(2);
+                if (document.getElementById('sum-selected-damage')) {
+                    document.getElementById('sum-selected-damage').textContent = damageSum.toFixed(2);
+                }
+                if (document.getElementById('sum-selected-shortage')) {
+                    document.getElementById('sum-selected-shortage').textContent = shortageSum.toFixed(2);
+                }
                 document.getElementById('sum-selected-gst').textContent = gstSum.toFixed(2);
                 document.getElementById('sum-selected-other').textContent = otherSum.toFixed(2);
                 document.getElementById('sum-selected-total').textContent = totalAmountSum.toFixed(2);
@@ -1989,7 +2013,7 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
         }
 
-        const grandTotal = (type === 'gypsum') ? displayTotalAmt : netTotalS2;
+        const grandTotal = (type === 'gypsum') ? (displayTotalAmt - totalDamageAmt - totalShortageAmt) : netTotalS2;
         
         safeSetText('nath-s1-desc', descToUse);
         

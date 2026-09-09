@@ -63,6 +63,66 @@ class SalesLedgerController extends Controller
             }
         }
 
+        if ($request->filled('date_from')) {
+            $query->whereDate('invoice_date', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('invoice_date', '<=', $request->date_to);
+        }
+
+        // Metrics & Branch-wise calculations across ALL filtered records
+        $allMatchingInvoices = (clone $query)->get();
+
+        $totalAmountWithoutGstAll = 0.0;
+        $totalGstAll = 0.0;
+        $totalReceivableAll = 0.0;
+        $totalReceivedAll = 0.0;
+        $netOutstandingAll = 0.0;
+
+        $branchOverviewData = [];
+
+        foreach ($allMatchingInvoices as $inv) {
+            $amtWoGst = (float)($inv->total_freight + $inv->total_other);
+            $gst = (float)$inv->total_gst;
+            $receivable = (float)$inv->net_payable_amount;
+            $received = (float)$inv->total_received_amount;
+            $outstanding = (float)$inv->outstanding_amount;
+
+            $totalAmountWithoutGstAll += $amtWoGst;
+            $totalGstAll += $gst;
+            $totalReceivableAll += $receivable;
+            $totalReceivedAll += $received;
+            $netOutstandingAll += $outstanding;
+
+            $branchId = $inv->branch_id ?? 0;
+            $branchName = $inv->branch ? $inv->branch->name : 'N/A';
+            $compName = $inv->company ? $inv->company->name : ($inv->company_name ?? 'N/A');
+
+            if (!isset($branchOverviewData[$branchId])) {
+                $branchOverviewData[$branchId] = [
+                    'branch_id' => $branchId,
+                    'branch_name' => $branchName,
+                    'company_name' => $compName,
+                    'total_bills' => 0,
+                    'total_amount_without_gst' => 0.0,
+                    'total_gst' => 0.0,
+                    'total_receivable' => 0.0,
+                    'total_received' => 0.0,
+                    'outstanding_amount' => 0.0,
+                ];
+            }
+
+            $branchOverviewData[$branchId]['total_bills']++;
+            $branchOverviewData[$branchId]['total_amount_without_gst'] += $amtWoGst;
+            $branchOverviewData[$branchId]['total_gst'] += $gst;
+            $branchOverviewData[$branchId]['total_receivable'] += $receivable;
+            $branchOverviewData[$branchId]['total_received'] += $received;
+            $branchOverviewData[$branchId]['outstanding_amount'] += $outstanding;
+        }
+
+        uasort($branchOverviewData, fn($a, $b) => strcmp($a['branch_name'], $b['branch_name']));
+
         $invoices = $query->orderBy('invoice_date', 'desc')->paginate(20);
 
         $companies = $user->isSuperAdmin() ? \App\Models\Company::where('status', 'active')->get() : collect();
@@ -77,7 +137,28 @@ class SalesLedgerController extends Controller
                 $q->where('company_id', $companyId);
             })->orderBy('id', 'desc')->get(['id', 'bill_number', 'invoice_no', 'consignor_name', 'company_id', 'branch_id', 'status']);
 
-        return view('admin.reports.sales_ledger', compact('invoices', 'companies', 'branches', 'consignors', 'allBills'));
+        // Recent receiving records for payment logs tab
+        $recentReceivingsQuery = \App\Models\BillReceiving::with(['invoice.consignor', 'company', 'branch']);
+        if ($companyId && $companyId !== 'all') {
+            $recentReceivingsQuery->where('company_id', $companyId);
+        }
+        if ($request->filled('branch_id')) {
+            $recentReceivingsQuery->where('branch_id', $request->branch_id);
+        }
+        if ($request->filled('date_from')) {
+            $recentReceivingsQuery->whereDate('date', '>=', $request->date_from);
+        }
+        if ($request->filled('date_to')) {
+            $recentReceivingsQuery->whereDate('date', '<=', $request->date_to);
+        }
+        $recentReceivings = $recentReceivingsQuery->orderBy('date', 'desc')->take(50)->get();
+
+        return view('admin.reports.sales_ledger', compact(
+            'invoices', 'companies', 'branches', 'consignors', 'allBills',
+            'branchOverviewData', 'recentReceivings',
+            'totalAmountWithoutGstAll', 'totalGstAll', 'totalReceivableAll',
+            'totalReceivedAll', 'netOutstandingAll'
+        ));
     }
 
     public function exportExcel(Request $request)
@@ -132,6 +213,86 @@ class SalesLedgerController extends Controller
             }
         }
 
+        if ($request->filled('date_from')) {
+            $query->whereDate('invoice_date', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('invoice_date', '<=', $request->date_to);
+        }
+
+        if ($request->input('export_type') === 'branch_overview') {
+            $allInvoices = $query->get();
+            $branchData = [];
+            foreach ($allInvoices as $inv) {
+                $branchId = $inv->branch_id ?? 0;
+                $branchName = $inv->branch ? $inv->branch->name : 'N/A';
+                $compName = $inv->company ? $inv->company->name : ($inv->company_name ?? 'N/A');
+
+                if (!isset($branchData[$branchId])) {
+                    $branchData[$branchId] = [
+                        'branch_name' => $branchName,
+                        'company_name' => $compName,
+                        'total_bills' => 0,
+                        'total_amount_without_gst' => 0.0,
+                        'total_gst' => 0.0,
+                        'total_receivable' => 0.0,
+                        'total_received' => 0.0,
+                        'outstanding_amount' => 0.0,
+                    ];
+                }
+
+                $branchData[$branchId]['total_bills']++;
+                $branchData[$branchId]['total_amount_without_gst'] += (float)($inv->total_freight + $inv->total_other);
+                $branchData[$branchId]['total_gst'] += (float)$inv->total_gst;
+                $branchData[$branchId]['total_receivable'] += (float)$inv->net_payable_amount;
+                $branchData[$branchId]['total_received'] += (float)$inv->total_received_amount;
+                $branchData[$branchId]['outstanding_amount'] += (float)$inv->outstanding_amount;
+            }
+
+            $headings = [
+                'S.No', 'Company', 'Branch', 'Total Bills', 'Total Amt (w/o GST)', 'Total GST', 'Total Receivable', 'Total Received', 'Outstanding Amount'
+            ];
+
+            $data = [];
+            $sno = 1;
+            $sumBills = 0; $sumWoGst = 0; $sumGst = 0; $sumRecv = 0; $sumTotalRecv = 0; $sumOut = 0;
+            foreach ($branchData as $row) {
+                $sumBills += $row['total_bills'];
+                $sumWoGst += $row['total_amount_without_gst'];
+                $sumGst += $row['total_gst'];
+                $sumRecv += $row['total_receivable'];
+                $sumTotalRecv += $row['total_received'];
+                $sumOut += $row['outstanding_amount'];
+
+                $data[] = [
+                    $sno++,
+                    $row['company_name'],
+                    $row['branch_name'],
+                    $row['total_bills'],
+                    number_format($row['total_amount_without_gst'], 2, '.', ''),
+                    number_format($row['total_gst'], 2, '.', ''),
+                    number_format($row['total_receivable'], 2, '.', ''),
+                    number_format($row['total_received'], 2, '.', ''),
+                    number_format($row['outstanding_amount'], 2, '.', ''),
+                ];
+            }
+
+            $data[] = [
+                'TOTAL', '', '', $sumBills,
+                number_format($sumWoGst, 2, '.', ''),
+                number_format($sumGst, 2, '.', ''),
+                number_format($sumRecv, 2, '.', ''),
+                number_format($sumTotalRecv, 2, '.', ''),
+                number_format($sumOut, 2, '.', '')
+            ];
+
+            return \Maatwebsite\Excel\Facades\Excel::download(
+                new \App\Exports\Reports\ReportExport($headings, $data, 'Sales Ledger Branch Overview'),
+                'sales_ledger_branch_overview_' . now()->format('Y-m-d_His') . '.xlsx'
+            );
+        }
+
         $invoices = $query->orderBy('invoice_date', 'desc')->get();
 
         $headings = [
@@ -154,11 +315,22 @@ class SalesLedgerController extends Controller
         ];
 
         $data = [];
+        $sumWoGst = 0; $sumGst = 0; $sumTds = 0; $sumDed = 0; $sumNet = 0; $sumRecvAmt = 0; $sumRecvGst = 0; $sumTotRecv = 0; $sumOut = 0;
         foreach ($invoices as $index => $invoice) {
             $amountWithoutGst = $invoice->total_freight + $invoice->total_other;
             $netPayable = $invoice->net_payable_amount;
             $totalReceived = $invoice->total_received_amount;
             $outstanding = $invoice->outstanding_amount;
+
+            $sumWoGst += $amountWithoutGst;
+            $sumGst += $invoice->total_gst;
+            $sumTds += $invoice->tds;
+            $sumDed += $invoice->deduction;
+            $sumNet += $netPayable;
+            $sumRecvAmt += $invoice->receiving_amount;
+            $sumRecvGst += $invoice->receiving_gst;
+            $sumTotRecv += $totalReceived;
+            $sumOut += $outstanding;
 
             $billNo = !empty($invoice->bill_number) ? $invoice->bill_number : ($invoice->invoice_no ?? ('INV-' . $invoice->id));
 
@@ -181,6 +353,20 @@ class SalesLedgerController extends Controller
                 ucfirst($invoice->status)
             ];
         }
+
+        $data[] = [
+            'TOTAL', '', '', '', '', '',
+            number_format($sumWoGst, 2, '.', ''),
+            number_format($sumGst, 2, '.', ''),
+            number_format($sumTds, 2, '.', ''),
+            number_format($sumDed, 2, '.', ''),
+            number_format($sumNet, 2, '.', ''),
+            number_format($sumRecvAmt, 2, '.', ''),
+            number_format($sumRecvGst, 2, '.', ''),
+            number_format($sumTotRecv, 2, '.', ''),
+            number_format($sumOut, 2, '.', ''),
+            ''
+        ];
 
         return \Maatwebsite\Excel\Facades\Excel::download(
             new \App\Exports\Reports\ReportExport($headings, $data, 'Sales Ledger Report'),
@@ -508,5 +694,70 @@ class SalesLedgerController extends Controller
         });
 
         return back()->with('success', 'Receiving entry deleted successfully.');
+    }
+
+    public function getBillDetails($id)
+    {
+        if (!auth()->user()->can('edit sales ledger') && !auth()->user()->can('view sales ledger') && !auth()->user()->can('view reports') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $invoice = \App\Models\Invoice::with(['company', 'branch', 'consignor'])->find($id);
+
+        if (!$invoice) {
+            return response()->json(['success' => false, 'message' => 'Invoice not found']);
+        }
+
+        $billNo = !empty($invoice->bill_number) ? $invoice->bill_number : ($invoice->invoice_no ?? ('INV-' . $invoice->id));
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $invoice->id,
+                'bill_number' => $billNo,
+                'invoice_no' => $invoice->invoice_no,
+                'invoice_date' => $invoice->invoice_date?->format('Y-m-d'),
+                'consignor_id' => $invoice->consignor_id,
+                'consignor_name' => $invoice->consignor_name,
+                'billing_address' => $invoice->billing_address ?? '',
+                'company_name' => $invoice->company ? $invoice->company->name : ($invoice->company_name ?? ''),
+                'branch_name' => $invoice->branch ? $invoice->branch->name : '',
+                'status' => $invoice->status,
+                'total_freight' => $invoice->total_freight,
+                'total_gst' => $invoice->total_gst,
+                'total_other' => $invoice->total_other,
+                'net_payable_amount' => $invoice->net_payable_amount,
+                'outstanding_amount' => $invoice->outstanding_amount,
+                'show_url' => route('admin.transport.invoices.show', $invoice->id),
+                'generate_url' => route('admin.transport.invoices.bill-generate', $invoice->id),
+            ]
+        ]);
+    }
+
+    public function updateBill(Request $request, $id)
+    {
+        if (!auth()->user()->can('edit sales ledger') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $request->validate([
+            'bill_number' => 'required|string|max:255',
+            'invoice_date' => 'required|date',
+            'consignor_name' => 'nullable|string|max:255',
+            'billing_address' => 'nullable|string|max:1000',
+            'status' => 'required|in:pending,paid,cancelled',
+        ]);
+
+        $invoice = \App\Models\Invoice::findOrFail($id);
+
+        $invoice->update([
+            'bill_number' => $request->bill_number,
+            'invoice_date' => $request->invoice_date,
+            'consignor_name' => $request->consignor_name ?: $invoice->consignor_name,
+            'billing_address' => $request->billing_address,
+            'status' => $request->status,
+        ]);
+
+        return back()->with('success', 'Bill details updated successfully.');
     }
 }

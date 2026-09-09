@@ -154,6 +154,8 @@ Route::name('admin.')->prefix('admin')->group(function () {
         Route::put('reports/sales-ledger/receiving/{id}', [\App\Http\Controllers\Admin\SalesLedgerController::class, 'updateReceiving'])->name('reports.sales-ledger.update-receiving');
         Route::delete('reports/sales-ledger/receiving/{id}', [\App\Http\Controllers\Admin\SalesLedgerController::class, 'deleteReceiving'])->name('reports.sales-ledger.delete-receiving');
         Route::get('reports/sales-ledger/invoice-details/{id}', [\App\Http\Controllers\Admin\SalesLedgerController::class, 'getInvoiceDetails'])->name('reports.sales-ledger.invoice-details');
+        Route::get('reports/sales-ledger/bill-details/{id}', [\App\Http\Controllers\Admin\SalesLedgerController::class, 'getBillDetails'])->name('reports.sales-ledger.bill-details');
+        Route::put('reports/sales-ledger/bill/{id}', [\App\Http\Controllers\Admin\SalesLedgerController::class, 'updateBill'])->name('reports.sales-ledger.update-bill');
         Route::get('reports/tds-report', [\App\Http\Controllers\Admin\SalesLedgerController::class, 'tdsReport'])->name('reports.tds-report');
         Route::get('reports/bilty-advance-details', [BiltyAdvanceDetailController::class, 'index'])->name('reports.bilty-advance-details.index');
         Route::post('reports/bilty-advance-details', [BiltyAdvanceDetailController::class, 'store'])->name('reports.bilty-advance-details.store');

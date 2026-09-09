@@ -43,6 +43,8 @@
                             <th>Consignor</th>
                             <th>Consignee</th>
                             <th class="text-end">Freight (₹)</th>
+                            <th class="text-end">Damage (₹)</th>
+                            <th class="text-end">Shortage (₹)</th>
                             <th class="text-end">GST (₹)</th>
                             <th class="text-end">Other (₹)</th>
                             <th class="text-end">Total (₹)</th>
@@ -68,6 +70,10 @@
                                 $lineFreight = floatval($bulty->freight_charges) - floatval($bulty->advance_amount);
                                 $lineOther = floatval($bulty->other_charges);
                             }
+
+                            $damage = floatval($bulty->damage_amount ?? 0);
+                            $shortage = floatval($bulty->shortage_amount ?? 0);
+                            $netFreight = max(0, $lineFreight - $damage - $shortage);
                             
                             $gstPercentage = $invoice->gstMaster ? floatval($invoice->gstMaster->percentage) : null;
                             if ($invoice->invoice_type === 'toll' && $gstPercentage === null) {
@@ -75,12 +81,12 @@
                             }
                             
                             if ($gstPercentage !== null) {
-                                $lineGst = $lineFreight * ($gstPercentage / 100);
+                                $lineGst = $netFreight * ($gstPercentage / 100);
                             } else {
                                 $lineGst = floatval($bulty->gst_amount);
                             }
                             
-                            $lineTotal = $lineFreight + $lineOther + $lineGst;
+                            $lineTotal = $netFreight + $lineOther + $lineGst;
                         @endphp
                         <tr>
                             <td>{{ $index + 1 }}</td>
@@ -91,20 +97,24 @@
                             <td>{{ $bulty->consignor->name ?? '-' }}</td>
                             <td>{{ $bulty->consignee->name ?? '-' }}</td>
                             <td class="text-end">{{ number_format($lineFreight, 2) }}</td>
+                            <td class="text-end text-danger">{{ number_format($damage, 2) }}</td>
+                            <td class="text-end text-danger">{{ number_format($shortage, 2) }}</td>
                             <td class="text-end">{{ number_format($lineGst, 2) }}</td>
                             <td class="text-end">{{ number_format($lineOther, 2) }}</td>
                             <td class="text-end"><strong>{{ number_format($lineTotal, 2) }}</strong></td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="11" class="text-center py-4">No LRs found for this invoice.</td>
+                            <td colspan="13" class="text-center py-4">No LRs found for this invoice.</td>
                         </tr>
                         @endforelse
                     </tbody>
                     <tfoot class="table-dark">
                         <tr>
                             <th colspan="7" class="text-end">Totals:</th>
-                            <th class="text-end">{{ number_format($invoice->total_freight, 2) }}</th>
+                            <th class="text-end">{{ number_format($invoice->bulties->sum(function($b) { return floatval($b->freight_charges) - floatval($b->advance_amount); }), 2) }}</th>
+                            <th class="text-end text-danger">{{ number_format($invoice->bulties->sum('damage_amount'), 2) }}</th>
+                            <th class="text-end text-danger">{{ number_format($invoice->bulties->sum('shortage_amount'), 2) }}</th>
                             <th class="text-end">{{ number_format($invoice->total_gst, 2) }}</th>
                             <th class="text-end">{{ number_format($invoice->total_other, 2) }}</th>
                             <th class="text-end">{{ number_format($invoice->total_amount, 2) }}</th>

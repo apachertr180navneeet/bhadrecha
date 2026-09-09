@@ -76,11 +76,21 @@ class BillingController extends Controller
         }
 
         $totals = [
-            'freight' => $bulties->sum('total_amount'),
+            'freight' => $bulties->sum(function($b) {
+                return floatval($b->freight_charges) - floatval($b->advance_amount);
+            }),
+            'damage' => $bulties->sum(fn($b) => floatval($b->damage_amount ?? 0)),
+            'shortage' => $bulties->sum(fn($b) => floatval($b->shortage_amount ?? 0)),
+            'net_freight' => $bulties->sum(function($b) {
+                $f = floatval($b->freight_charges) - floatval($b->advance_amount);
+                return $f - floatval($b->damage_amount ?? 0) - floatval($b->shortage_amount ?? 0);
+            }),
             'gst' => $bulties->sum('gst_amount'),
             'other' => $bulties->sum('other_charges'),
             'grand' => $bulties->sum(function($b) {
-                return floatval($b->total_amount) + floatval($b->gst_amount) + floatval($b->other_charges);
+                $f = floatval($b->freight_charges) - floatval($b->advance_amount);
+                $netF = $f - floatval($b->damage_amount ?? 0) - floatval($b->shortage_amount ?? 0);
+                return $netF + floatval($b->other_charges) + floatval($b->gst_amount);
             }),
         ];
 
@@ -204,10 +214,12 @@ class BillingController extends Controller
                 $gst = floatval($bulty->gst_amount);
 
                 if ($gstPercentage !== null) {
-                    $gst = $freight * ($gstPercentage / 100);
+                    $netFreightForGst = max(0, $freight - $damage - $shortage);
+                    $gst = $netFreightForGst * ($gstPercentage / 100);
                 }
 
-                $total = $freight + $other - $damage - $shortage + $gst;
+                $netFreightLine = $freight - $damage - $shortage;
+                $total = $netFreightLine + $other + $gst;
 
                 $totalFreight += $freight;
                 $totalGst += $gst;
@@ -248,10 +260,12 @@ class BillingController extends Controller
 
             $defaultGstType = $isSameState ? 'CGST_SGST' : 'IGST';
             $gstType = $request->input('gst_type') ?: $defaultGstType;
+            $netTotalFreight = $totalFreight - $totalDamage - $totalShortage;
+
             if ($request->filled('total_gst') && floatval($request->total_gst) > 0) {
                 $totalGst = floatval($request->total_gst);
-            } elseif ($gstPercentage !== null && $gstPercentage > 0 && $totalFreight > 0) {
-                $totalGst = round($totalFreight * ($gstPercentage / 100), 2);
+            } elseif ($gstPercentage !== null && $gstPercentage > 0 && $netTotalFreight > 0) {
+                $totalGst = round($netTotalFreight * ($gstPercentage / 100), 2);
             }
 
             if ($gstType === 'IGST') {
@@ -264,14 +278,22 @@ class BillingController extends Controller
                 $igstAmount = 0.00;
             }
 
+            $rcmPayable = $request->has('rcm_payable') ? (int)$request->rcm_payable : 1;
+
             if ($request->filled('total_amount') && floatval($request->total_amount) > 0) {
                 $totalAmount = floatval($request->total_amount);
             } else {
-                $totalAmount = $totalFreight + $totalOther - $totalDamage - $totalShortage + $totalGst;
+                // Final Bill Amount = Original Bill Amount - Shortage Amount - Damage Amount
+                // If GST is exclusive and applicable, add GST; otherwise don't add GST again
+                if ($rcmPayable == 1 || $totalGst <= 0) {
+                    $totalAmount = $netTotalFreight + $totalOther;
+                } else {
+                    $totalAmount = $netTotalFreight + $totalOther + $totalGst;
+                }
             }
             $amountInWords = self::convertNumberToWords($totalAmount);
 
-            $invoice = DB::transaction(function () use ($firstBulty, $consignorId, $consignorName, $fromCityName, $toCityName, $totalFreight, $totalGst, $totalOther, $invoiceNo, $invoiceType, $totalAmount, $amountInWords, $format, $groupBulties, $request, $isMaiharUnloading, $companyName, $gstType, $cgstAmount, $sgstAmount, $igstAmount) {
+            $invoice = DB::transaction(function () use ($firstBulty, $consignorId, $consignorName, $fromCityName, $toCityName, $netTotalFreight, $totalGst, $totalOther, $invoiceNo, $invoiceType, $totalAmount, $amountInWords, $format, $groupBulties, $request, $isMaiharUnloading, $companyName, $gstType, $cgstAmount, $sgstAmount, $igstAmount, $rcmPayable) {
                 $invoice = Invoice::create([
                     'company_id' => $firstBulty->company_id,
                     'branch_id' => $firstBulty->branch_id,
@@ -283,7 +305,7 @@ class BillingController extends Controller
                     'custom_place_of_supply' => $request->custom_place_of_supply,
                     'from_city_name' => $fromCityName,
                     'to_city_name' => $toCityName,
-                    'total_freight' => $totalFreight,
+                    'total_freight' => $netTotalFreight,
                     'total_gst' => $totalGst,
                     'total_other' => $totalOther,
                     'invoice_no' => $invoiceNo,
@@ -311,7 +333,7 @@ class BillingController extends Controller
                     'cgst_amount' => $cgstAmount,
                     'sgst_amount' => $sgstAmount,
                     'igst_amount' => $igstAmount,
-                    'rcm_payable' => $request->has('rcm_payable') ? (int)$request->rcm_payable : 1,
+                    'rcm_payable' => $rcmPayable,
                 ]);
 
                 foreach ($groupBulties as $bulty) {
