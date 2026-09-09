@@ -63,6 +63,13 @@
             </a>
         </li>
 
+        <li class="menu-item {{ request()->is('admin/notifications*') ? 'active' : '' }}">
+            <a href="{{ route('admin.notifications.index') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-bell"></i>
+                <div data-i18n="Notifications">Expiry Alerts</div>
+            </a>
+        </li>
+
         @canany(['view bulties', 'view trips', 'view fuel outstanding', 'view adblue outstanding', 'view billing', 'view letterheads'])
             <li class="menu-divider"></li>
             <li class="menu-header small text-uppercase">

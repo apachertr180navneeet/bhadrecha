@@ -77,9 +77,16 @@ class BultyController extends Controller
             ->pluck('count', 'status')
             ->toArray();
 
-        $bulties = $query->orderBy('updated_at', 'desc')->orderBy('id', 'desc')->paginate(15)->withQueryString();
+        $dateSort = $request->get('date_sort', 'latest');
+        if ($dateSort === 'oldest') {
+            $query->orderBy('lr_date', 'asc')->orderBy('id', 'asc');
+        } else {
+            $query->orderBy('lr_date', 'desc')->orderBy('id', 'desc');
+        }
 
-        return view('admin.transport.bulties.index', compact('bulties', 'statusCounts'));
+        $bulties = $query->paginate(15)->withQueryString();
+
+        return view('admin.transport.bulties.index', compact('bulties', 'statusCounts', 'dateSort'));
     }
 
     public function nextLRNumber($branchId)

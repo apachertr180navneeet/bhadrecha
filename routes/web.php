@@ -164,6 +164,13 @@ Route::name('admin.')->prefix('admin')->group(function () {
         Route::get('reports/bilty-advance-details/export', [BiltyAdvanceDetailController::class, 'exportExcel'])->name('reports.bilty-advance-details.export');
         Route::get('reports/bilty-advance-details/bulty-info/{id}', [BiltyAdvanceDetailController::class, 'getBultyInfo'])->name('reports.bilty-advance-details.bulty-info');
 
+        // Notification Center & Expiry Alerts Routes
+        Route::get('notifications', [\App\Http\Controllers\Admin\NotificationController::class, 'index'])->name('notifications.index');
+        Route::get('notifications/unread', [\App\Http\Controllers\Admin\NotificationController::class, 'getUnread'])->name('notifications.unread');
+        Route::post('notifications/{id}/read', [\App\Http\Controllers\Admin\NotificationController::class, 'markAsRead'])->name('notifications.read');
+        Route::post('notifications/mark-all-read', [\App\Http\Controllers\Admin\NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
+        Route::post('notifications/sync-check', [\App\Http\Controllers\Admin\NotificationController::class, 'syncCheck'])->name('notifications.sync-check');
+
         Route::get('reports/vehicle/export/{format}', [ReportController::class, 'exportVehicle'])->name('reports.vehicle.export');
         Route::get('reports/trip/export/{format}', [ReportController::class, 'exportTrip'])->name('reports.trip.export');
         Route::get('reports/driver-trip/export/{format}', [ReportController::class, 'exportDriverTrip'])->name('reports.driver-trip.export');
