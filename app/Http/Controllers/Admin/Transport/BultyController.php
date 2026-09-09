@@ -331,6 +331,16 @@ class BultyController extends Controller
         }
     }
 
+    public function approveDocument(Bulty $bulty)
+    {
+        return $this->approveMaterialDocument($bulty);
+    }
+
+    public function rejectDocument(Bulty $bulty)
+    {
+        return $this->rejectMaterialDocument($bulty);
+    }
+
     public function approveMaterialDocument(Bulty $bulty)
     {
         $this->authorizeBultyAction($bulty, 'approve bulty material document');
