@@ -478,7 +478,7 @@
         <td colspan="{{ floor((ceil($colCount * 2 / 3)) / 2) }}" style="border-left: 2px solid #000; border: 1px solid #ddd; font-weight: bold; padding: 10px;">IFC CODE</td>
         <td colspan="{{ ceil((ceil($colCount * 2 / 3)) / 2) }}" style="border: 1px solid #ddd; font-weight: bold; padding: 10px;">{{ $bankIfsc }}</td>
         <td colspan="{{ $colCount - ceil($colCount * 2 / 3) }}" style="border-right: 2px solid #000; text-align: right; vertical-align: bottom;">
-            <div style="font-size: 8px; color: #555; margin-bottom: 5px;">Print Date: {{ date('d-m-Y H:i:s') }}</div>
+            <div style="font-size: 8px; color: #555; margin-bottom: 5px;">Print Date: {{ date('d-m-Y H:i:s') }} +05'30'</div>
         </td>
     </tr>
     <tr>
@@ -489,7 +489,7 @@
                 @if(!empty($companyOwner))
                     <div style="font-size: 8px; color: #333; font-weight: bold; line-height: 1.2; text-align: center; display: inline-block;">Digitally signed by {{ $companyOwner }}</div><br/>
                 @endif
-                <div style="font-size: 8px; color: #555; line-height: 1.2; text-align: center; display: inline-block; margin-bottom: 4px;">Date: {{ date('d-m-Y H:i:s') }}</div><br/>
+                <div style="font-size: 8px; color: #555; line-height: 1.2; text-align: center; display: inline-block; margin-bottom: 4px;">Date: {{ date('d-m-Y H:i:s') }} +05'30'</div><br/>
                 <span style="border-top: 1px solid #000; padding-top: 3px; display: inline-block; width: 150px; text-align: center;">Authorized Signatory</span>
             </div>
         </td>

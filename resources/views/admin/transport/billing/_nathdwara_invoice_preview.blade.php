@@ -265,7 +265,7 @@
                     @if(!empty($companyOwner))
                         <div style="font-size: 8px; color: #333; font-weight: bold; line-height: 1.2;">Digitally signed by {{ $companyOwner }}</div>
                     @endif
-                    <div style="font-size: 8px; color: #555; line-height: 1.2;">Date: {{ date('d-m-Y H:i:s') }}</div>
+                    <div style="font-size: 8px; color: #555; line-height: 1.2;">Date: {{ date('d-m-Y H:i:s') }} +05'30'</div>
                 </div>
                 <div style="padding: 4px; font-weight: bold; border-top: 1px solid #000;">Authorized Signatory</div>
             </div>
@@ -422,7 +422,7 @@
                     @if(!empty($companyOwner))
                         <div style="font-size: 8px; color: #333; font-weight: bold; line-height: 1.2;">Digitally signed by {{ $companyOwner }}</div>
                     @endif
-                    <div style="font-size: 8px; color: #555; line-height: 1.2;">Date: {{ date('d-m-Y H:i:s') }}</div>
+                    <div style="font-size: 8px; color: #555; line-height: 1.2;">Date: {{ date('d-m-Y H:i:s') }} +05'30'</div>
                 </div>
                 <div style="font-size: 9px; font-weight: bold;">Authorized Signature</div>
             </div>

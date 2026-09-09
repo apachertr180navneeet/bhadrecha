@@ -355,7 +355,7 @@
                                 <td style="text-align: right; vertical-align: middle; border: none; font-size: 7.5px; width: 80px;">
                                     signed by<br>
                                     Date: {{ $bulty->created_at ? date('d/m/Y', strtotime($bulty->created_at)) : '-' }}<br>
-                                    {{ $bulty->created_at ? date('H:i:s', strtotime($bulty->created_at)) : '-' }}
+                                    {{ $bulty->created_at ? date('H:i:s', strtotime($bulty->created_at)) . ' +05\'30\'' : '-' }}
                                 </td>
                             </tr>
                         </table>

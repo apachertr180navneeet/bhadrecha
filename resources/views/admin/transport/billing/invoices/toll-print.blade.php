@@ -387,7 +387,7 @@
                             @if(!empty($compOwner))
                                 <div style="font-size: 8px; color: #333; font-weight: bold; line-height: 1.2;">Digitally signed by {{ $compOwner }}</div>
                             @endif
-                            <div style="font-size: 8px; color: #555; line-height: 1.2;">Date: {{ date('d-m-Y H:i:s') }}</div>
+                            <div style="font-size: 8px; color: #555; line-height: 1.2;">Date: {{ date('d-m-Y H:i:s') }} +05'30'</div>
                             <div class="fw-bold" style="font-size: 11px; border-top: 1px solid #000; width: 80%; margin: 4px auto 0; padding-top: 4px;">Authorized Signatory</div>
                         </div>
                     </div>

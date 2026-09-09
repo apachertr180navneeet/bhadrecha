@@ -191,7 +191,7 @@
                                         Digitally signed by <span class="preview-company-owner-name">{{ strtoupper($defaultCompany->owner_name ?? '') }}</span>
                                     </div>
                                     <div style="font-size: 8px; color: #555; line-height: 1.2;">
-                                        Date: {{ date('d-m-Y H:i:s') }}
+                                        Date: {{ date('d-m-Y H:i:s') }} +05'30'
                                     </div>
                                 </div>
                                 <div style="font-size: 10px;">
@@ -365,7 +365,7 @@
                                         Digitally signed by <span class="preview-company-owner-name">{{ strtoupper($defaultCompany->owner_name ?? '') }}</span>
                                     </div>
                                     <div style="font-size: 8px; color: #555; line-height: 1.2;">
-                                        Date: {{ date('d-m-Y H:i:s') }}
+                                        Date: {{ date('d-m-Y H:i:s') }} +05'30'
                                     </div>
                                 </div>
                                 <div style="margin-top: auto;" class="fw-bold">Authorized Signatory</div>
@@ -486,7 +486,7 @@
                                         Digitally signed by <span class="preview-company-owner-name">{{ strtoupper($defaultCompany->owner_name ?? '') }}</span>
                                     </div>
                                     <div style="font-size: 8px; color: #555; line-height: 1.2;">
-                                        Date: {{ date('d-m-Y H:i:s') }}
+                                        Date: {{ date('d-m-Y H:i:s') }} +05'30'
                                     </div>
                                 </div>
                             </div>
