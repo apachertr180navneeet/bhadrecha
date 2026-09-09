@@ -109,6 +109,7 @@
                 <input type="hidden" name="custom_gstn" id="hidden_custom_gstn" value="">
                 <input type="hidden" name="custom_pan_no" id="hidden_custom_pan_no" value="">
                 <input type="hidden" name="consignor_name" id="hidden_consignor_name" value="">
+                <input type="hidden" name="no_of_lrs" id="hidden_no_of_lrs" value="">
                 @foreach($invoice->bulties as $bulty)
                     <input type="hidden" name="bulty_modes[{{ $bulty->id }}]" id="hidden_bulty_mode_{{ $bulty->id }}" value="">
                 @endforeach
@@ -116,6 +117,7 @@
                     function gv(id){var e=document.getElementById(id);return e?e.innerText.trim():'';}
                     function gh(id){var e=document.getElementById(id);return e?e.innerHTML.trim():'';}
                     document.getElementById('hidden_bill_number').value = gv('bill_number_cell');
+                    document.getElementById('hidden_no_of_lrs').value = gv('no_of_lrs_cell');
                     document.getElementById('hidden_company_name').value = gv('company_name_cell');
                     document.getElementById('hidden_billing_address').value = gh('billing_address_cell');
                     document.getElementById('hidden_custom_hsn_code').value = gv('custom_hsn_cell');
@@ -149,34 +151,31 @@
 <div class="row justify-content-center">
     <div class="col-12" style="max-width: 1200px;">
         <div class="card border-0 shadow-none p-0 m-0" style="background: transparent;">
-            <div class="card-body p-0" style="background: #fff; color: #000; font-family: Arial, Helvetica, sans-serif; font-size: 11px; line-height: 1.4;">
-                <div id="toll-print-sheet" style="border: 1px solid #000; padding: 0;">
+            <div class="card-body p-2" style="background: #fff; color: #000; font-family: Arial, Helvetica, sans-serif; font-size: 10px; line-height: 1.3;">
+                
+                <!-- MAIN SHEET CONTAINER -->
+                <div id="toll-print-sheet" style="border: 2px solid #000; padding: 0; box-sizing: border-box; background: #fff;">
                     
-                    <!-- TAX INVOICE HEADER -->
-                    <div class="text-center fw-bold" style="border-bottom: 1px solid #000; padding: 4px; font-size: 14px; text-transform: uppercase;">
-                        TAX INVOICE
-                    </div>
-                    
-                    <div class="text-center" style="border-bottom: 1px solid #000; padding: 6px;">
-                        <div style="font-size: 11px; margin-top: 4px; font-weight: bold;">{{ $companyAddress }}</div>
-                        <div style="font-size: 11px; margin-top: 2px; font-weight: bold;">
-                            PAN NO. : {{ $companyPan }} &nbsp;&nbsp; GSTIN : {{ $companyGst }} &nbsp;&nbsp; STATE: RAJASTHAN CODE 08
-                        </div>
+                    <!-- Top GST / TAX INVOICE / PAN Header -->
+                    <div class="d-flex justify-content-between align-items-center position-relative" style="border-bottom: 2px solid #000; padding: 4px 8px; font-weight: bold; font-size: 11px;">
+                        <div>GSTIN: <span>{{ $companyGst }}</span></div>
+                        <div class="position-absolute top-50 start-50 translate-middle fw-bold" style="font-size: 13px; letter-spacing: 0.5px;">TAX INVOICE</div>
+                        <div>PAN: <span>{{ $companyPan }}</span></div>
                     </div>
 
-                    <div class="text-center fw-bold" style="border-bottom: 1px solid #000; padding: 4px; font-size: 11px; text-transform: uppercase;">
-                        WHEATHER IS PAYABLE UNDER REVERSE CHARGE MECHANISIM:-{{ $rcmPayableVal == 1 ? 'YES' : 'NO' }}
-                    </div>
-
-                    <div class="text-center fw-bold" style="background: #ccc; border-bottom: 1px solid #000; padding: 5px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">
-                        TRANSPORATION TOLL FREIGHT BILL
+                    <!-- Company Name & Header -->
+                    <div class="text-center" style="border-bottom: 2px solid #000; padding: 6px;">
+                        <h2 class="m-0 fw-bold" style="font-size: 18px; letter-spacing: 1px; text-transform: uppercase;">
+                            <span id="company_name_cell" contenteditable="true" style="outline: none;" title="Click to edit company name">{{ $companyName }}</span>
+                        </h2>
+                        <div style="font-size: 10px; margin-top: 2px;">{{ $companyAddress }}</div>
                     </div>
 
                     <!-- Supply and Vendor Codes Meta Info -->
-                    <table class="w-100 table-meta" style="border-collapse: collapse; border-bottom: 1px solid #000;">
+                    <table class="table-meta" style="width: 100%; border-collapse: collapse; text-align: left;">
                         <tr>
-                            <td style="width: 15%; font-weight: bold; border-right: 1px solid #000; padding: 4px;">PLACE OF SUPPLY</td>
-                            <td id="custom_place_of_supply_cell" contenteditable="true" style="width: 45%; font-weight: bold; border-right: 1px solid #000; padding: 4px; text-transform: uppercase; outline: none;" title="Click to edit place of supply">{{ $placeOfSupply }}</td>
+                            <td style="width: 25%; font-weight: bold; border-right: 1px solid #000; padding: 4px;">PLACE OF SUPPLY-</td>
+                            <td id="custom_place_of_supply_cell" contenteditable="true" style="width: 35%; font-weight: bold; border-right: 1px solid #000; padding: 4px; text-transform: uppercase; outline: none;" title="Click to edit place of supply">{{ $placeOfSupply }}</td>
                             <td style="width: 25%; font-weight: bold; border-right: 1px solid #000; padding: 4px;">HSN/SAC CODE-</td>
                             <td id="custom_hsn_cell" contenteditable="true" style="width: 15%; font-weight: bold; padding: 4px; text-align: center; outline: none;" title="Click to edit HSN/SAC code">{{ $companyHsn }}</td>
                         </tr>
@@ -187,10 +186,14 @@
                             <td style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center;">{{ $invoice->invoice_date->format('d/m/Y') }}</td>
                         </tr>
                         <tr>
-                            <td rowspan="5" style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px; vertical-align: top;">COMPANY ADDRESS</td>
-                            <td rowspan="5" id="billing_address_cell" contenteditable="true" style="border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px; vertical-align: top; font-weight: bold; outline: none;" title="Click to edit address">
+                            <td rowspan="6" style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px; vertical-align: top;">COMPANY ADDRESS</td>
+                            <td rowspan="6" id="billing_address_cell" contenteditable="true" style="border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px; vertical-align: top; font-weight: bold; outline: none;" title="Click to edit address">
                                 {!! $partyAddress !!}
                             </td>
+                            <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">NO OF LR</td>
+                            <td id="no_of_lrs_cell" contenteditable="true" style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center; outline: none;" title="Click to edit No of LRs">{{ $invoice->no_of_lrs ?? $invoice->bulties->count() }}</td>
+                        </tr>
+                        <tr>
                             <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">STATE VENDOR CODE</td>
                             <td id="state_vendor_code_cell" style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center;">{{ $invoice->state_vendor_code ?? '' }}</td>
                         </tr>

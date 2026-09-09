@@ -556,29 +556,33 @@
                     </div>
 
                     @if(!empty($podList) && !$bulty->pod_document_status)
-                    <div class="mb-3 d-flex gap-2">
-                        <form action="{{ route('admin.transport.bulties.approve-pod', $bulty->id) }}" method="POST" class="flex-grow-1">
-                            @csrf
-                            <button type="submit" class="btn btn-success btn-sm w-100">Approve</button>
-                        </form>
-                        <form action="{{ route('admin.transport.bulties.reject-pod', $bulty->id) }}" method="POST" class="flex-grow-1">
-                            @csrf
-                            <button type="submit" class="btn btn-outline-danger btn-sm w-100" onclick="return confirm('Reject POD? Driver will need to re-upload.')">Reject</button>
-                        </form>
-                    </div>
+                        @canany(['approve bulty pod', 'approve bulty documents', 'edit bulties'])
+                        <div class="mb-3 d-flex gap-2">
+                            <form action="{{ route('admin.transport.bulties.approve-pod', $bulty->id) }}" method="POST" class="flex-grow-1">
+                                @csrf
+                                <button type="submit" class="btn btn-success btn-sm w-100">Approve</button>
+                            </form>
+                            <form action="{{ route('admin.transport.bulties.reject-pod', $bulty->id) }}" method="POST" class="flex-grow-1">
+                                @csrf
+                                <button type="submit" class="btn btn-outline-danger btn-sm w-100" onclick="return confirm('Reject POD? Driver will need to re-upload.')">Reject</button>
+                            </form>
+                        </div>
+                        @endcanany
                     @endif
 
                     @if(!empty($matList) && !$bulty->material_document_status)
-                    <div class="mt-3 d-flex gap-2">
-                        <form action="{{ route('admin.transport.bulties.approve-document', $bulty->id) }}" method="POST" class="flex-grow-1">
-                            @csrf
-                            <button type="submit" class="btn btn-success btn-sm w-100">Approve</button>
-                        </form>
-                        <form action="{{ route('admin.transport.bulties.reject-document', $bulty->id) }}" method="POST" class="flex-grow-1">
-                            @csrf
-                            <button type="submit" class="btn btn-outline-danger btn-sm w-100" onclick="return confirm('Reject?')">Reject</button>
-                        </form>
-                    </div>
+                        @canany(['approve bulty material document', 'approve bulty documents', 'edit bulties'])
+                        <div class="mt-3 d-flex gap-2">
+                            <form action="{{ route('admin.transport.bulties.approve-document', $bulty->id) }}" method="POST" class="flex-grow-1">
+                                @csrf
+                                <button type="submit" class="btn btn-success btn-sm w-100">Approve</button>
+                            </form>
+                            <form action="{{ route('admin.transport.bulties.reject-document', $bulty->id) }}" method="POST" class="flex-grow-1">
+                                @csrf
+                                <button type="submit" class="btn btn-outline-danger btn-sm w-100" onclick="return confirm('Reject?')">Reject</button>
+                            </form>
+                        </div>
+                        @endcanany
                     @endif
                 </div>
 

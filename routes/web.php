@@ -289,6 +289,7 @@ Route::name('admin.')->prefix('admin')->group(function () {
             Route::post('trips', [TripController::class, 'store'])->name('trips.store');
             Route::get('trips/{trip}/edit', [TripController::class, 'edit'])->name('trips.edit');
             Route::put('trips/{trip}', [TripController::class, 'update'])->name('trips.update');
+            Route::delete('trips/{trip}', [TripController::class, 'destroy'])->name('trips.destroy');
             Route::post('trips/{trip}/toggle-status', [TripController::class, 'toggleStatus'])->name('trips.toggle-status');
             Route::get('trips/fast-tag/download-template', [TripController::class, 'downloadFastTagTemplate'])->name('trips.fast-tag.download-template');
             Route::post('trips/fast-tag/import', [TripController::class, 'importFastTag'])->name('trips.fast-tag.import');

@@ -168,6 +168,18 @@
                         </tr>
                         @endforelse
                     </tbody>
+                    @if($invoices->isNotEmpty())
+                    <tfoot class="table-dark fw-bold">
+                        <tr>
+                            <td colspan="6" class="text-end">Total:</td>
+                            <td class="text-end">{{ number_format($invoices->sum('total_freight'), 2) }}</td>
+                            <td class="text-end">{{ number_format($invoices->sum('total_gst'), 2) }}</td>
+                            <td class="text-end">{{ number_format($invoices->sum('total_other'), 2) }}</td>
+                            <td class="text-end">{{ number_format($invoices->sum('total_amount'), 2) }}</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                    @endif
                 </table>
             </div>
         </div>

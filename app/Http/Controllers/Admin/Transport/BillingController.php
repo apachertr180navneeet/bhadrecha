@@ -285,9 +285,11 @@ class BillingController extends Controller
                 $igstAmount = 0.00;
             }
 
-            $rcmPayable = $request->has('rcm_payable') ? (int)$request->rcm_payable : 1;
+            $rcmPayable = $request->has('rcm_payable') ? (int)$request->rcm_payable : ($invoiceType === 'toll' ? 0 : 1);
 
-            if ($request->filled('total_amount') && floatval($request->total_amount) > 0) {
+            if ($invoiceType === 'toll') {
+                $totalAmount = $netTotalFreight + $totalGst;
+            } elseif ($request->filled('total_amount') && floatval($request->total_amount) > 0) {
                 $totalAmount = floatval($request->total_amount);
             } else {
                 // Final Bill Amount = Original Bill Amount - Shortage Amount - Damage Amount
@@ -329,7 +331,7 @@ class BillingController extends Controller
                     'user_id' => auth()->id(),
                     'gst_master_id' => $format ? $format->gst_master_id : null,
                     'mn_number' => $request->mn_number,
-                    'no_of_lrs' => $request->no_of_lrs,
+                    'no_of_lrs' => $request->filled('no_of_lrs') ? intval($request->no_of_lrs) : $groupBulties->count(),
                     'state_vendor_code' => $request->state_vendor_code,
                     'vendor_code' => $request->vendor_code,
                     'vendor_name' => $request->vendor_name,

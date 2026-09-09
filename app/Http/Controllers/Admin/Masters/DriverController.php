@@ -279,14 +279,17 @@ class DriverController extends Controller
 
     public function quickStore(Request $request)
     {
-        if (!auth()->user()->can('create drivers') && !auth()->user()->isSuperAdmin()) {
+        $user = auth()->user();
+        if (!$user || (!$user->can('create drivers') && !$user->can('create bulties') && !$user->can('edit bulties') && !$user->isSuperAdmin())) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
         $validated = $request->validate([
+            'company_id' => 'nullable|exists:companies,id',
+            'branch_id' => 'nullable|exists:branches,id',
             'driver_id' => 'nullable|string|max:50',
             'name' => 'required|string|max:255',
-            'phone' => ['required', 'string', 'max:10', Rule::unique('drivers', 'phone')],
+            'phone' => 'required|string|max:20',
             'license_number' => 'nullable|string|max:50',
             'license_expiry' => "nullable|date|before_or_equal:9999-12-31",
             'address' => 'nullable|string',
@@ -295,7 +298,35 @@ class DriverController extends Controller
             'emergency_contact' => 'nullable|string|max:20',
         ]);
 
+        $companyId = $validated['company_id'] 
+            ?? (session('current_company_id') && session('current_company_id') !== 'all' ? session('current_company_id') : null)
+            ?? $user->company_id 
+            ?? \App\Models\Company::first()?->id;
+
+        $validated['company_id'] = $companyId;
+        $validated['branch_id'] = $validated['branch_id'] ?? $user->branch_id ?? session('current_branch_id') ?? null;
         $validated['status'] = 'active';
+
+        // Ensure unique phone/license or find existing if duplicate phone submitted
+        $cleanPhone = preg_replace('/[^0-9]/', '', $validated['phone']);
+        $existingDriver = Driver::where(function($q) use ($validated, $cleanPhone) {
+            $q->where('phone', $validated['phone']);
+            if (!empty($cleanPhone)) {
+                $q->orWhereRaw("REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '+', '') = ?", [$cleanPhone]);
+            }
+        })->first();
+
+        if ($existingDriver) {
+            return response()->json([
+                'success' => true,
+                'driver' => $existingDriver,
+                'message' => 'Existing driver selected.'
+            ]);
+        }
+
+        if (empty($validated['license_number'])) {
+            $validated['license_number'] = 'DL-' . strtoupper(substr(uniqid(), -6));
+        }
 
         $driver = Driver::create($validated);
         ActivityLog::log('driver_created', "Quick created driver: {$driver->name}", $driver);

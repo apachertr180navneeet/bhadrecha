@@ -1327,6 +1327,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 safeSetText('preview-place-of-supply', partyState);
                 safeSetText('preview-bill-date', billDate);
                 safeSetText('preview-bill-no', billNo);
+                const noOfLrsVal = $('input[name="no_of_lrs"]').val() || (bulties ? bulties.length : 0);
+                safeSetText('preview-no-of-lrs', noOfLrsVal);
 
                 // Populate Nathdwara Client Details
                 safeSetText('nath-party-name', partyName);
@@ -1335,6 +1337,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 safeSetText('nath-party-state', partyState);
                 safeSetText('nath-party-place-of-supply', partyState);
                 safeSetText('nath-party-hsn', customHsn || (b.company ? (b.company.hsn_code || '996511') : '996511'));
+                safeSetText('nath-no-of-lrs', noOfLrsVal);
+                safeSetText('gyp-no-of-lrs', noOfLrsVal);
 
                 // Populate Sheet 2
                 safeSetText('preview-grn-company-name', compName);
@@ -1352,6 +1356,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 safeSetText('preview-grn-place-of-supply', partyState);
                 safeSetText('preview-grn-bill-date', billDate);
                 safeSetText('preview-grn-bill-no', billNo);
+                safeSetText('preview-grn-no-of-lrs', noOfLrsVal);
 
                 if (b.company) {
                     currentCompanyDeclaration = b.company.declaration || '';
@@ -2108,6 +2113,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize template selection
     $('#template-type-select').trigger('change');
+
+    $('input[name="no_of_lrs"], #no-of-lrs-input').on('input change', function() {
+        const val = $(this).val();
+        safeSetText('preview-no-of-lrs', val);
+        safeSetText('preview-grn-no-of-lrs', val);
+        safeSetText('nath-no-of-lrs', val);
+        safeSetText('gyp-no-of-lrs', val);
+    });
 
     $('form').on('submit', function() {
         try {

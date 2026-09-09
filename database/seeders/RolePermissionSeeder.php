@@ -33,7 +33,7 @@ class RolePermissionSeeder extends Seeder
                 'view permissions', 'create permissions', 'edit permissions', 'delete permissions'
             ],
             'bulties' => [
-                'view bulties', 'create bulties', 'edit bulties', 'delete bulties', 'restore bulties', 'force delete bulties', 'cancel bulties', 'print bulties', 'approve bulty documents', 'approve bulty pod'
+                'view bulties', 'create bulties', 'edit bulties', 'delete bulties', 'restore bulties', 'force delete bulties', 'cancel bulties', 'print bulties', 'approve bulty documents', 'approve bulty material document', 'approve bulty pod'
             ],
             'trips' => [
                 'view trips', 'create trips', 'edit trips', 'delete trips', 'close trips', 'import trip data'
@@ -177,6 +177,7 @@ class RolePermissionSeeder extends Seeder
         $branchManagerPermissions = Permission::whereIn('name', [
             'view branches', 'view users', 'create users', 'edit users',
             'view bulties', 'create bulties', 'edit bulties', 'cancel bulties', 'print bulties',
+            'approve bulty documents', 'approve bulty material document', 'approve bulty pod',
             'view trips', 'create trips', 'edit trips',
             'view vehicles', 'view drivers',
             'view reports', 'export reports',
@@ -250,6 +251,7 @@ class RolePermissionSeeder extends Seeder
         $dispatcher = Role::firstOrCreate(['name' => 'Dispatcher', 'guard_name' => 'web']);
         $dispatcherPermissions = Permission::whereIn('name', [
             'view bulties', 'create bulties', 'edit bulties', 'print bulties',
+            'approve bulty documents', 'approve bulty material document', 'approve bulty pod',
             'view trips', 'create trips', 'edit trips',
             'view vehicles', 'view drivers', 'view consignors', 'view consignees',
             'view letterheads',

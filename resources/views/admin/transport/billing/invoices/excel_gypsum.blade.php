@@ -143,7 +143,8 @@
         <td colspan="4" style="border: 2px solid #000; padding: 4px; vertical-align: top;">
             <strong>HSN/SAC CODE:</strong> {{ $partyHsn }}<br>
             <strong>Date:</strong> - {{ $billDate }}<br>
-            <strong>Bill No:</strong> - {{ $billNo }}
+            <strong>Bill No:</strong> - {{ $billNo }}<br>
+            <strong>No. of LR:</strong> - {{ $invoice->no_of_lrs ?? $invoice->bulties->count() }}
             @if(!empty($invoice->state_vendor_code))
             <br><strong>State Vendor Code:</strong> - {{ $invoice->state_vendor_code }}
             @endif

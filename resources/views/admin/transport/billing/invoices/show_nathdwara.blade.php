@@ -170,6 +170,7 @@
                     <div><strong>HSN/SAC CODE:</strong> <span>{{ $partyHsn }}</span></div>
                     <div class="mt-2"><strong>Date:</strong> - <span>{{ $billDate }}</span></div>
                     <div><strong>Bill No:</strong> - <span>{{ $billNo }}</span></div>
+                    <div><strong>No. of LR:</strong> - <span>{{ $invoice->no_of_lrs ?? $invoice->bulties->count() }}</span></div>
                     @if(!empty($invoice->state_vendor_code))
                     <div class="mt-1"><strong>State Vendor Code:</strong> - <span>{{ $invoice->state_vendor_code }}</span></div>
                     @endif

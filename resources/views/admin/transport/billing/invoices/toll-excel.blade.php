@@ -118,8 +118,8 @@
                             <td style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center;">{{ $invoice->invoice_date->format('d/m/Y') }}</td>
                         </tr>
                         <tr>
-                            <td rowspan="5" style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px; vertical-align: top;">COMPANY ADDRESS</td>
-                            <td rowspan="5" style="border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px; vertical-align: top; font-weight: bold;">
+                            <td rowspan="6" style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px; vertical-align: top;">COMPANY ADDRESS</td>
+                            <td rowspan="6" style="border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px; vertical-align: top; font-weight: bold;">
                                 {!! $partyAddress !!}
                             </td>
                             <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">STATE VENDOR CODE</td>
@@ -136,6 +136,10 @@
                         <tr>
                             <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">BILL NO.</td>
                             <td style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center; color: #d00; font-size: 12px;">{{ $invoice->bill_number ?? $invoice->invoice_no }}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">NO OF LR</td>
+                            <td style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center;">{{ $invoice->no_of_lrs ?? ($invoice->bulties ? $invoice->bulties->count() : '-') }}</td>
                         </tr>
                         <tr>
                             <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">EPOD Status:-</td>

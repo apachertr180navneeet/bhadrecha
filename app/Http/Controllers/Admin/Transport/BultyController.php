@@ -349,8 +349,29 @@ class BultyController extends Controller
         if (!$user) {
             abort(401);
         }
-        if ($permission && !$user->can($permission)) {
-            abort(403, 'Unauthorized action. You do not have the required permission.');
+
+        if ($user->isSuperAdmin()) {
+            return;
+        }
+
+        if ($permission) {
+            if ($permission === 'approve bulty material document') {
+                if (!$user->can('approve bulty material document') && !$user->can('approve bulty documents') && !$user->can('edit bulties')) {
+                    abort(403, 'Unauthorized action. You do not have permission to approve material documents.');
+                }
+                return;
+            }
+
+            if ($permission === 'approve bulty pod') {
+                if (!$user->can('approve bulty pod') && !$user->can('approve bulty documents') && !$user->can('edit bulties')) {
+                    abort(403, 'Unauthorized action. You do not have permission to approve POD documents.');
+                }
+                return;
+            }
+
+            if (!$user->can($permission)) {
+                abort(403, 'Unauthorized action. You do not have the required permission.');
+            }
         }
     }
 

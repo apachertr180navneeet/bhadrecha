@@ -124,6 +124,15 @@
                                         <i class="bx bx-edit"></i>
                                     </a>
                                     @endcan
+                                    @can('delete trips')
+                                    <form action="{{ route('admin.transport.trips.destroy', $trip->trip->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this trip record?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-icon btn-outline-danger" title="Delete Trip">
+                                            <i class="bx bx-trash"></i>
+                                        </button>
+                                    </form>
+                                    @endcan
                                 @else
                                     @can('create trips')
                                     <a href="{{ route('admin.transport.trips.create', $trip->id) }}" class="btn btn-sm btn-icon btn-outline-success" title="Add Trip">

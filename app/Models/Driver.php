@@ -11,7 +11,7 @@ class Driver extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'driver_id', 'name', 'phone', 'license_number', 'license_expiry',
+        'company_id', 'branch_id', 'driver_id', 'name', 'phone', 'license_number', 'license_expiry',
         'address', 'city', 'state', 'emergency_contact', 'status',
         'license_front', 'license_back', 'aadhar_front', 'aadhar_back', 'pan_front', 'pan_back',
     ];
@@ -19,4 +19,14 @@ class Driver extends Model
     protected $casts = [
         'license_expiry' => 'date',
     ];
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
 }

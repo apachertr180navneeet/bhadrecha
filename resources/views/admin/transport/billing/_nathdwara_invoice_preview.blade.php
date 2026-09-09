@@ -142,6 +142,7 @@
             </div>
             <div class="col-4 p-2">
                 <div>Bill No: - {{ $billNumber }}</div>
+                <div><strong>No. of LR:</strong> - <span>{{ $existingInvoice->no_of_lrs ?? $bulties->count() }}</span></div>
                 @if(!empty($existingInvoice?->state_vendor_code))
                 <div class="mt-1"><strong>State Vendor Code:</strong> - <span>{{ $existingInvoice->state_vendor_code }}</span></div>
                 @endif

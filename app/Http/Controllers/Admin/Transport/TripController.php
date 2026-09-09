@@ -503,13 +503,49 @@ class TripController extends Controller
         return response()->json(['status' => $newStatus]);
     }
 
+    public function destroy(Trip $trip)
+    {
+        $user = auth()->user();
+        if (!$user || (!$user->can('delete trips') && !$user->isSuperAdmin())) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        DB::transaction(function () use ($trip) {
+            $trip->fastTagDetails()->delete();
+            $trip->fuelDetails()->delete();
+            $trip->adblueDetails()->delete();
+            $trip->otherAmountDetails()->delete();
+            $trip->advanceDetails()->delete();
+            $trip->delete();
+        });
+
+        return redirect()->route('admin.transport.trips.index')
+            ->with('success', 'Trip deleted successfully.');
+    }
+
+    private function authorizeImportAction()
+    {
+        $user = auth()->user();
+        if (!$user || (!$user->can('create trips') && !$user->can('edit trips') && !$user->can('import trip data') && !$user->isSuperAdmin())) {
+            return false;
+        }
+        return true;
+    }
+
     public function downloadFastTagTemplate()
     {
+        if (!$this->authorizeImportAction()) {
+            abort(403, 'Unauthorized action.');
+        }
         return Excel::download(new FastTagTemplateExport, 'fast_tag_import_template.xlsx');
     }
 
     public function importFastTag(Request $request)
     {
+        if (!$this->authorizeImportAction()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+        }
+
         $request->validate(['file' => 'required|mimes:xlsx,xls,csv']);
 
         try {
@@ -544,11 +580,18 @@ class TripController extends Controller
 
     public function downloadFuelDetailTemplate()
     {
+        if (!$this->authorizeImportAction()) {
+            abort(403, 'Unauthorized action.');
+        }
         return Excel::download(new FuelDetailTemplateExport, 'fuel_detail_import_template.xlsx');
     }
 
     public function importFuelDetail(Request $request)
     {
+        if (!$this->authorizeImportAction()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+        }
+
         $request->validate(['file' => 'required|mimes:xlsx,xls,csv']);
 
         $defaultCompanyId = $request->input('fuel_company_id');
@@ -587,11 +630,18 @@ class TripController extends Controller
 
     public function downloadAdBlueDetailTemplate()
     {
+        if (!$this->authorizeImportAction()) {
+            abort(403, 'Unauthorized action.');
+        }
         return Excel::download(new AdBlueDetailTemplateExport, 'adblue_detail_import_template.xlsx');
     }
 
     public function importAdBlueDetail(Request $request)
     {
+        if (!$this->authorizeImportAction()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+        }
+
         $request->validate(['file' => 'required|mimes:xlsx,xls,csv']);
 
         $defaultCompanyId = $request->input('adblue_company_id');
@@ -629,11 +679,18 @@ class TripController extends Controller
 
     public function downloadOtherAmountDetailTemplate()
     {
+        if (!$this->authorizeImportAction()) {
+            abort(403, 'Unauthorized action.');
+        }
         return Excel::download(new OtherAmountDetailTemplateExport, 'other_amount_detail_import_template.xlsx');
     }
 
     public function importOtherAmountDetail(Request $request)
     {
+        if (!$this->authorizeImportAction()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+        }
+
         $request->validate(['file' => 'required|mimes:xlsx,xls,csv']);
 
         try {
@@ -666,11 +723,18 @@ class TripController extends Controller
 
     public function downloadAdvanceDetailTemplate()
     {
+        if (!$this->authorizeImportAction()) {
+            abort(403, 'Unauthorized action.');
+        }
         return Excel::download(new AdvanceDetailTemplateExport, 'advance_detail_import_template.xlsx');
     }
 
     public function importAdvanceDetail(Request $request)
     {
+        if (!$this->authorizeImportAction()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+        }
+
         $request->validate(['file' => 'required|mimes:xlsx,xls,csv']);
 
         $defaultCompanyId = $request->input('fuel_company_id');

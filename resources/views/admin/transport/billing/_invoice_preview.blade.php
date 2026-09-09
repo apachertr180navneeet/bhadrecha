@@ -320,6 +320,7 @@
                 <div><strong>HSN/SAC CODE:</strong> <span>{{ $companyHsn }}</span></div>
                 <div class="mt-2"><strong>Date:</strong> - <span>{{ $existingInvoice->invoice_date ? $existingInvoice->invoice_date->format('d-m-Y') : now()->format('d-m-Y') }}</span></div>
                 <div><strong>Bill No:</strong> - <span>{{ $billNumber }}</span></div>
+                <div><strong>No. of LR:</strong> - <span>{{ $existingInvoice->no_of_lrs ?? $bulties->count() }}</span></div>
                 <div class="mt-1"><strong>State Vendor Code:</strong> - <span>{{ $existingInvoice->state_vendor_code ?? '-' }}</span></div>
                 <div><strong>Vendor Code:</strong> - <span>{{ $vendorCode ?? '-' }}</span></div>
                 <div><strong>Vendor Name:</strong> - <span>{{ $existingInvoice->vendor_name ?? '-' }}</span></div>
