@@ -203,7 +203,7 @@
                     @php
                         $shareUrl = route('bilty.share', $bulty->share_token);
                         $driverPhone = $bulty->driver->phone ?? '';
-                        $whatsappMsg = urlencode("Bilty Details: {$bulty->lr_no}\nFrom: " . ($bulty->originCity->name ?? 'N/A') . " To: " . ($bulty->destinationCity->name ?? 'N/A') . "\nView: {$shareUrl}");
+                        $whatsappMsg = urlencode("Bilty Details / बिल्टी विवरण: {$bulty->lr_no}\nFrom: " . ($bulty->originCity->name ?? 'N/A') . " To: " . ($bulty->destinationCity->name ?? 'N/A') . "\nView / देखें: {$shareUrl}");
                         $whatsappUrl = $driverPhone ? "https://wa.me/{$driverPhone}?text={$whatsappMsg}" : '#';
                     @endphp
                     
@@ -474,47 +474,88 @@
                 <div class="glass-card mb-4 p-4">
                     <h6 class="fw-bold mb-4"><i class="bx bx-file-blank text-primary me-2"></i>Documents</h6>
                     
+                    @php
+                        $matList = $bulty->material_documents_list;
+                        $podList = $bulty->pod_documents_list;
+                    @endphp
+
                     <!-- Material Document -->
-                    <div class="d-flex align-items-center justify-content-between mb-3 p-3 rounded-3 bg-light border">
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="bx bx-receipt fs-4 text-muted"></i>
-                            <div>
-                                <div class="fw-bold small">Material Doc</div>
-                                <div class="text-muted" style="font-size: 10px;">{{ $bulty->material_document ? 'Available' : 'Pending' }}</div>
+                    <div class="mb-3 p-3 rounded-3 bg-light border">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bx bx-receipt fs-4 text-muted"></i>
+                                <div>
+                                    <div class="fw-bold small">Material Doc</div>
+                                    <div class="text-muted" style="font-size: 10px;">
+                                        @if(!empty($matList))
+                                            {{ count($matList) }} Photo{{ count($matList) > 1 ? 's' : '' }} Available
+                                        @else
+                                            Pending
+                                        @endif
+                                    </div>
+                                </div>
                             </div>
+                            @if(!empty($matList))
+                                @if(count($matList) === 1)
+                                    <a href="{{ $matList[0] }}" target="_blank" class="btn btn-sm btn-outline-primary">View</a>
+                                @else
+                                    <span class="badge bg-primary">{{ count($matList) }} Photos</span>
+                                @endif
+                            @else
+                                <span class="badge bg-label-secondary small">N/A</span>
+                            @endif
                         </div>
-                        @if($bulty->material_document)
-                        <a href="{{ $bulty->material_document }}" target="_blank" class="btn btn-sm btn-outline-primary">View</a>
-                        @else
-                        <span class="badge bg-label-secondary small">N/A</span>
+                        @if(!empty($matList) && count($matList) > 1)
+                            <div class="d-flex flex-wrap gap-2 mt-2 pt-2 border-top">
+                                @foreach($matList as $idx => $mUrl)
+                                    <a href="{{ $mUrl }}" target="_blank" class="btn btn-sm btn-outline-primary py-1 px-2" style="font-size: 11px;">
+                                        <i class="bx bx-image me-1"></i>Photo {{ $idx + 1 }}
+                                    </a>
+                                @endforeach
+                            </div>
                         @endif
                     </div>
 
                     <!-- POD Document -->
-                    <div class="d-flex align-items-center justify-content-between p-3 rounded-3 bg-light border mb-3">
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="bx bx-check-shield fs-4 text-muted"></i>
-                            <div>
-                                <div class="fw-bold small">POD Proof</div>
+                    <div class="p-3 rounded-3 bg-light border mb-3">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bx bx-check-shield fs-4 text-muted"></i>
                                 <div>
-                                    @if($bulty->pod_document_status)
-                                        <span class="badge bg-success bg-opacity-10 text-success small">Approved</span>
-                                    @elseif($bulty->pod_document)
-                                        <span class="badge bg-warning bg-opacity-10 text-warning small">Pending</span>
-                                    @else
-                                        <span class="text-muted" style="font-size: 10px;">Not Uploaded</span>
-                                    @endif
+                                    <div class="fw-bold small">POD Proof</div>
+                                    <div>
+                                        @if($bulty->pod_document_status)
+                                            <span class="badge bg-success bg-opacity-10 text-success small">Approved</span>
+                                        @elseif(!empty($podList))
+                                            <span class="badge bg-warning bg-opacity-10 text-warning small">Pending ({{ count($podList) }} Photo{{ count($podList) > 1 ? 's' : '' }})</span>
+                                        @else
+                                            <span class="text-muted" style="font-size: 10px;">Not Uploaded</span>
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
+                            @if(!empty($podList))
+                                @if(count($podList) === 1)
+                                    <a href="{{ $podList[0] }}" target="_blank" class="btn btn-sm btn-outline-primary">View</a>
+                                @else
+                                    <span class="badge bg-primary">{{ count($podList) }} Photos</span>
+                                @endif
+                            @else
+                                <span class="badge bg-label-secondary small">N/A</span>
+                            @endif
                         </div>
-                        @if($bulty->pod_document)
-                        <a href="{{ $bulty->pod_document }}" target="_blank" class="btn btn-sm btn-outline-primary">View</a>
-                        @else
-                        <span class="badge bg-label-secondary small">N/A</span>
+                        @if(!empty($podList) && count($podList) > 1)
+                            <div class="d-flex flex-wrap gap-2 mt-2 pt-2 border-top">
+                                @foreach($podList as $idx => $pUrl)
+                                    <a href="{{ $pUrl }}" target="_blank" class="btn btn-sm btn-outline-primary py-1 px-2" style="font-size: 11px;">
+                                        <i class="bx bx-image me-1"></i>Photo {{ $idx + 1 }}
+                                    </a>
+                                @endforeach
+                            </div>
                         @endif
                     </div>
 
-                    @if($bulty->pod_document && !$bulty->pod_document_status)
+                    @if(!empty($podList) && !$bulty->pod_document_status)
                     <div class="mb-3 d-flex gap-2">
                         <form action="{{ route('admin.transport.bulties.approve-pod', $bulty->id) }}" method="POST" class="flex-grow-1">
                             @csrf
@@ -527,7 +568,7 @@
                     </div>
                     @endif
 
-                    @if($bulty->material_document && !$bulty->material_document_status)
+                    @if(!empty($matList) && !$bulty->material_document_status)
                     <div class="mt-3 d-flex gap-2">
                         <form action="{{ route('admin.transport.bulties.approve-document', $bulty->id) }}" method="POST" class="flex-grow-1">
                             @csrf

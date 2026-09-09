@@ -110,22 +110,51 @@ class WebsiteController extends Controller
             return back()->with('error', 'Document is already approved. Cannot upload a new document.');
         }
 
+        // Support both single and multiple files input
         $request->validate([
-            'material_document' => 'required|file|mimes:jpg,jpeg,png,pdf|max:10240',
+            'material_documents' => 'nullable|array',
+            'material_documents.*' => 'file|mimes:jpg,jpeg,png,pdf|max:10240',
+            'material_document' => 'nullable',
         ]);
 
-        if ($bulty->material_document) {
-            $relativePath = str_replace(asset('uploads/'), '', $bulty->material_document);
-            Storage::disk('uploads')->delete($relativePath);
+        $files = [];
+        if ($request->hasFile('material_documents')) {
+            $files = $request->file('material_documents');
+        } elseif ($request->hasFile('material_document')) {
+            $f = $request->file('material_document');
+            $files = is_array($f) ? $f : [$f];
         }
 
-        $path = $request->file('material_document')->store('material-documents', 'uploads');
+        if (empty($files)) {
+            return back()->with('error', 'Please select at least one photo or document to upload.');
+        }
 
-        $bulty->material_document = asset('uploads/' . $path);
+        // Delete existing files
+        Bulty::deleteStoredDocumentFiles($bulty->material_document);
+
+        $uploadedUrls = [];
+        foreach ($files as $file) {
+            if ($file && $file->isValid()) {
+                $path = $file->store('material-documents', 'uploads');
+                $uploadedUrls[] = asset('uploads/' . $path);
+            }
+        }
+
+        if (empty($uploadedUrls)) {
+            return back()->with('error', 'Failed to upload document photos. Please try again.');
+        }
+
+        $bulty->material_document = count($uploadedUrls) === 1 ? $uploadedUrls[0] : json_encode($uploadedUrls);
+        $bulty->material_document_status = false;
         $bulty->status = 'planned';
         $bulty->save();
 
-        return back()->with('success', 'Material document uploaded successfully. Status updated to Planned.');
+        $count = count($uploadedUrls);
+        $msg = $count > 1 
+            ? "{$count} material photos uploaded successfully. Status updated to Planned." 
+            : "Material document uploaded successfully. Status updated to Planned.";
+
+        return back()->with('success', $msg);
     }
 
     public function uploadPodDocument(Request $request, $shareToken)
@@ -136,20 +165,50 @@ class WebsiteController extends Controller
             return back()->with('error', 'POD is already approved. Cannot upload a new one.');
         }
 
+        // Support both single and multiple files input
         $request->validate([
-            'pod_file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
+            'pod_files' => 'nullable|array',
+            'pod_files.*' => 'file|mimes:jpg,jpeg,png,pdf|max:10240',
+            'pod_file' => 'nullable',
         ]);
 
-        if ($bulty->pod_document) {
-            $relativePath = str_replace(asset('uploads/'), '', $bulty->pod_document);
-            Storage::disk('uploads')->delete($relativePath);
+        $files = [];
+        if ($request->hasFile('pod_files')) {
+            $files = $request->file('pod_files');
+        } elseif ($request->hasFile('pod_file')) {
+            $f = $request->file('pod_file');
+            $files = is_array($f) ? $f : [$f];
         }
 
-        $path = $request->file('pod_file')->store('pods', 'uploads');
-        $bulty->pod_document = asset('uploads/' . $path);
+        if (empty($files)) {
+            return back()->with('error', 'Please select at least one photo or document to upload.');
+        }
+
+        // Delete existing files
+        Bulty::deleteStoredDocumentFiles($bulty->pod_document);
+
+        $uploadedUrls = [];
+        foreach ($files as $file) {
+            if ($file && $file->isValid()) {
+                $path = $file->store('pods', 'uploads');
+                $uploadedUrls[] = asset('uploads/' . $path);
+            }
+        }
+
+        if (empty($uploadedUrls)) {
+            return back()->with('error', 'Failed to upload POD photos. Please try again.');
+        }
+
+        $bulty->pod_document = count($uploadedUrls) === 1 ? $uploadedUrls[0] : json_encode($uploadedUrls);
+        $bulty->pod_document_status = false;
         $bulty->status = 'partially_delivered';
         $bulty->save();
 
-        return back()->with('success', 'POD uploaded successfully. Awaiting admin approval. Status updated to Partially Delivered.');
+        $count = count($uploadedUrls);
+        $msg = $count > 1 
+            ? "{$count} POD photos uploaded successfully. Awaiting admin approval. Status updated to Partially Delivered." 
+            : "POD uploaded successfully. Awaiting admin approval. Status updated to Partially Delivered.";
+
+        return back()->with('success', $msg);
     }
 }

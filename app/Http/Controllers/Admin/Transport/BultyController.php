@@ -258,10 +258,14 @@ class BultyController extends Controller
         }
 
         $request->validate([
+            'material_documents' => 'nullable|array',
+            'material_documents.*' => 'file|mimes:jpg,jpeg,png,pdf|max:10240',
             'material_document' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
-            'pod_document' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
-            'consignor_pod' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
-            'consignee_pod' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+            'pod_files' => 'nullable|array',
+            'pod_files.*' => 'file|mimes:jpg,jpeg,png,pdf|max:10240',
+            'pod_document' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
+            'consignor_pod' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
+            'consignee_pod' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
         ]);
 
         $validated = $this->validatedData($request, [
@@ -288,24 +292,36 @@ class BultyController extends Controller
         $items = $validated['items'] ?? [];
         unset($validated['items']);
 
-        if ($request->hasFile('material_document')) {
-            if ($bulty->material_document) {
-                $relativePath = str_replace(asset('uploads/'), '', $bulty->material_document);
-                Storage::disk('uploads')->delete($relativePath);
+        if ($request->hasFile('material_documents') || $request->hasFile('material_document')) {
+            Bulty::deleteStoredDocumentFiles($bulty->material_document);
+            $matFiles = $request->hasFile('material_documents') ? $request->file('material_documents') : [$request->file('material_document')];
+            $uploadedMatUrls = [];
+            foreach ($matFiles as $f) {
+                if ($f && $f->isValid()) {
+                    $path = $f->store('material-documents', 'uploads');
+                    $uploadedMatUrls[] = asset('uploads/' . $path);
+                }
             }
-            $path = $request->file('material_document')->store('material-documents', 'uploads');
-            $validated['material_document'] = asset('uploads/' . $path);
-            $validated['material_document_status'] = false;
+            if (!empty($uploadedMatUrls)) {
+                $validated['material_document'] = count($uploadedMatUrls) === 1 ? $uploadedMatUrls[0] : json_encode($uploadedMatUrls);
+                $validated['material_document_status'] = false;
+            }
         }
 
-        if ($request->hasFile('pod_document')) {
-            if ($bulty->pod_document) {
-                $relativePath = str_replace(asset('uploads/'), '', $bulty->pod_document);
-                Storage::disk('uploads')->delete($relativePath);
+        if ($request->hasFile('pod_files') || $request->hasFile('pod_document')) {
+            Bulty::deleteStoredDocumentFiles($bulty->pod_document);
+            $podFiles = $request->hasFile('pod_files') ? $request->file('pod_files') : [$request->file('pod_document')];
+            $uploadedPodUrls = [];
+            foreach ($podFiles as $f) {
+                if ($f && $f->isValid()) {
+                    $path = $f->store('pods', 'uploads');
+                    $uploadedPodUrls[] = asset('uploads/' . $path);
+                }
             }
-            $path = $request->file('pod_document')->store('pods', 'uploads');
-            $validated['pod_document'] = asset('uploads/' . $path);
-            $validated['pod_document_status'] = false;
+            if (!empty($uploadedPodUrls)) {
+                $validated['pod_document'] = count($uploadedPodUrls) === 1 ? $uploadedPodUrls[0] : json_encode($uploadedPodUrls);
+                $validated['pod_document_status'] = false;
+            }
         }
         if ($request->hasFile('consignor_pod')) {
             $path = $request->file('consignor_pod')->store('pods', 'uploads');
@@ -369,10 +385,7 @@ class BultyController extends Controller
     {
         $this->authorizeBultyAction($bulty, 'approve bulty material document');
 
-        if ($bulty->material_document) {
-            $relativePath = str_replace(asset('uploads/'), '', $bulty->material_document);
-            Storage::disk('uploads')->delete($relativePath);
-        }
+        Bulty::deleteStoredDocumentFiles($bulty->material_document);
 
         $bulty->material_document = null;
         $bulty->material_document_status = false;
@@ -408,10 +421,7 @@ class BultyController extends Controller
     {
         $this->authorizeBultyAction($bulty, 'approve bulty pod');
 
-        if ($bulty->pod_document) {
-            $relativePath = str_replace(asset('uploads/'), '', $bulty->pod_document);
-            Storage::disk('uploads')->delete($relativePath);
-        }
+        Bulty::deleteStoredDocumentFiles($bulty->pod_document);
 
         $bulty->pod_document = null;
         $bulty->pod_document_status = false;
@@ -571,11 +581,7 @@ class BultyController extends Controller
         $fileFields = ['material_document', 'consignor_pod', 'consignee_pod', 'pod_document'];
         foreach ($fileFields as $field) {
             if ($bulty->$field) {
-                $relativePath = str_replace(asset('uploads/'), '', $bulty->$field);
-                $fullPath = public_path('uploads/' . $relativePath);
-                if (file_exists($fullPath)) {
-                    unlink($fullPath);
-                }
+                Bulty::deleteStoredDocumentFiles($bulty->$field);
             }
         }
 

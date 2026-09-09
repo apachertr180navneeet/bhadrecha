@@ -136,8 +136,11 @@
                                     <i class="bx bx-show"></i>
                                 </a>
                                 @endcan
-                                @if($trip->material_document)
-                                <a href="{{ $trip->material_document }}" target="_blank" class="btn btn-sm btn-icon btn-outline-info" title="View Document">
+                                @php
+                                    $firstMatDoc = $trip->material_documents_list[0] ?? null;
+                                @endphp
+                                @if($firstMatDoc)
+                                <a href="{{ $firstMatDoc }}" target="_blank" class="btn btn-sm btn-icon btn-outline-info" title="View Document">
                                     <i class="bx bx-file"></i>
                                 </a>
                                 @endif

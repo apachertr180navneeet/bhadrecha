@@ -172,6 +172,50 @@ class Bulty extends Model
         return $this->belongsTo(GstMaster::class, 'gst_master_id');
     }
 
+    public function getMaterialDocumentsListAttribute()
+    {
+        if (!$this->material_document) {
+            return [];
+        }
+        $decoded = json_decode($this->material_document, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            return $decoded;
+        }
+        return [$this->material_document];
+    }
+
+    public function getPodDocumentsListAttribute()
+    {
+        if (!$this->pod_document) {
+            return [];
+        }
+        $decoded = json_decode($this->pod_document, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            return $decoded;
+        }
+        return [$this->pod_document];
+    }
+
+    public static function deleteStoredDocumentFiles($fieldValue)
+    {
+        if (!$fieldValue) {
+            return;
+        }
+        $urls = is_array($fieldValue) ? $fieldValue : (json_decode($fieldValue, true) ?: [$fieldValue]);
+        foreach ($urls as $url) {
+            if (!is_string($url) || empty($url)) {
+                continue;
+            }
+            $relativePath = str_replace(asset('uploads/'), '', $url);
+            $relativePath = ltrim(str_replace('/uploads/', '', parse_url($relativePath, PHP_URL_PATH) ?? $relativePath), '/');
+            \Illuminate\Support\Facades\Storage::disk('uploads')->delete($relativePath);
+            $fullPath = public_path('uploads/' . $relativePath);
+            if (file_exists($fullPath) && is_file($fullPath)) {
+                @unlink($fullPath);
+            }
+        }
+    }
+
     public function getBultyCommissionAttribute()
     {
         return $this->bilty_commission;
