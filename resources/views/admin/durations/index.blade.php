@@ -20,37 +20,24 @@
                 <table class="table table-hover" id="durationsTable">
                     <thead>
                         <tr>
+                            @if(auth()->user()->can('edit service durations') || auth()->user()->can('delete service durations'))
+                            <th class="text-nowrap" style="width: 80px;">Actions</th>
+                            @endif
                             <th>Name</th>
                             <th>Days</th>
                             <th>Status</th>
-                            @if(auth()->user()->can('edit service durations') || auth()->user()->can('delete service durations'))
-                            <th>Actions</th>
-                            @endif
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($durations as $duration)
                         <tr>
-                            <td class="fw-semibold">{{ $duration->name }}</td>
-                            <td>{{ $duration->days ?? '-' }}</td>
-                            <td>
-                                @can('edit service durations')
-                                <button class="btn btn-sm toggle-status {{ $duration->status ? 'btn-success' : 'btn-secondary' }}" data-url="{{ route('admin.durations.toggle-status', $duration->id) }}" data-status="{{ $duration->status }}">
-                                    {{ $duration->status ? 'Active' : 'Inactive' }}
-                                </button>
-                                @else
-                                <span class="badge {{ $duration->status ? 'bg-label-success' : 'bg-label-secondary' }}">
-                                    {{ $duration->status ? 'Active' : 'Inactive' }}
-                                </span>
-                                @endcan
-                            </td>
                             @if(auth()->user()->can('edit service durations') || auth()->user()->can('delete service durations'))
                             <td>
                                 <div class="dropdown">
                                     <button class="btn p-0 dropdown-toggle hide-arrow" type="button" data-bs-toggle="dropdown">
                                         <i class="bx bx-dots-vertical-rounded"></i>
                                     </button>
-                                    <ul class="dropdown-menu dropdown-menu-end">
+                                    <ul class="dropdown-menu">
                                         @can('edit service durations')
                                         <li>
                                             <a class="dropdown-item" href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editDurationModal"
@@ -73,6 +60,19 @@
                                 </div>
                             </td>
                             @endif
+                            <td class="fw-semibold">{{ $duration->name }}</td>
+                            <td>{{ $duration->days ?? '-' }}</td>
+                            <td>
+                                @can('edit service durations')
+                                <button class="btn btn-sm toggle-status {{ $duration->status ? 'btn-success' : 'btn-secondary' }}" data-url="{{ route('admin.durations.toggle-status', $duration->id) }}" data-status="{{ $duration->status }}">
+                                    {{ $duration->status ? 'Active' : 'Inactive' }}
+                                </button>
+                                @else
+                                <span class="badge {{ $duration->status ? 'bg-label-success' : 'bg-label-secondary' }}">
+                                    {{ $duration->status ? 'Active' : 'Inactive' }}
+                                </span>
+                                @endcan
+                            </td>
                         </tr>
                         @endforeach
                     </tbody>

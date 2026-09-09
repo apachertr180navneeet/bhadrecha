@@ -73,6 +73,7 @@
                 <table class="table table-striped table-hover mb-0">
                     <thead class="table-dark">
                         <tr>
+                            <th style="width: 110px;">Action</th>
                             <th>Invoice No</th>
                             <th>Type</th>
                             <th>
@@ -87,12 +88,28 @@
                             <th class="text-end">Other (₹)</th>
                             <th class="text-end">Grand Total (₹)</th>
                             <th>Status</th>
-                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($invoices as $inv)
                         <tr>
+                            <td>
+                                <div class="d-flex gap-2">
+                                    <a href="{{ route('admin.transport.invoices.show', $inv->id) }}" class="btn btn-sm btn-outline-primary btn-icon" title="View / Print">
+                                        <i class="bx bx-show"></i>
+                                    </a>
+                                    <a href="{{ route('admin.transport.invoices.bill-generate', $inv->id) }}" class="btn btn-sm btn-outline-success btn-icon" title="Bill Generate">
+                                        <i class="bx bx-receipt"></i>
+                                    </a>
+                                    <form action="{{ route('admin.transport.invoices.destroy', $inv->id) }}" method="POST" class="d-inline" onsubmit="confirmDelete(event, this);">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" title="Delete Invoice">
+                                            <i class="bx bx-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
                             <td><strong>{{ $inv->invoice_no }}</strong></td>
                             <td>
                                 @if(($inv->invoice_type ?? 'freight') === 'toll')
@@ -142,23 +159,6 @@
                                             </form>
                                         </li>
                                     </ul>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="d-flex gap-2">
-                                    <a href="{{ route('admin.transport.invoices.show', $inv->id) }}" class="btn btn-sm btn-outline-primary btn-icon" title="View / Print">
-                                        <i class="bx bx-show"></i>
-                                    </a>
-                                    <a href="{{ route('admin.transport.invoices.bill-generate', $inv->id) }}" class="btn btn-sm btn-outline-success btn-icon" title="Bill Generate">
-                                        <i class="bx bx-receipt"></i>
-                                    </a>
-                                    <form action="{{ route('admin.transport.invoices.destroy', $inv->id) }}" method="POST" class="d-inline" onsubmit="confirmDelete(event, this);">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" title="Delete Invoice">
-                                            <i class="bx bx-trash"></i>
-                                        </button>
-                                    </form>
                                 </div>
                             </td>
                         </tr>

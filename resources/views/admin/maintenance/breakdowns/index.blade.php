@@ -81,6 +81,7 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th class="text-center text-nowrap" style="width: 140px;">Action</th>
                         <th>Vehicle</th>
                         <th>Date</th>
                         <th>Location</th>
@@ -88,30 +89,12 @@
                         <th>Severity</th>
                         <th class="text-end">Repair Cost</th>
                         <th>Status</th>
-                        <th class="text-center">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($breakdowns as $breakdown)
                     <tr>
                         <td>{{ $loop->iteration }}</td>
-                        <td><strong>{{ $breakdown->vehicle?->vehicle_number ?? 'N/A' }}</strong></td>
-                        <td>{{ $breakdown->breakdown_date?->format('d-m-Y') ?? '-' }}</td>
-                        <td style="max-width:200px" class="text-truncate">{{ $breakdown->location }}</td>
-                        <td>{{ $breakdown->issue_type }}</td>
-                        <td>
-                            @php
-                                $sevBadge = ['minor' => 'success', 'major' => 'warning', 'critical' => 'danger'];
-                            @endphp
-                            <span class="badge bg-label-{{ $sevBadge[$breakdown->severity] ?? 'secondary' }}">{{ ucfirst($breakdown->severity) }}</span>
-                        </td>
-                        <td class="text-end">{{ $breakdown->repair_cost ? '₹ ' . number_format($breakdown->repair_cost, 2) : '-' }}</td>
-                        <td>
-                            @php
-                                $badge = ['reported' => 'danger', 'in_progress' => 'warning', 'resolved' => 'success', 'towed' => 'secondary'];
-                            @endphp
-                            <span class="badge bg-label-{{ $badge[$breakdown->status] ?? 'secondary' }}">{{ str_replace('_', ' ', ucfirst($breakdown->status)) }}</span>
-                        </td>
                         <td class="text-center text-nowrap">
                             <a href="{{ route('admin.maintenance.breakdowns.show', $breakdown) }}" class="btn btn-sm btn-icon btn-outline-info" title="View"><i class="bx bx-show"></i></a>
                             @can('edit breakdowns')
@@ -131,6 +114,23 @@
                                 <button type="submit" class="btn btn-sm btn-icon btn-outline-danger" title="Delete"><i class="bx bx-trash"></i></button>
                             </form>
                             @endcan
+                        </td>
+                        <td><strong>{{ $breakdown->vehicle?->vehicle_number ?? 'N/A' }}</strong></td>
+                        <td>{{ $breakdown->breakdown_date?->format('d-m-Y') ?? '-' }}</td>
+                        <td style="max-width:200px" class="text-truncate">{{ $breakdown->location }}</td>
+                        <td>{{ $breakdown->issue_type }}</td>
+                        <td>
+                            @php
+                                $sevBadge = ['minor' => 'success', 'major' => 'warning', 'critical' => 'danger'];
+                            @endphp
+                            <span class="badge bg-label-{{ $sevBadge[$breakdown->severity] ?? 'secondary' }}">{{ ucfirst($breakdown->severity) }}</span>
+                        </td>
+                        <td class="text-end">{{ $breakdown->repair_cost ? '₹ ' . number_format($breakdown->repair_cost, 2) : '-' }}</td>
+                        <td>
+                            @php
+                                $badge = ['reported' => 'danger', 'in_progress' => 'warning', 'resolved' => 'success', 'towed' => 'secondary'];
+                            @endphp
+                            <span class="badge bg-label-{{ $badge[$breakdown->status] ?? 'secondary' }}">{{ str_replace('_', ' ', ucfirst($breakdown->status)) }}</span>
                         </td>
                     </tr>
                     @empty

@@ -71,6 +71,7 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th class="text-center text-nowrap" style="width: 120px;">Action</th>
                         <th>Vehicle</th>
                         <th>Position</th>
                         <th>Brand</th>
@@ -78,25 +79,12 @@
                         <th>Serial #</th>
                         <th class="text-end">Tread Depth</th>
                         <th>Status</th>
-                        <th class="text-center">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($tyres as $tyre)
                     <tr>
                         <td>{{ $loop->iteration }}</td>
-                        <td><strong>{{ $tyre->vehicle?->vehicle_number ?? 'N/A' }}</strong></td>
-                        <td>{{ $tyre->tyre_position }}</td>
-                        <td>{{ $tyre->tyre_brand }}</td>
-                        <td>{{ $tyre->tyre_size }}</td>
-                        <td>{{ $tyre->serial_number ?? '-' }}</td>
-                        <td class="text-end">{{ $tyre->tread_depth_current ? $tyre->tread_depth_current . ' mm' : '-' }}</td>
-                        <td>
-                            @php
-                                $badge = ['active' => 'success', 'removed' => 'warning', 'scrap' => 'danger'];
-                            @endphp
-                            <span class="badge bg-label-{{ $badge[$tyre->status] ?? 'secondary' }}">{{ ucfirst($tyre->status) }}</span>
-                        </td>
                         <td class="text-center text-nowrap">
                             <a href="{{ route('admin.maintenance.tyre-management.show', $tyre) }}" class="btn btn-sm btn-icon btn-outline-info" title="View"><i class="bx bx-show"></i></a>
                             @can('edit tyre management')
@@ -108,6 +96,18 @@
                                 <button type="submit" class="btn btn-sm btn-icon btn-outline-danger" title="Delete"><i class="bx bx-trash"></i></button>
                             </form>
                             @endcan
+                        </td>
+                        <td><strong>{{ $tyre->vehicle?->vehicle_number ?? 'N/A' }}</strong></td>
+                        <td>{{ $tyre->tyre_position }}</td>
+                        <td>{{ $tyre->tyre_brand }}</td>
+                        <td>{{ $tyre->tyre_size }}</td>
+                        <td>{{ $tyre->serial_number ?? '-' }}</td>
+                        <td class="text-end">{{ $tyre->tread_depth_current ? $tyre->tread_depth_current . ' mm' : '-' }}</td>
+                        <td>
+                            @php
+                                $badge = ['active' => 'success', 'removed' => 'warning', 'scrap' => 'danger'];
+                            @endphp
+                            <span class="badge bg-label-{{ $badge[$tyre->status] ?? 'secondary' }}">{{ ucfirst($tyre->status) }}</span>
                         </td>
                     </tr>
                     @empty

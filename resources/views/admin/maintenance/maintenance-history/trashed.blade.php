@@ -28,21 +28,17 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th class="text-center text-nowrap" style="width: 100px;">Action</th>
                         <th>Vehicle</th>
                         <th>Service Type</th>
                         <th>Service Date</th>
                         <th>Deleted At</th>
-                        <th class="text-center">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($histories as $history)
                     <tr>
                         <td>{{ $loop->iteration }}</td>
-                        <td>{{ $history->vehicle?->vehicle_number ?? 'N/A' }}</td>
-                        <td>{{ $history->service_type }}</td>
-                        <td>{{ $history->service_date?->format('d-m-Y') ?? '-' }}</td>
-                        <td>{{ $history->deleted_at->format('d-m-Y h:i A') }}</td>
                         <td class="text-center text-nowrap">
                             <form method="POST" action="{{ route('admin.maintenance.maintenance-history.restore', $history->id) }}" class="d-inline">
                                 @csrf
@@ -53,6 +49,10 @@
                                 <button type="submit" class="btn btn-sm btn-icon btn-outline-danger" title="Delete Permanently"><i class="bx bx-trash"></i></button>
                             </form>
                         </td>
+                        <td>{{ $history->vehicle?->vehicle_number ?? 'N/A' }}</td>
+                        <td>{{ $history->service_type }}</td>
+                        <td>{{ $history->service_date?->format('d-m-Y') ?? '-' }}</td>
+                        <td>{{ $history->deleted_at->format('d-m-Y h:i A') }}</td>
                     </tr>
                     @empty
                     <tr>

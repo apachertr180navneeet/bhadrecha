@@ -24,21 +24,17 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th class="text-center" style="width: 100px;">Actions</th>
                         <th>Model Name</th>
                         <th>Brand</th>
                         <th>Code</th>
                         <th>Deleted At</th>
-                        <th class="text-center">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($models as $key => $model)
                     <tr>
                         <td>{{ ($models->currentPage() - 1) * $models->perPage() + $key + 1 }}</td>
-                        <td class="fw-semibold">{{ $model->name }}</td>
-                        <td>{{ $model->brand->name ?? '-' }}</td>
-                        <td>{{ $model->code ?? '-' }}</td>
-                        <td>{{ $model->deleted_at->format('d-m-Y H:i A') }}</td>
                         <td class="text-center text-nowrap">
                             <form action="{{ route('admin.masters.tyre-models.restore', $model->id) }}" method="POST" class="d-inline">
                                 @csrf
@@ -51,6 +47,10 @@
                                 <button type="submit" class="btn btn-sm btn-icon btn-outline-danger" title="Permanently Delete"><i class="bx bx-trash-alt"></i></button>
                             </form>
                         </td>
+                        <td class="fw-semibold">{{ $model->name }}</td>
+                        <td>{{ $model->brand->name ?? '-' }}</td>
+                        <td>{{ $model->code ?? '-' }}</td>
+                        <td>{{ $model->deleted_at->format('d-m-Y H:i A') }}</td>
                     </tr>
                     @empty
                     <tr>

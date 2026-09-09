@@ -56,18 +56,28 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th class="text-center" style="width: 120px;">Actions</th>
                         <th>Tyre Size</th>
                         <th>Tyre Brand</th>
                         <th>Tyre Model</th>
                         <th>Code</th>
                         <th>Status</th>
-                        <th class="text-center">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($sizes as $key => $size)
                     <tr>
                         <td>{{ ($sizes->currentPage() - 1) * $sizes->perPage() + $key + 1 }}</td>
+                        <td class="text-center text-nowrap">
+                            <a href="{{ route('admin.masters.tyre-sizes.edit', $size->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
+                            <form action="{{ route('admin.masters.tyre-sizes.toggle-status', $size->id) }}" method="POST" class="d-inline">
+                                @csrf
+                                <button type="submit" class="btn btn-sm btn-icon btn-outline-{{ $size->status == 'active' ? 'warning' : 'success' }}" title="{{ $size->status == 'active' ? 'Deactivate' : 'Activate' }}">
+                                    <i class="bx bx-{{ $size->status == 'active' ? 'pause' : 'play' }}"></i>
+                                </button>
+                            </form>
+                            <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleDelete({{ $size->id }}, '{{ addslashes($size->name) }}')" title="Delete"><i class="bx bx-trash"></i></button>
+                        </td>
                         <td class="fw-semibold">
                             <i class="bx bx-ruler text-primary me-1"></i> {{ $size->name }}
                         </td>
@@ -78,16 +88,6 @@
                             <span class="badge bg-label-{{ $size->status == 'active' ? 'success' : 'danger' }}">
                                 {{ ucfirst($size->status) }}
                             </span>
-                        </td>
-                        <td class="text-center text-nowrap">
-                            <a href="{{ route('admin.masters.tyre-sizes.edit', $size->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
-                            <form action="{{ route('admin.masters.tyre-sizes.toggle-status', $size->id) }}" method="POST" class="d-inline">
-                                @csrf
-                                <button type="submit" class="btn btn-sm btn-icon btn-outline-{{ $size->status == 'active' ? 'warning' : 'success' }}" title="{{ $size->status == 'active' ? 'Deactivate' : 'Activate' }}">
-                                    <i class="bx bx-{{ $size->status == 'active' ? 'pause' : 'play' }}"></i>
-                                </button>
-                            </form>
-                            <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleDelete({{ $size->id }}, '{{ addslashes($size->name) }}')" title="Delete"><i class="bx bx-trash"></i></button>
                         </td>
                     </tr>
                     @empty

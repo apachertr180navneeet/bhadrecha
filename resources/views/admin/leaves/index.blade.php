@@ -83,6 +83,7 @@
             <table class="table table-hover mb-0">
                 <thead class="table-light">
                     <tr>
+                        <th class="py-3 text-center" style="width: 90px;">Actions</th>
                         <th class="py-3">Employee</th>
                         <th class="py-3">Company</th>
                         <th class="py-3">Type</th>
@@ -91,25 +92,11 @@
                         <th class="py-3">Reason</th>
                         <th class="py-3">Status</th>
                         <th class="py-3">Approved By</th>
-                        <th class="py-3 text-center">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($leaves as $leave)
                     <tr>
-                        <td>
-                            <span class="fw-semibold text-dark">{{ $leave->user->full_name }}</span>
-                            <small class="d-block text-muted">{{ $leave->user->roles->first()?->name ?? 'N/A' }}</small>
-                        </td>
-                        <td><span class="badge bg-label-info">{{ $leave->user->company?->name ?? '-' }}</span></td>
-                        <td><span class="badge bg-label-secondary">{{ ucfirst($leave->leave_type) }}</span></td>
-                        <td>{{ $leave->start_date->format('d M') }} - {{ $leave->end_date->format('d M Y') }}</td>
-                        <td><strong>{{ $leave->start_date->diffInDays($leave->end_date) + 1 }}</strong></td>
-                        <td><small class="text-muted">{{ Str::limit($leave->reason, 40) }}</small></td>
-                        <td>
-                            <span class="leave-status status-{{ $leave->status }}">{{ ucfirst($leave->status) }}</span>
-                        </td>
-                        <td><small class="text-muted">{{ $leave->approver?->full_name ?? '-' }}</small></td>
                         <td class="text-center">
                             @if($leave->status === 'pending' && (auth()->user()->isSuperAdmin() || auth()->user()->isCompanyAdmin()))
                                 @if(auth()->user()->isCompanyAdmin() && $leave->user->company_id !== auth()->user()->company_id)
@@ -127,6 +114,19 @@
                                 <span class="text-muted small">-</span>
                             @endif
                         </td>
+                        <td>
+                            <span class="fw-semibold text-dark">{{ $leave->user->full_name }}</span>
+                            <small class="d-block text-muted">{{ $leave->user->roles->first()?->name ?? 'N/A' }}</small>
+                        </td>
+                        <td><span class="badge bg-label-info">{{ $leave->user->company?->name ?? '-' }}</span></td>
+                        <td><span class="badge bg-label-secondary">{{ ucfirst($leave->leave_type) }}</span></td>
+                        <td>{{ $leave->start_date->format('d M') }} - {{ $leave->end_date->format('d M Y') }}</td>
+                        <td><strong>{{ $leave->start_date->diffInDays($leave->end_date) + 1 }}</strong></td>
+                        <td><small class="text-muted">{{ Str::limit($leave->reason, 40) }}</small></td>
+                        <td>
+                            <span class="leave-status status-{{ $leave->status }}">{{ ucfirst($leave->status) }}</span>
+                        </td>
+                        <td><small class="text-muted">{{ $leave->approver?->full_name ?? '-' }}</small></td>
                     </tr>
                     @empty
                     <tr><td colspan="9" class="text-center py-4">No leave records found.</td></tr>

@@ -88,43 +88,17 @@
                 <table class="table table-hover table-striped mb-0">
                     <thead class="bg-primary text-white">
                         <tr>
+                            <th class="text-center" style="width: 140px;">Actions</th>
                             <th>Ref No.</th>
                             <th>Date</th>
                             <th>Company</th>
                             <th>Recipient Details</th>
                             <th>Subject</th>
-                            <th class="text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($letterheads as $lh)
                             <tr>
-                                <td class="font-weight-bold text-primary">
-                                    <a href="{{ route('admin.letterheads.pdf', $lh->id) }}" target="_blank" title="View PDF">
-                                        {{ $lh->letter_no }}
-                                    </a>
-                                </td>
-                                <td>
-                                    <div class="font-weight-bold text-dark">{{ \Carbon\Carbon::parse($lh->letter_date)->format('d M, Y') }}</div>
-                                    <div class="small text-muted"><i class="bx bx-time-five me-1"></i>{{ \Carbon\Carbon::parse($lh->created_at ?? $lh->letter_date)->format('h:i A') }}</div>
-                                </td>
-                                <td>
-                                    <span class="badge badge-info p-2">{{ $lh->company->name ?? 'N/A' }}</span>
-                                </td>
-                                <td>
-                                    <div class="font-weight-bold text-dark">{{ $lh->recipient_name }}</div>
-                                    @if($lh->recipient_company)
-                                        <div class="small text-muted">{{ $lh->recipient_company }}</div>
-                                    @endif
-                                    @if($lh->recipient_email)
-                                        <div class="small text-info"><i class="bx bx-envelope me-1"></i>{{ $lh->recipient_email }}</div>
-                                    @endif
-                                </td>
-                                <td>
-                                    <div style="max-width: 250px;" class="text-truncate font-weight-bold text-dark" title="{{ $lh->subject }}">
-                                        {{ $lh->subject }}
-                                    </div>
-                                </td>
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm" role="group">
                                         <!-- View / Print PDF -->
@@ -167,6 +141,32 @@
                                             </button>
                                         </form>
                                         @endcan
+                                    </div>
+                                </td>
+                                <td class="font-weight-bold text-primary">
+                                    <a href="{{ route('admin.letterheads.pdf', $lh->id) }}" target="_blank" title="View PDF">
+                                        {{ $lh->letter_no }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <div class="font-weight-bold text-dark">{{ \Carbon\Carbon::parse($lh->letter_date)->format('d M, Y') }}</div>
+                                    <div class="small text-muted"><i class="bx bx-time-five me-1"></i>{{ \Carbon\Carbon::parse($lh->created_at ?? $lh->letter_date)->format('h:i A') }}</div>
+                                </td>
+                                <td>
+                                    <span class="badge badge-info p-2">{{ $lh->company->name ?? 'N/A' }}</span>
+                                </td>
+                                <td>
+                                    <div class="font-weight-bold text-dark">{{ $lh->recipient_name }}</div>
+                                    @if($lh->recipient_company)
+                                        <div class="small text-muted">{{ $lh->recipient_company }}</div>
+                                    @endif
+                                    @if($lh->recipient_email)
+                                        <div class="small text-info"><i class="bx bx-envelope me-1"></i>{{ $lh->recipient_email }}</div>
+                                    @endif
+                                </td>
+                                <td>
+                                    <div style="max-width: 250px;" class="text-truncate font-weight-bold text-dark" title="{{ $lh->subject }}">
+                                        {{ $lh->subject }}
                                     </div>
                                 </td>
                             </tr>

@@ -33,12 +33,12 @@
                                             </div>
                                         </th>
                                         <th>S.No.</th>
+                                        <th class="text-center" style="width: 70px;">Action</th>
                                         <th>Name</th>
                                         <th>Mobile</th>
                                         <th>Email</th>
                                         <th>Date of Birth</th>
                                         <th>Status</th>
-                                        <th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -56,6 +56,18 @@
                                             </div>
                                         </td>
                                         <td>{{ $index + 1 }}</td>
+                                        <td class="text-center">
+                                            @if($customer->mobile)
+                                            <button type="button" class="btn btn-sm btn-outline-success btn-send-single"
+                                                data-name="{{ $customer->name }}"
+                                                data-mobile="{{ $customer->mobile }}"
+                                                title="Send WhatsApp">
+                                                <i class="bx bxl-whatsapp"></i>
+                                            </button>
+                                            @else
+                                            <span class="text-muted small">No mobile</span>
+                                            @endif
+                                        </td>
                                         <td>
                                             <div class="d-flex align-items-center">
                                                 <div class="avatar avatar-sm me-3">
@@ -74,18 +86,6 @@
                                                 <span class="badge bg-warning"><i class="bx bx-cake me-1"></i> Today's Birthday!</span>
                                             @else
                                                 <span class="badge bg-label-info">{{ date('d M', strtotime($customer->dob)) }}</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if($customer->mobile)
-                                            <button type="button" class="btn btn-sm btn-outline-success btn-send-single"
-                                                data-name="{{ $customer->name }}"
-                                                data-mobile="{{ $customer->mobile }}"
-                                                title="Send WhatsApp">
-                                                <i class="bx bxl-whatsapp"></i>
-                                            </button>
-                                            @else
-                                            <span class="text-muted small">No mobile</span>
                                             @endif
                                         </td>
                                     </tr>

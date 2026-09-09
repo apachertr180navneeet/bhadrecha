@@ -29,39 +29,30 @@
                         <table class="table table-hover" id="categoriesTable">
                             <thead>
                                 <tr>
+                                    @if(auth()->user()->can('edit expense categories') || auth()->user()->can('delete expense categories'))
+                                    <th class="text-center text-nowrap" style="width: 80px;">Actions</th>
+                                    @endif
                                     <th>Name</th>
                                     <th>Description</th>
                                     <th>Status</th>
                                     <th>Expenses Count</th>
-                                    @if(auth()->user()->can('edit expense categories') || auth()->user()->can('delete expense categories'))
-                                    <th>Actions</th>
-                                    @endif
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($categories as $category)
                                 <tr>
-                                    <td class="fw-semibold">{{ $category->name }}</td>
-                                    <td>{{ Str::limit($category->description, 50) }}</td>
-                                    <td>
-                                        @if($category->status == 1)
-                                        <span class="badge bg-label-success">Active</span>
-                                        @else
-                                        <span class="badge bg-label-danger">Inactive</span>
-                                        @endif
-                                    </td>
-                                    <td><span class="badge bg-label-info">{{ $category->expenses_count }}</span></td>
                                     @if(auth()->user()->can('edit expense categories') || auth()->user()->can('delete expense categories'))
-                                    <td>
+                                    <td class="text-center text-nowrap">
                                         <div class="dropdown">
                                             <button
                                                 class="btn p-0 dropdown-toggle hide-arrow"
                                                 type="button"
                                                 data-bs-toggle="dropdown"
+                                                data-bs-boundary="viewport"
                                             >
                                                 <i class="bx bx-dots-vertical-rounded"></i>
                                             </button>
-                                            <ul class="dropdown-menu dropdown-menu-end">
+                                            <ul class="dropdown-menu">
                                                 @can('edit expense categories')
                                                 <li>
                                                     <a
@@ -93,6 +84,16 @@
                                         </div>
                                     </td>
                                     @endif
+                                    <td class="fw-semibold">{{ $category->name }}</td>
+                                    <td>{{ Str::limit($category->description, 50) }}</td>
+                                    <td>
+                                        @if($category->status == 1)
+                                        <span class="badge bg-label-success">Active</span>
+                                        @else
+                                        <span class="badge bg-label-danger">Inactive</span>
+                                        @endif
+                                    </td>
+                                    <td><span class="badge bg-label-info">{{ $category->expenses_count }}</span></td>
                                 </tr>
                                 @endforeach
                             </tbody>

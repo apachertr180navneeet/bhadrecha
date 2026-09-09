@@ -32,23 +32,18 @@
             <table class="table table-hover">
                 <thead class="table-light">
                     <tr>
+                        <th class="text-center text-nowrap" style="width: 140px;">Actions</th>
                         <th>Doc Number</th>
                         <th>Document Name</th>
                         <th>Category</th>
                         <th>File Size</th>
                         <th>Deleted Date</th>
-                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($trashedDocuments as $doc)
                     <tr>
-                        <td><span class="fw-bold text-danger">{{ $doc->document_number }}</span></td>
-                        <td>{{ $doc->name }}</td>
-                        <td><span class="badge bg-label-info">{{ $doc->category?->name }}</span></td>
-                        <td>{{ $doc->formatted_file_size }}</td>
-                        <td>{{ $doc->deleted_at->format('d M Y, h:i A') }}</td>
-                        <td>
+                        <td class="text-center text-nowrap">
                             <form action="{{ route('admin.documents.restore', $doc->id) }}" method="POST" class="d-inline">
                                 @csrf
                                 @method('PUT')
@@ -67,6 +62,11 @@
                             </form>
                             @endif
                         </td>
+                        <td><span class="fw-bold text-danger">{{ $doc->document_number }}</span></td>
+                        <td>{{ $doc->name }}</td>
+                        <td><span class="badge bg-label-info">{{ $doc->category?->name }}</span></td>
+                        <td>{{ $doc->formatted_file_size }}</td>
+                        <td>{{ $doc->deleted_at->format('d M Y, h:i A') }}</td>
                     </tr>
                     @empty
                     <tr>

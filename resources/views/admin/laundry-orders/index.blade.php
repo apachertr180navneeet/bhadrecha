@@ -79,6 +79,9 @@
                                     </th>
                                     @endcan
                                     <th>#</th>
+                                    @if(auth()->user()->can('edit laundry orders') || auth()->user()->can('delete laundry orders') || auth()->user()->can('receive laundry orders'))
+                                    <th class="text-nowrap" style="width: 80px;">Actions</th>
+                                    @endif
                                     <th>Date</th>
                                     <th>Store</th>
                                     <th>Branch</th>
@@ -87,9 +90,6 @@
                                     <th>Status</th>
                                     <th>Payment Status</th>
                                     <th>Remark</th>
-                                    @if(auth()->user()->can('edit laundry orders') || auth()->user()->can('delete laundry orders') || auth()->user()->can('receive laundry orders'))
-                                    <th class="text-end">Actions</th>
-                                    @endif
                                 </tr>
                             </thead>
                             <tbody>
@@ -105,6 +105,38 @@
                                     </td>
                                     @endcan
                                     <td>{{ $loop->iteration + ($orders->currentPage() - 1) * $orders->perPage() }}</td>
+                                    @if(auth()->user()->can('edit laundry orders') || auth()->user()->can('delete laundry orders') || auth()->user()->can('receive laundry orders'))
+                                    <td>
+                                        <div class="dropdown">
+                                            <button class="btn p-0 dropdown-toggle hide-arrow" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport">
+                                                <i class="bx bx-dots-vertical-rounded"></i>
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                @can('receive laundry orders')
+                                                <li>
+                                                    <a class="dropdown-item text-primary btn-receive-order" href="javascript:void(0);" data-id="{{ $order->id }}">
+                                                        <i class="bx bx-check-shield me-1"></i> Receive Items
+                                                    </a>
+                                                </li>
+                                                @endcan
+                                                @can('edit laundry orders')
+                                                <li>
+                                                    <a class="dropdown-item btn-edit-order" href="javascript:void(0);" data-id="{{ $order->id }}">
+                                                        <i class="bx bx-edit-alt me-1"></i> Edit
+                                                    </a>
+                                                </li>
+                                                @endcan
+                                                @can('delete laundry orders')
+                                                <li>
+                                                    <a class="dropdown-item text-danger btn-delete-order" href="javascript:void(0);" data-id="{{ $order->id }}">
+                                                        <i class="bx bx-trash me-1"></i> Delete
+                                                    </a>
+                                                </li>
+                                                @endcan
+                                            </ul>
+                                        </div>
+                                    </td>
+                                    @endif
                                     <td>
                                         <span class="fw-bold text-dark">{{ $order->order_date ? $order->order_date->format('d M Y') : '-' }}</span>
                                     </td>
@@ -137,38 +169,6 @@
                                             {{ $order->remark ?? '-' }}
                                         </span>
                                     </td>
-                                    @if(auth()->user()->can('edit laundry orders') || auth()->user()->can('delete laundry orders') || auth()->user()->can('receive laundry orders'))
-                                    <td class="text-end">
-                                        <div class="dropdown">
-                                            <button class="btn p-0 dropdown-toggle hide-arrow" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport">
-                                                <i class="bx bx-dots-vertical-rounded"></i>
-                                            </button>
-                                            <ul class="dropdown-menu dropdown-menu-end">
-                                                @can('receive laundry orders')
-                                                <li>
-                                                    <a class="dropdown-item text-primary btn-receive-order" href="javascript:void(0);" data-id="{{ $order->id }}">
-                                                        <i class="bx bx-check-shield me-1"></i> Receive Items
-                                                    </a>
-                                                </li>
-                                                @endcan
-                                                @can('edit laundry orders')
-                                                <li>
-                                                    <a class="dropdown-item btn-edit-order" href="javascript:void(0);" data-id="{{ $order->id }}">
-                                                        <i class="bx bx-edit-alt me-1"></i> Edit
-                                                    </a>
-                                                </li>
-                                                @endcan
-                                                @can('delete laundry orders')
-                                                <li>
-                                                    <a class="dropdown-item text-danger btn-delete-order" href="javascript:void(0);" data-id="{{ $order->id }}">
-                                                        <i class="bx bx-trash me-1"></i> Delete
-                                                    </a>
-                                                </li>
-                                                @endcan
-                                            </ul>
-                                        </div>
-                                    </td>
-                                    @endif
                                 </tr>
                                 @empty
                                 <tr>

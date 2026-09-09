@@ -51,19 +51,16 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th class="text-center" style="width: 120px;">Actions</th>
                         <th>City Name</th>
                         <th>State</th>
                         <th>Status</th>
-                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($cities as $key => $city)
                     <tr>
                         <td>{{ ($cities->currentPage() - 1) * $cities->perPage() + $key + 1 }}</td>
-                        <td class="fw-semibold">{{ $city->name }}</td>
-                        <td>{{ $city->state }}</td>
-                        <td><span class="badge bg-label-{{ $city->status == 'active' ? 'success' : 'danger' }}">{{ ucfirst($city->status) }}</span></td>
                         <td class="text-center text-nowrap">
                             <a href="{{ route('admin.masters.city.edit', $city->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
                             <form action="{{ route('admin.masters.city.toggle-status', $city->id) }}" method="POST" class="d-inline">@csrf
@@ -71,6 +68,9 @@
                             </form>
                             <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleDelete({{ $city->id }}, '{{ $city->name }}')" title="Delete"><i class="bx bx-trash"></i></button>
                         </td>
+                        <td class="fw-semibold">{{ $city->name }}</td>
+                        <td>{{ $city->state }}</td>
+                        <td><span class="badge bg-label-{{ $city->status == 'active' ? 'success' : 'danger' }}">{{ ucfirst($city->status) }}</span></td>
                     </tr>
                     @empty
                     <tr>

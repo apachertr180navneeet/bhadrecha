@@ -51,24 +51,24 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th class="text-center" style="width: 120px;">Actions</th>
                         <th>AdBlue Company</th>
                         <th>Status</th>
-                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($adblueCompanies as $key => $adblueCompany)
                     <tr>
                         <td>{{ ($adblueCompanies->currentPage() - 1) * $adblueCompanies->perPage() + $key + 1 }}</td>
-                        <td class="fw-semibold">{{ $adblueCompany->name }}</td>
-                        <td><span class="badge bg-label-{{ $adblueCompany->status == 'active' ? 'success' : 'danger' }}">{{ ucfirst($adblueCompany->status) }}</span></td>
                         <td class="text-center text-nowrap">
                             <a href="{{ route('admin.masters.adblue-companies.edit', $adblueCompany->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
                             <form action="{{ route('admin.masters.adblue-companies.toggle-status', $adblueCompany->id) }}" method="POST" class="d-inline">@csrf
-                                <button type="submit" class="btn btn-sm btn-icon btn-outline-{{ $adblueCompany->status == 'active' ? 'warning' : 'success' }}" title="{{ $adblueCompany->status == 'active' ? 'Deactivate' : 'Activate' }}"><i class="bx bx-{{ $adblueCompany->status == 'active' ? 'pause' : 'play' }}"></i></button>
+                                <button type="submit" class="btn btn-sm btn-icon btn-outline-{{ $adblueCompany->status == 'active' ? 'warning' : 'success' }}" title="{{ $adblueCompany->status == 'active' ? 'Deactivate' : 'Activate' }}"><i class="bx bx-{{ $adblueCompany->status == 'pause' : 'play' }}"></i></button>
                             </form>
                             <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleDelete({{ $adblueCompany->id }}, '{{ $adblueCompany->name }}')" title="Delete"><i class="bx bx-trash"></i></button>
                         </td>
+                        <td class="fw-semibold">{{ $adblueCompany->name }}</td>
+                        <td><span class="badge bg-label-{{ $adblueCompany->status == 'active' ? 'success' : 'danger' }}">{{ ucfirst($adblueCompany->status) }}</span></td>
                     </tr>
                     @empty
                     <tr><td colspan="4" class="text-center py-4"><p class="text-muted mb-0">No AdBlue companies found</p></td></tr>

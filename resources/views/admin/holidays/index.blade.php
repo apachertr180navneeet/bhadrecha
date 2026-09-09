@@ -20,33 +20,24 @@
                     <table class="table table-hover" id="holidaysTable">
                         <thead>
                             <tr>
+                                @if(auth()->user()->can('edit holidays') || auth()->user()->can('delete holidays'))
+                                <th class="text-nowrap" style="width: 80px;">Actions</th>
+                                @endif
                                 <th>Name</th>
                                 <th>Date</th>
                                 <th>Status</th>
-                                @if(auth()->user()->can('edit holidays') || auth()->user()->can('delete holidays'))
-                                <th>Actions</th>
-                                @endif
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($holidays as $holiday)
                             <tr id="holiday-row-{{ $holiday->id }}">
-                                <td class="fw-semibold">{{ $holiday->name }}</td>
-                                <td>{{ \Carbon\Carbon::parse($holiday->date)->format('M d, Y') }}</td>
-                                <td>
-                                    @if($holiday->status)
-                                        <span class="badge bg-label-success">Active</span>
-                                    @else
-                                        <span class="badge bg-label-danger">Inactive</span>
-                                    @endif
-                                </td>
                                 @if(auth()->user()->can('edit holidays') || auth()->user()->can('delete holidays'))
                                 <td>
                                     <div class="dropdown">
                                         <button class="btn p-0 dropdown-toggle hide-arrow" type="button" data-bs-toggle="dropdown">
                                             <i class="bx bx-dots-vertical-rounded"></i>
                                         </button>
-                                        <ul class="dropdown-menu dropdown-menu-end">
+                                        <ul class="dropdown-menu">
                                             @can('edit holidays')
                                             <li>
                                                 <a class="dropdown-item" href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#holidayModal"
@@ -69,6 +60,15 @@
                                     </div>
                                 </td>
                                 @endif
+                                <td class="fw-semibold">{{ $holiday->name }}</td>
+                                <td>{{ \Carbon\Carbon::parse($holiday->date)->format('M d, Y') }}</td>
+                                <td>
+                                    @if($holiday->status)
+                                        <span class="badge bg-label-success">Active</span>
+                                    @else
+                                        <span class="badge bg-label-danger">Inactive</span>
+                                    @endif
+                                </td>
                             </tr>
                             @empty
                             <tr>

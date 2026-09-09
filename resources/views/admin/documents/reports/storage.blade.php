@@ -54,26 +54,20 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th class="text-center text-nowrap" style="width: 100px;">Action</th>
                         <th>Doc Number</th>
                         <th>Document Name</th>
                         <th>Format</th>
                         <th>Size</th>
                         <th>Uploaded By</th>
                         <th>Upload Date</th>
-                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($metrics['largest_files'] as $index => $doc)
                     <tr>
                         <td>{{ $index + 1 }}</td>
-                        <td><strong class="text-primary">{{ $doc->document_number }}</strong></td>
-                        <td>{{ $doc->name }}</td>
-                        <td><span class="badge bg-label-dark">{{ strtoupper($doc->file_extension) }}</span></td>
-                        <td><strong class="text-dark">{{ $doc->formatted_file_size }}</strong></td>
-                        <td>{{ $doc->uploader?->full_name }}</td>
-                        <td>{{ $doc->created_at->format('d M Y') }}</td>
-                        <td>
+                        <td class="text-center text-nowrap">
                             <a href="{{ route('admin.documents.show', $doc->id) }}" class="btn btn-icon btn-sm btn-outline-primary">
                                 <i class="bx bx-show"></i>
                             </a>
@@ -81,6 +75,12 @@
                                 <i class="bx bx-download"></i>
                             </a>
                         </td>
+                        <td><strong class="text-primary">{{ $doc->document_number }}</strong></td>
+                        <td>{{ $doc->name }}</td>
+                        <td><span class="badge bg-label-dark">{{ strtoupper($doc->file_extension) }}</span></td>
+                        <td><strong class="text-dark">{{ $doc->formatted_file_size }}</strong></td>
+                        <td>{{ $doc->uploader?->full_name }}</td>
+                        <td>{{ $doc->created_at->format('d M Y') }}</td>
                     </tr>
                     @empty
                     <tr>

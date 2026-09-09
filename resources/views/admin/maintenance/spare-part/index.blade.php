@@ -67,6 +67,7 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th class="text-center text-nowrap" style="width: 120px;">Action</th>
                         <th>Part Name</th>
                         <th>Part No.</th>
                         <th>Vehicle</th>
@@ -75,23 +76,12 @@
                         <th class="text-end">Amount (₹)</th>
                         <th>Part Change Date</th>
                         <th>Supplier</th>
-                        <th class="text-center">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($parts as $part)
                     <tr>
                         <td>{{ $loop->iteration }}</td>
-                        <td><strong>{{ $part->name }}</strong></td>
-                        <td>{{ $part->part_number ?? '-' }}</td>
-                        <td>{{ $part->vehicle?->vehicle_number ?? '-' }}</td>
-                        <td class="text-end">
-                            <span class="badge bg-success">{{ $part->quantity }}</span>
-                        </td>
-                        <td class="text-end">{{ number_format($part->unit_price, 2) }}</td>
-                        <td class="text-end">{{ number_format($part->amount ?? ($part->quantity * $part->unit_price), 2) }}</td>
-                        <td>{{ $part->part_change_date?->format('d-m-Y') ?? '-' }}</td>
-                        <td>{{ $part->supplier?->name ?? '-' }}</td>
                         <td class="text-center text-nowrap">
                             @if(auth()->user()->can('view spare parts') || auth()->user()->isSuperAdmin())
                             <a href="{{ route('admin.maintenance.spare-part.show', $part) }}" class="btn btn-sm btn-icon btn-outline-info" title="View"><i class="bx bx-show"></i></a>
@@ -106,6 +96,16 @@
                             </form>
                             @endif
                         </td>
+                        <td><strong>{{ $part->name }}</strong></td>
+                        <td>{{ $part->part_number ?? '-' }}</td>
+                        <td>{{ $part->vehicle?->vehicle_number ?? '-' }}</td>
+                        <td class="text-end">
+                            <span class="badge bg-success">{{ $part->quantity }}</span>
+                        </td>
+                        <td class="text-end">{{ number_format($part->unit_price, 2) }}</td>
+                        <td class="text-end">{{ number_format($part->amount ?? ($part->quantity * $part->unit_price), 2) }}</td>
+                        <td>{{ $part->part_change_date?->format('d-m-Y') ?? '-' }}</td>
+                        <td>{{ $part->supplier?->name ?? '-' }}</td>
                     </tr>
                     @empty
                     <tr>

@@ -28,22 +28,18 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th class="text-center text-nowrap" style="width: 100px;">Actions</th>
                         <th>Name</th>
                         <th>Phone</th>
                         <th>GSTIN</th>
                         <th>Deleted At</th>
-                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($suppliers as $index => $supplier)
                     <tr>
                         <td>{{ $suppliers->firstItem() + $index }}</td>
-                        <td><strong>{{ $supplier->name }}</strong></td>
-                        <td>{{ $supplier->phone ?? '-' }}</td>
-                        <td>{{ $supplier->gstin ?? '-' }}</td>
-                        <td>{{ $supplier->deleted_at->format('d-m-Y h:i A') }}</td>
-                        <td class="text-nowrap">
+                        <td class="text-center text-nowrap">
                             <form method="POST" action="{{ route('admin.masters.suppliers.restore', $supplier->id) }}" class="d-inline" onsubmit="return confirm('Restore this supplier?')">
                                 @csrf
                                 <button type="submit" class="btn btn-sm btn-icon btn-outline-success" title="Restore"><i class="bx bx-revision"></i></button>
@@ -53,6 +49,10 @@
                                 <button type="submit" class="btn btn-sm btn-icon btn-outline-danger" title="Permanently Delete"><i class="bx bx-trash"></i></button>
                             </form>
                         </td>
+                        <td><strong>{{ $supplier->name }}</strong></td>
+                        <td>{{ $supplier->phone ?? '-' }}</td>
+                        <td>{{ $supplier->gstin ?? '-' }}</td>
+                        <td>{{ $supplier->deleted_at->format('d-m-Y h:i A') }}</td>
                     </tr>
                     @empty
                     <tr><td colspan="6" class="text-center py-4 text-muted">Recycle bin is empty</td></tr>

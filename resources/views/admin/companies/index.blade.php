@@ -42,18 +42,12 @@
         <div class="table-responsive text-nowrap">
             <table class="table table-hover">
                 <thead class="table-light">
-                    <tr><th>#</th><th>Name</th><th>Email</th><th>Phone</th><th class="text-center">Branches</th><th class="text-center">Users</th><th class="text-nowrap">Status</th><th class="text-nowrap">Actions</th></tr>
+                    <tr><th>#</th><th class="text-center text-nowrap" style="width: 130px;">Actions</th><th>Name</th><th>Email</th><th>Phone</th><th class="text-center">Branches</th><th class="text-center">Users</th><th class="text-nowrap">Status</th></tr>
                 </thead>
                 <tbody>
                     @forelse($companies as $index => $company)
                     <tr>
                         <td>{{ $companies->firstItem() + $index }}</td>
-                        <td><strong>{{ $company->name }}</strong></td>
-                        <td>{{ $company->email ?? '-' }}</td>
-                        <td>{{ $company->phone ?? '-' }}</td>
-                        <td class="text-center">{{ $company->branches_count }}</td>
-                        <td class="text-center">{{ $company->users_count }}</td>
-                        <td><span class="badge bg-label-{{ $company->status == 'active' ? 'success' : 'danger' }}">{{ ucfirst($company->status) }}</span></td>
                         <td class="text-center text-nowrap">
                             <a href="{{ route('admin.companies.show', $company->id) }}" class="btn btn-sm btn-icon btn-outline-info" title="View"><i class="bx bx-show"></i></a>
                             <a href="{{ route('admin.companies.edit', $company->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
@@ -64,6 +58,12 @@
                             <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleDelete({{ $company->id }}, '{{ $company->name }}')" title="Delete"><i class="bx bx-trash"></i></button>
                             @endif
                         </td>
+                        <td><strong>{{ $company->name }}</strong></td>
+                        <td>{{ $company->email ?? '-' }}</td>
+                        <td>{{ $company->phone ?? '-' }}</td>
+                        <td class="text-center">{{ $company->branches_count }}</td>
+                        <td class="text-center">{{ $company->users_count }}</td>
+                        <td><span class="badge bg-label-{{ $company->status == 'active' ? 'success' : 'danger' }}">{{ ucfirst($company->status) }}</span></td>
                     </tr>
                     @empty
                     <tr><td colspan="8" class="text-center py-4 text-muted">No companies found</td></tr>

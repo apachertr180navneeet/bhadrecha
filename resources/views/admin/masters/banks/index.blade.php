@@ -51,28 +51,18 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th class="text-center text-nowrap" style="width: 120px;">Actions</th>
                         <th>Bank Name</th>
                         <th>Code</th>
                         <th>Status</th>
                         <th>Created Date</th>
-                        <th class="text-end">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($banks as $key => $bank)
                         <tr>
                             <td>{{ ($banks->currentPage() - 1) * $banks->perPage() + $key + 1 }}</td>
-                            <td><strong>{{ $bank->name }}</strong></td>
-                            <td><span class="badge bg-label-primary">{{ $bank->code }}</span></td>
-                            <td>
-                                @if($bank->status === 'active')
-                                    <span class="badge bg-label-success">Active</span>
-                                @else
-                                    <span class="badge bg-label-secondary">Inactive</span>
-                                @endif
-                            </td>
-                            <td>{{ $bank->created_at->format('d M Y') }}</td>
-                            <td class="text-end">
+                            <td class="text-center text-nowrap">
                                 <div class="d-inline-flex gap-1">
                                     <a href="{{ route('admin.masters.banks.edit', $bank->id) }}" class="btn btn-sm btn-icon btn-outline-warning" title="Edit">
                                         <i class="bx bx-edit"></i>
@@ -88,6 +78,16 @@
                                     </button>
                                 </div>
                             </td>
+                            <td><strong>{{ $bank->name }}</strong></td>
+                            <td><span class="badge bg-label-primary">{{ $bank->code }}</span></td>
+                            <td>
+                                @if($bank->status === 'active')
+                                    <span class="badge bg-label-success">Active</span>
+                                @else
+                                    <span class="badge bg-label-secondary">Inactive</span>
+                                @endif
+                            </td>
+                            <td>{{ $bank->created_at->format('d M Y') }}</td>
                         </tr>
                     @empty
                         <tr>

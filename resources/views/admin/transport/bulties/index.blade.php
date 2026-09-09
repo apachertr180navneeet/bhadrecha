@@ -117,6 +117,7 @@
             <table class="table table-hover">
                 <thead class="table-light">
                     <tr>
+                        <th style="width: 60px;">Actions</th>
                         <th>LR No</th>
                         <th>
                             <a href="{{ request()->fullUrlWithQuery(['date_sort' => request('date_sort') === 'oldest' ? 'latest' : 'oldest']) }}" class="text-dark d-flex align-items-center gap-1 text-decoration-none">
@@ -132,12 +133,36 @@
                         <th>Weight</th>
                         <th>Amount</th>
                         <th>Status</th>
-                        <th class="text-end">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($bulties as $bulty)
                     <tr>
+                        <td>
+                            @canany(['view bulties', 'edit bulties', 'cancel bulties', 'delete bulties'])
+                            <div class="dropdown">
+                                <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown" data-bs-boundary="viewport"><i class="bx bx-dots-vertical-rounded"></i></button>
+                                <div class="dropdown-menu">
+                                    @can('view bulties')
+                                    <a class="dropdown-item" href="{{ route('admin.transport.bulties.show', $bulty->id) }}"><i class="bx bx-show me-1"></i> View</a>
+                                    @endcan
+                                    @can('edit bulties')
+                                    <a class="dropdown-item" href="{{ route('admin.transport.bulties.edit', $bulty->id) }}"><i class="bx bx-edit me-1"></i> Edit</a>
+                                    @endcan
+                                    @can('cancel bulties')
+                                    @if(in_array($bulty->status, ['pending', 'planned']))
+                                    <button type="button" class="dropdown-item text-danger" onclick="handleReject({{ $bulty->id }}, '{{ $bulty->lr_no }}')"><i class="bx bx-x-circle me-1"></i> Reject</button>
+                                    @endif
+                                    @endcan
+                                    @can('delete bulties')
+                                    @if(in_array($bulty->status, ['pending', 'planned']))
+                                    <button type="button" class="dropdown-item text-danger" onclick="handleDelete({{ $bulty->id }}, '{{ $bulty->lr_no }}')"><i class="bx bx-trash me-1"></i> Delete</button>
+                                    @endif
+                                    @endcan
+                                </div>
+                            </div>
+                            @endcanany
+                        </td>
                         <td class="fw-semibold">{{ $bulty->lr_no }}</td>
                         <td>{{ $bulty->lr_date ? date('d M Y', strtotime($bulty->lr_date)) : '-' }}</td>
                         <td><strong>{{ $bulty->vehicle->vehicle_number ?? '-' }}</strong></td>
@@ -159,31 +184,6 @@
                                 $color = $statusColors[$bulty->status] ?? 'secondary';
                             @endphp
                             <span class="badge bg-label-{{ $color }}">{{ ucfirst(str_replace('_', ' ', $bulty->status)) }}</span>
-                        </td>
-                        <td class="text-end">
-                            @canany(['view bulties', 'edit bulties', 'cancel bulties', 'delete bulties'])
-                            <div class="dropdown">
-                                <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown" data-bs-boundary="viewport"><i class="bx bx-dots-vertical-rounded"></i></button>
-                                <div class="dropdown-menu dropdown-menu-end">
-                                    @can('view bulties')
-                                    <a class="dropdown-item" href="{{ route('admin.transport.bulties.show', $bulty->id) }}"><i class="bx bx-show me-1"></i> View</a>
-                                    @endcan
-                                    @can('edit bulties')
-                                    <a class="dropdown-item" href="{{ route('admin.transport.bulties.edit', $bulty->id) }}"><i class="bx bx-edit me-1"></i> Edit</a>
-                                    @endcan
-                                    @can('cancel bulties')
-                                    @if(in_array($bulty->status, ['pending', 'planned']))
-                                    <button type="button" class="dropdown-item text-danger" onclick="handleReject({{ $bulty->id }}, '{{ $bulty->lr_no }}')"><i class="bx bx-x-circle me-1"></i> Reject</button>
-                                    @endif
-                                    @endcan
-                                    @can('delete bulties')
-                                    @if(in_array($bulty->status, ['pending', 'planned']))
-                                    <button type="button" class="dropdown-item text-danger" onclick="handleDelete({{ $bulty->id }}, '{{ $bulty->lr_no }}')"><i class="bx bx-trash me-1"></i> Delete</button>
-                                    @endif
-                                    @endcan
-                                </div>
-                            </div>
-                            @endcanany
                         </td>
                     </tr>
                     @empty

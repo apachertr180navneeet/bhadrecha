@@ -81,6 +81,9 @@
                         <table class="table table-hover" id="expensesTable">
                             <thead>
                                 <tr>
+                                    @if(auth()->user()->can('edit expenses') || auth()->user()->can('delete expenses'))
+                                    <th class="text-center text-nowrap" style="width: 80px;">Actions</th>
+                                    @endif
                                     <th>Date</th>
                                     <th>Category</th>
                                     <th>Amount</th>
@@ -88,46 +91,23 @@
                                     <th>Attachment</th>
                                     <th>Store</th>
                                     <th>Branch</th>
-                                    @if(auth()->user()->can('edit expenses') || auth()->user()->can('delete expenses'))
-                                    <th>Actions</th>
-                                    @endif
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($expenses as $expense)
                                 <tr>
-                                    <td>{{ \Carbon\Carbon::parse($expense->date)->format('d M Y') }}</td>
-                                    <td>
-                                        <span class="badge bg-label-info">{{ $expense->category->name ?? 'N/A' }}</span>
-                                    </td>
-                                    <td class="fw-semibold">₹{{ number_format($expense->amount, 2) }}</td>
-                                    <td>{{ Str::limit($expense->remarks, 40) }}</td>
-                                    <td>
-                                        @if($expense->attachment)
-                                        <a
-                                            href="{{ asset($expense->attachment) }}"
-                                            target="_blank"
-                                            class="btn btn-sm btn-label-primary"
-                                        >
-                                            <i class="bx bx-download"></i>
-                                        </a>
-                                        @else
-                                        <span class="text-muted">--</span>
-                                        @endif
-                                    </td>
-                                    <td>{{ $expense->store->store_name ?? $expense->store->name ?? 'N/A' }}</td>
-                                    <td>{{ $expense->branch->name ?? 'N/A' }}</td>
                                     @if(auth()->user()->can('edit expenses') || auth()->user()->can('delete expenses'))
-                                    <td>
+                                    <td class="text-center text-nowrap">
                                         <div class="dropdown">
                                             <button
                                                 class="btn p-0 dropdown-toggle hide-arrow"
                                                 type="button"
                                                 data-bs-toggle="dropdown"
+                                                data-bs-boundary="viewport"
                                             >
                                                 <i class="bx bx-dots-vertical-rounded"></i>
                                             </button>
-                                            <ul class="dropdown-menu dropdown-menu-end">
+                                            <ul class="dropdown-menu">
                                                 @can('edit expenses')
                                                 <li>
                                                     <a
@@ -162,6 +142,27 @@
                                         </div>
                                     </td>
                                     @endif
+                                    <td>{{ \Carbon\Carbon::parse($expense->date)->format('d M Y') }}</td>
+                                    <td>
+                                        <span class="badge bg-label-info">{{ $expense->category->name ?? 'N/A' }}</span>
+                                    </td>
+                                    <td class="fw-semibold">₹{{ number_format($expense->amount, 2) }}</td>
+                                    <td>{{ Str::limit($expense->remarks, 40) }}</td>
+                                    <td>
+                                        @if($expense->attachment)
+                                        <a
+                                            href="{{ asset($expense->attachment) }}"
+                                            target="_blank"
+                                            class="btn btn-sm btn-label-primary"
+                                        >
+                                            <i class="bx bx-download"></i>
+                                        </a>
+                                        @else
+                                        <span class="text-muted">--</span>
+                                        @endif
+                                    </td>
+                                    <td>{{ $expense->store->store_name ?? $expense->store->name ?? 'N/A' }}</td>
+                                    <td>{{ $expense->branch->name ?? 'N/A' }}</td>
                                 </tr>
                                 @endforeach
                             </tbody>

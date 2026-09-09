@@ -163,16 +163,21 @@
                             <table class="table table-borderless services-table mb-0">
                                 <thead>
                                     <tr>
+                                        <th style="min-width: 50px; width: 6%; text-align: center;">Action</th>
                                         <th style="min-width: 200px; width: 32%;">Service <span class="text-danger">*</span></th>
                                         <th style="min-width: 220px; width: 36%;">Stylist(s)</th>
                                         <th style="min-width: 110px; width: 14%;">Price (₹)</th>
                                         <th style="min-width: 100px; width: 12%;">Duration (min)</th>
-                                        <th style="min-width: 50px; width: 6%; text-align: center;">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody id="servicesContainer">
                                     <!-- Default Service Row 0 -->
                                     <tr class="service-row" data-index="0">
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn" disabled title="At least one service is required">
+                                                <i class="bx bx-trash"></i>
+                                            </button>
+                                        </td>
                                         <td>
                                             <div class="custom-ajax-wrapper service-picker-wrapper">
                                                 <div class="input-group input-group-sm">
@@ -199,11 +204,6 @@
                                         </td>
                                         <td>
                                             <input type="number" class="form-control item-duration" name="items[0][duration]" placeholder="0" readonly>
-                                        </td>
-                                        <td class="text-center">
-                                            <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn" disabled title="At least one service is required">
-                                                <i class="bx bx-trash"></i>
-                                            </button>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -626,6 +626,11 @@
         $('#addServiceRowBtn').on('click', function() {
             const newRow = `
                 <tr class="service-row" data-index="${itemIndex}">
+                    <td class="text-center">
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn" title="Remove Service">
+                            <i class="bx bx-trash"></i>
+                        </button>
+                    </td>
                     <td>
                         <div class="custom-ajax-wrapper service-picker-wrapper">
                             <div class="input-group input-group-sm">
@@ -652,11 +657,6 @@
                     </td>
                     <td>
                         <input type="number" class="form-control item-duration" name="items[${itemIndex}][duration]" placeholder="0" readonly>
-                    </td>
-                    <td class="text-center">
-                        <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn" title="Remove Service">
-                            <i class="bx bx-trash"></i>
-                        </button>
                     </td>
                 </tr>
             `;

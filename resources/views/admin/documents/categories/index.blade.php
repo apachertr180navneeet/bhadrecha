@@ -27,19 +27,31 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th class="text-center text-nowrap" style="width: 100px;">Actions</th>
                         <th>Category Name</th>
                         <th>Parent Category</th>
                         <th>Description</th>
                         <th>Total Documents</th>
                         <th>Sort Order</th>
                         <th>Status</th>
-                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($categories as $index => $cat)
                     <tr>
                         <td>{{ $index + 1 }}</td>
+                        <td class="text-center text-nowrap">
+                            <button class="btn btn-icon btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#editCategoryModal{{ $cat->id }}">
+                                <i class="bx bx-edit-alt"></i>
+                            </button>
+                            <form action="{{ route('admin.documents.categories.destroy', $cat->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this category?');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-icon btn-sm btn-outline-danger">
+                                    <i class="bx bx-trash"></i>
+                                </button>
+                            </form>
+                        </td>
                         <td>
                             <strong class="text-primary"><i class="bx bx-folder me-1"></i> {{ $cat->name }}</strong>
                         </td>
@@ -53,18 +65,6 @@
                             @else
                                 <span class="badge bg-secondary">Inactive</span>
                             @endif
-                        </td>
-                        <td>
-                            <button class="btn btn-icon btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#editCategoryModal{{ $cat->id }}">
-                                <i class="bx bx-edit-alt"></i>
-                            </button>
-                            <form action="{{ route('admin.documents.categories.destroy', $cat->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this category?');">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-icon btn-sm btn-outline-danger">
-                                    <i class="bx bx-trash"></i>
-                                </button>
-                            </form>
                         </td>
                     </tr>
 

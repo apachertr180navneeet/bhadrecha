@@ -32,25 +32,19 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th class="text-center text-nowrap" style="width: 100px;">Action</th>
                         <th>Part Name</th>
                         <th>Part No.</th>
                         <th>Vehicle</th>
                         <th class="text-end">Stock</th>
                         <th>Supplier</th>
                         <th>Deleted At</th>
-                        <th class="text-center">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($parts as $part)
                     <tr>
                         <td>{{ $loop->iteration }}</td>
-                        <td><strong>{{ $part->name }}</strong></td>
-                        <td>{{ $part->part_number ?? '-' }}</td>
-                        <td>{{ $part->vehicle?->vehicle_number ?? '-' }}</td>
-                        <td class="text-end">{{ $part->quantity }}</td>
-                        <td>{{ $part->supplier?->name ?? '-' }}</td>
-                        <td>{{ $part->deleted_at->format('d-m-Y h:i A') }}</td>
                         <td class="text-center text-nowrap">
                             <form method="POST" action="{{ route('admin.maintenance.spare-part.restore', $part->id) }}" class="d-inline" onsubmit="return confirm('Restore this part?')">
                                 @csrf
@@ -61,6 +55,12 @@
                                 <button type="submit" class="btn btn-sm btn-icon btn-outline-danger" title="Permanently Delete"><i class="bx bx-trash"></i></button>
                             </form>
                         </td>
+                        <td><strong>{{ $part->name }}</strong></td>
+                        <td>{{ $part->part_number ?? '-' }}</td>
+                        <td>{{ $part->vehicle?->vehicle_number ?? '-' }}</td>
+                        <td class="text-end">{{ $part->quantity }}</td>
+                        <td>{{ $part->supplier?->name ?? '-' }}</td>
+                        <td>{{ $part->deleted_at->format('d-m-Y h:i A') }}</td>
                     </tr>
                     @empty
                     <tr>

@@ -27,6 +27,9 @@
                 <thead>
                     <tr>
                         <th style="width: 40px;"><input type="checkbox" class="form-check-input" id="checkAllPayrolls"></th>
+                        @if(auth()->user()->can('view payrolls') || auth()->user()->can('edit payrolls') || auth()->user()->can('delete payrolls'))
+                        <th class="text-center text-nowrap" style="width:80px;">Actions</th>
+                        @endif
                         <th>Staff</th>
                         <th>Month</th>
                         <th>Year</th>
@@ -35,9 +38,6 @@
                         <th>Advance Deduction</th>
                         <th>Net Amount</th>
                         <th style="width:90px;">Status</th>
-                        @if(auth()->user()->can('view payrolls') || auth()->user()->can('edit payrolls') || auth()->user()->can('delete payrolls'))
-                        <th style="width:160px;">Actions</th>
-                        @endif
                     </tr>
                 </thead>
                 <tbody>
@@ -48,34 +48,13 @@
                             <input type="checkbox" class="form-check-input payroll-checkbox" value="{{ $payroll->id }}">
                             @endif
                         </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="avatar avatar-sm me-3" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;">
-                                    <span class="avatar-initial rounded-circle bg-label-primary" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:600;">
-                                        {{ strtoupper(substr($payroll->staff->full_name ?? '--', 0, 2)) }}
-                                    </span>
-                                </div>
-                                <span class="fw-semibold">{{ $payroll->staff->full_name ?? 'N/A' }}</span>
-                            </div>
-                        </td>
-                        <td>{{ date('F', mktime(0, 0, 0, $payroll->month, 1)) }}</td>
-                        <td>{{ $payroll->year }}</td>
-                        <td>₹{{ number_format($payroll->basic_salary, 2) }}</td>
-                        <td class="text-danger">₹{{ number_format($payroll->deductions ?? 0, 2) }}</td>
-                        <td class="text-warning fw-semibold">₹{{ number_format($payroll->advance_amount ?? 0, 2) }}</td>
-                        <td class="fw-semibold">₹{{ number_format($payroll->net_amount, 2) }}</td>
-                        <td>
-                            <span class="badge bg-label-{{ $payroll->status == 'paid' ? 'success' : 'warning' }}" id="payroll-status-{{ $payroll->id }}">
-                                {{ ucfirst($payroll->status) }}
-                            </span>
-                        </td>
                         @if(auth()->user()->can('view payrolls') || auth()->user()->can('edit payrolls') || auth()->user()->can('delete payrolls'))
-                        <td>
+                        <td class="text-center text-nowrap">
                             <div class="dropdown">
-                                <button class="btn p-0 dropdown-toggle hide-arrow" type="button" data-bs-toggle="dropdown">
+                                <button class="btn p-0 dropdown-toggle hide-arrow" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport">
                                     <i class="bx bx-dots-vertical-rounded"></i>
                                 </button>
-                                <ul class="dropdown-menu dropdown-menu-end">
+                                <ul class="dropdown-menu">
                                     @can('edit payrolls')
                                     <li>
                                         <a class="dropdown-item text-primary" href="{{ route('admin.payrolls.edit', $payroll->id) }}">
@@ -108,6 +87,27 @@
                             </div>
                         </td>
                         @endif
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar avatar-sm me-3" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;">
+                                    <span class="avatar-initial rounded-circle bg-label-primary" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:600;">
+                                        {{ strtoupper(substr($payroll->staff->full_name ?? '--', 0, 2)) }}
+                                    </span>
+                                </div>
+                                <span class="fw-semibold">{{ $payroll->staff->full_name ?? 'N/A' }}</span>
+                            </div>
+                        </td>
+                        <td>{{ date('F', mktime(0, 0, 0, $payroll->month, 1)) }}</td>
+                        <td>{{ $payroll->year }}</td>
+                        <td>₹{{ number_format($payroll->basic_salary, 2) }}</td>
+                        <td class="text-danger">₹{{ number_format($payroll->deductions ?? 0, 2) }}</td>
+                        <td class="text-warning fw-semibold">₹{{ number_format($payroll->advance_amount ?? 0, 2) }}</td>
+                        <td class="fw-semibold">₹{{ number_format($payroll->net_amount, 2) }}</td>
+                        <td>
+                            <span class="badge bg-label-{{ $payroll->status == 'paid' ? 'success' : 'warning' }}" id="payroll-status-{{ $payroll->id }}">
+                                {{ ucfirst($payroll->status) }}
+                            </span>
+                        </td>
                     </tr>
                     @empty
                     <tr>

@@ -23,19 +23,19 @@
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead class="table-light">
-                    <tr><th>#</th><th>AdBlue Company</th><th>Status</th><th class="text-nowrap">Deleted At</th><th class="text-nowrap">Actions</th></tr>
+                    <tr><th>#</th><th class="text-center text-nowrap" style="width: 100px;">Actions</th><th>AdBlue Company</th><th>Status</th><th class="text-nowrap">Deleted At</th></tr>
                 </thead>
                 <tbody>
                     @forelse($adblueCompanies as $index => $adblueCompany)
                     <tr>
                         <td class="text-nowrap">{{ $adblueCompanies->firstItem() + $index }}</td>
-                        <td class="text-nowrap"><strong>{{ $adblueCompany->name }}</strong></td>
-                        <td>{{ $adblueCompany->status ?? '-' }}</td>
-                        <td class="text-nowrap">{{ $adblueCompany->deleted_at->format('d M Y, h:i A') }}</td>
                         <td class="text-center text-nowrap">
                             <button type="button" class="btn btn-sm btn-icon btn-outline-success" onclick="handleRestore({{ $adblueCompany->id }}, '{{ $adblueCompany->name }}')" title="Restore"><i class="bx bx-revision"></i></button>
                             <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleForceDelete({{ $adblueCompany->id }}, '{{ $adblueCompany->name }}')" title="Permanently Delete"><i class="bx bx-trash"></i></button>
                         </td>
+                        <td class="text-nowrap"><strong>{{ $adblueCompany->name }}</strong></td>
+                        <td>{{ $adblueCompany->status ?? '-' }}</td>
+                        <td class="text-nowrap">{{ $adblueCompany->deleted_at->format('d M Y, h:i A') }}</td>
                     </tr>
                     @empty
                     <tr><td colspan="5" class="text-center py-4 text-muted">No AdBlue companies in recycle bin</td></tr>

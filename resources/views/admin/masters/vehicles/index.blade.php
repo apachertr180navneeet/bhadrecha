@@ -85,7 +85,7 @@
 
             <table class="table table-hover">
 
-                <thead class="table-light"><tr><th>#</th><th>Vehicle No</th><th>Type</th><th>Capacity</th><th>Owner</th><th>Insurance</th><th>Status</th><th>Docs</th><th>Actions</th></tr></thead>
+                <thead class="table-light"><tr><th>#</th><th class="text-center" style="width: 120px;">Actions</th><th>Vehicle No</th><th>Type</th><th>Capacity</th><th>Owner</th><th>Insurance</th><th>Status</th><th>Docs</th></tr></thead>
 
                 <tbody>
 
@@ -94,6 +94,24 @@
                     <tr>
 
                         <td>{{ $vehicles->firstItem() + $index }}</td>
+
+                        <td class="text-center text-nowrap">
+
+                            @can('edit vehicles')
+                            <a href="{{ route('admin.masters.vehicles.edit', $vehicle->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
+
+                            <form action="{{ route('admin.masters.vehicles.toggle-status', $vehicle->id) }}" method="POST" class="d-inline">@csrf
+
+                                <button type="submit" class="btn btn-sm btn-icon btn-outline-{{ $vehicle->status == 'active' ? 'warning' : 'success' }}" title="{{ $vehicle->status == 'active' ? 'Deactivate' : 'Activate' }}"><i class="bx bx-{{ $vehicle->status == 'active' ? 'pause' : 'play' }}"></i></button>
+
+                            </form>
+                            @endcan
+
+                            @can('delete vehicles')
+                            <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleDelete({{ $vehicle->id }}, '{{ $vehicle->vehicle_number }}')" title="Delete"><i class="bx bx-trash"></i></button>
+                            @endcan
+
+                        </td>
 
                         <td><strong>{{ $vehicle->vehicle_number }}</strong></td>
 
@@ -118,24 +136,6 @@
                                 {{ $uploaded }}/5
 
                             </span>
-
-                        </td>
-
-                        <td class="text-center text-nowrap">
-
-                            @can('edit vehicles')
-                            <a href="{{ route('admin.masters.vehicles.edit', $vehicle->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
-
-                            <form action="{{ route('admin.masters.vehicles.toggle-status', $vehicle->id) }}" method="POST" class="d-inline">@csrf
-
-                                <button type="submit" class="btn btn-sm btn-icon btn-outline-{{ $vehicle->status == 'active' ? 'warning' : 'success' }}" title="{{ $vehicle->status == 'active' ? 'Deactivate' : 'Activate' }}"><i class="bx bx-{{ $vehicle->status == 'active' ? 'pause' : 'play' }}"></i></button>
-
-                            </form>
-                            @endcan
-
-                            @can('delete vehicles')
-                            <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleDelete({{ $vehicle->id }}, '{{ $vehicle->vehicle_number }}')" title="Delete"><i class="bx bx-trash"></i></button>
-                            @endcan
 
                         </td>
 

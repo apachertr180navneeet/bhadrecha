@@ -28,23 +28,18 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th class="text-center text-nowrap" style="width: 100px;">Action</th>
                         <th>Vehicle</th>
                         <th>Position</th>
                         <th>Brand</th>
                         <th>Serial #</th>
                         <th>Deleted At</th>
-                        <th class="text-center">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($tyres as $tyre)
                     <tr>
                         <td>{{ $loop->iteration }}</td>
-                        <td>{{ $tyre->vehicle?->vehicle_number ?? 'N/A' }}</td>
-                        <td>{{ $tyre->tyre_position }}</td>
-                        <td>{{ $tyre->tyre_brand }}</td>
-                        <td>{{ $tyre->serial_number ?? '-' }}</td>
-                        <td>{{ $tyre->deleted_at->format('d-m-Y h:i A') }}</td>
                         <td class="text-center text-nowrap">
                             <form method="POST" action="{{ route('admin.maintenance.tyre-management.restore', $tyre->id) }}" class="d-inline">
                                 @csrf
@@ -55,6 +50,11 @@
                                 <button type="submit" class="btn btn-sm btn-icon btn-outline-danger" title="Delete Permanently"><i class="bx bx-trash"></i></button>
                             </form>
                         </td>
+                        <td>{{ $tyre->vehicle?->vehicle_number ?? 'N/A' }}</td>
+                        <td>{{ $tyre->tyre_position }}</td>
+                        <td>{{ $tyre->tyre_brand }}</td>
+                        <td>{{ $tyre->serial_number ?? '-' }}</td>
+                        <td>{{ $tyre->deleted_at->format('d-m-Y h:i A') }}</td>
                     </tr>
                     @empty
                     <tr>

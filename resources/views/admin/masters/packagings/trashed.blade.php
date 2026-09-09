@@ -24,19 +24,19 @@
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead class="table-light">
-                    <tr><th>#</th><th>Name</th><th>Description</th><th class="text-nowrap">Deleted At</th><th class="text-nowrap">Actions</th></tr>
+                    <tr><th>#</th><th class="text-center text-nowrap" style="width: 100px;">Actions</th><th>Name</th><th>Description</th><th class="text-nowrap">Deleted At</th></tr>
                 </thead>
                 <tbody>
                     @forelse($packagings as $index => $packaging)
                     <tr>
                         <td class="text-nowrap">{{ $packagings->firstItem() + $index }}</td>
-                        <td class="text-nowrap"><strong>{{ $packaging->name }}</strong></td>
-                        <td style="max-width: 200px">{{ $packaging->description ?? '-' }}</td>
-                        <td class="text-nowrap">{{ $packaging->deleted_at->format('d M Y, h:i A') }}</td>
                         <td class="text-center text-nowrap">
                             <button type="button" class="btn btn-sm btn-icon btn-outline-success" onclick="handleRestore({{ $packaging->id }}, '{{ $packaging->name }}')" title="Restore"><i class="bx bx-revision"></i></button>
                             <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleForceDelete({{ $packaging->id }}, '{{ $packaging->name }}')" title="Permanently Delete"><i class="bx bx-trash"></i></button>
                         </td>
+                        <td class="text-nowrap"><strong>{{ $packaging->name }}</strong></td>
+                        <td style="max-width: 200px">{{ $packaging->description ?? '-' }}</td>
+                        <td class="text-nowrap">{{ $packaging->deleted_at->format('d M Y, h:i A') }}</td>
                     </tr>
                     @empty
                     <tr><td colspan="5" class="text-center py-4 text-muted">No packagings in recycle bin</td></tr>

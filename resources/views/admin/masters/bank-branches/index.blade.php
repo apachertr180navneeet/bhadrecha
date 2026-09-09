@@ -59,32 +59,20 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th class="text-center text-nowrap" style="width: 120px;">Actions</th>
                         <th>Bank</th>
                         <th>Branch Name</th>
                         <th>IFSC Code</th>
                         <th>Address</th>
                         <th>Status</th>
                         <th>Created Date</th>
-                        <th class="text-end">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($branches as $key => $branch)
                         <tr>
                             <td>{{ ($branches->currentPage() - 1) * $branches->perPage() + $key + 1 }}</td>
-                            <td><span class="badge bg-label-info">{{ $branch->bank?->name ?? '-' }}</span></td>
-                            <td><strong>{{ $branch->branch_name }}</strong></td>
-                            <td><span class="badge bg-label-primary">{{ $branch->ifsc }}</span></td>
-                            <td style="max-width:200px;">{{ $branch->address ?? '-' }}</td>
-                            <td>
-                                @if($branch->status === 'active')
-                                    <span class="badge bg-label-success">Active</span>
-                                @else
-                                    <span class="badge bg-label-secondary">Inactive</span>
-                                @endif
-                            </td>
-                            <td>{{ $branch->created_at->format('d M Y') }}</td>
-                            <td class="text-end">
+                            <td class="text-center text-nowrap">
                                 <div class="d-inline-flex gap-1">
                                     <a href="{{ route('admin.masters.bank-branches.edit', $branch->id) }}" class="btn btn-sm btn-icon btn-outline-warning" title="Edit">
                                         <i class="bx bx-edit"></i>
@@ -100,6 +88,18 @@
                                     </button>
                                 </div>
                             </td>
+                            <td><span class="badge bg-label-info">{{ $branch->bank?->name ?? '-' }}</span></td>
+                            <td><strong>{{ $branch->branch_name }}</strong></td>
+                            <td><span class="badge bg-label-primary">{{ $branch->ifsc }}</span></td>
+                            <td style="max-width:200px;">{{ $branch->address ?? '-' }}</td>
+                            <td>
+                                @if($branch->status === 'active')
+                                    <span class="badge bg-label-success">Active</span>
+                                @else
+                                    <span class="badge bg-label-secondary">Inactive</span>
+                                @endif
+                            </td>
+                            <td>{{ $branch->created_at->format('d M Y') }}</td>
                         </tr>
                     @empty
                         <tr>

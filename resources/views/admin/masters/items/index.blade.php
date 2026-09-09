@@ -51,19 +51,16 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th class="text-center" style="width: 120px;">Actions</th>
                         <th>Name</th>
                         <th>Description</th>
                         <th>Status</th>
-                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($items as $key => $item)
                     <tr>
                         <td>{{ ($items->currentPage() - 1) * $items->perPage() + $key + 1 }}</td>
-                        <td class="fw-semibold">{{ $item->name }}</td>
-                        <td>{{ $item->description ?? '-' }}</td>
-                        <td><span class="badge bg-label-{{ $item->status == 'active' ? 'success' : 'danger' }}">{{ ucfirst($item->status) }}</span></td>
                         <td class="text-center text-nowrap">
                             <a href="{{ route('admin.masters.items.edit', $item->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
                             <form action="{{ route('admin.masters.items.toggle-status', $item->id) }}" method="POST" class="d-inline">@csrf
@@ -71,6 +68,9 @@
                             </form>
                             <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleDelete({{ $item->id }}, '{{ $item->name }}')" title="Delete"><i class="bx bx-trash"></i></button>
                         </td>
+                        <td class="fw-semibold">{{ $item->name }}</td>
+                        <td>{{ $item->description ?? '-' }}</td>
+                        <td><span class="badge bg-label-{{ $item->status == 'active' ? 'success' : 'danger' }}">{{ ucfirst($item->status) }}</span></td>
                     </tr>
                     @empty
                     <tr>

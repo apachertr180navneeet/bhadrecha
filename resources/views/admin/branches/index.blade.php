@@ -40,19 +40,12 @@
         <div class="table-responsive text-nowrap">
             <table class="table table-hover">
                 <thead class="table-light">
-                    <tr><th>#</th><th>Name</th><th>Company</th><th>Email</th><th>Phone</th><th>City</th><th class="text-center">Users</th><th class="text-nowrap">Status</th><th class="text-nowrap">Actions</th></tr>
+                    <tr><th>#</th><th class="text-center text-nowrap" style="width: 130px;">Actions</th><th>Name</th><th>Company</th><th>Email</th><th>Phone</th><th>City</th><th class="text-center">Users</th><th class="text-nowrap">Status</th></tr>
                 </thead>
                 <tbody>
                     @forelse($branches as $index => $branch)
                     <tr>
                         <td>{{ $branches->firstItem() + $index }}</td>
-                        <td><strong>{{ $branch->name }}</strong></td>
-                        <td>{{ $branch->company->name ?? '-' }}</td>
-                        <td>{{ $branch->email ?? '-' }}</td>
-                        <td>{{ $branch->phone ?? '-' }}</td>
-                        <td>{{ $branch->city ?? '-' }}</td>
-                        <td class="text-center">{{ $branch->users_count }}</td>
-                        <td><span class="badge bg-label-{{ $branch->status == 'active' ? 'success' : 'danger' }}">{{ ucfirst($branch->status) }}</span></td>
                         <td class="text-center text-nowrap">
                             <a href="{{ route('admin.branches.show', $branch->id) }}" class="btn btn-sm btn-icon btn-outline-info" title="View"><i class="bx bx-show"></i></a>
                             <a href="{{ route('admin.branches.edit', $branch->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
@@ -63,6 +56,13 @@
                             <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleDelete({{ $branch->id }}, '{{ $branch->name }}')" title="Delete"><i class="bx bx-trash"></i></button>
                             @endif
                         </td>
+                        <td><strong>{{ $branch->name }}</strong></td>
+                        <td>{{ $branch->company->name ?? '-' }}</td>
+                        <td>{{ $branch->email ?? '-' }}</td>
+                        <td>{{ $branch->phone ?? '-' }}</td>
+                        <td>{{ $branch->city ?? '-' }}</td>
+                        <td class="text-center">{{ $branch->users_count }}</td>
+                        <td><span class="badge bg-label-{{ $branch->status == 'active' ? 'success' : 'danger' }}">{{ ucfirst($branch->status) }}</span></td>
                     </tr>
                     @empty
                     <tr><td colspan="9" class="text-center py-4 text-muted">No branches found</td></tr>

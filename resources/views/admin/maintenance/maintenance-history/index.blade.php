@@ -68,6 +68,7 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th class="text-center text-nowrap" style="width: 120px;">Action</th>
                         <th>Vehicle</th>
                         <th>Service Type</th>
                         <th>Service Date</th>
@@ -75,25 +76,12 @@
                         <th>Vendor/Workshop</th>
                         <th class="text-end">Cost</th>
                         <th>Status</th>
-                        <th class="text-center">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($histories as $history)
                     <tr>
                         <td>{{ $loop->iteration }}</td>
-                        <td><strong>{{ $history->vehicle?->vehicle_number ?? 'N/A' }}</strong></td>
-                        <td>{{ $history->service_type }}</td>
-                        <td>{{ $history->service_date?->format('d-m-Y') ?? '-' }}</td>
-                        <td class="text-end">{{ $history->current_km ? number_format($history->current_km, 0) . ' km' : '-' }}</td>
-                        <td>{{ $history->vendor?->name ?? $history->vendor_name ?? '-' }}</td>
-                        <td class="text-end">{{ $history->cost ? '₹ ' . number_format($history->cost, 2) : '-' }}</td>
-                        <td>
-                            @php
-                                $badge = ['completed' => 'success', 'pending' => 'warning', 'cancelled' => 'secondary'];
-                            @endphp
-                            <span class="badge bg-label-{{ $badge[$history->status] ?? 'secondary' }}">{{ ucfirst($history->status) }}</span>
-                        </td>
                         <td class="text-center text-nowrap">
                             <a href="{{ route('admin.maintenance.maintenance-history.show', $history) }}" class="btn btn-sm btn-icon btn-outline-info" title="View"><i class="bx bx-show"></i></a>
                             @can('edit maintenance history')
@@ -105,6 +93,18 @@
                                 <button type="submit" class="btn btn-sm btn-icon btn-outline-danger" title="Delete"><i class="bx bx-trash"></i></button>
                             </form>
                             @endcan
+                        </td>
+                        <td><strong>{{ $history->vehicle?->vehicle_number ?? 'N/A' }}</strong></td>
+                        <td>{{ $history->service_type }}</td>
+                        <td>{{ $history->service_date?->format('d-m-Y') ?? '-' }}</td>
+                        <td class="text-end">{{ $history->current_km ? number_format($history->current_km, 0) . ' km' : '-' }}</td>
+                        <td>{{ $history->vendor?->name ?? $history->vendor_name ?? '-' }}</td>
+                        <td class="text-end">{{ $history->cost ? '₹ ' . number_format($history->cost, 2) : '-' }}</td>
+                        <td>
+                            @php
+                                $badge = ['completed' => 'success', 'pending' => 'warning', 'cancelled' => 'secondary'];
+                            @endphp
+                            <span class="badge bg-label-{{ $badge[$history->status] ?? 'secondary' }}">{{ ucfirst($history->status) }}</span>
                         </td>
                     </tr>
                     @empty

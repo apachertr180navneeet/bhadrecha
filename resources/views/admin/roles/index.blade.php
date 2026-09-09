@@ -19,20 +19,16 @@
         <div class="table-responsive text-nowrap">
             <table class="table table-hover">
                 <thead class="table-light">
-                    <tr><th>#</th><th>Name</th><th class="text-center">Permissions</th><th class="text-center">Users</th><th class="text-nowrap">Created</th><th class="text-nowrap">Actions</th></tr>
+                    <tr><th>#</th><th class="text-nowrap" style="width: 80px;">Actions</th><th>Name</th><th class="text-center">Permissions</th><th class="text-center">Users</th><th class="text-nowrap">Created</th></tr>
                 </thead>
                 <tbody>
                     @forelse($roles as $index => $role)
                     <tr>
                         <td>{{ $roles->firstItem() + $index }}</td>
-                        <td><strong>{{ $role->name }}</strong></td>
-                        <td class="text-center">{{ $role->permissions->count() }}</td>
-                        <td class="text-center">{{ $role->users->count() }}</td>
-                        <td>{{ $role->created_at->format('d M Y') }}</td>
                         <td>
                             @canany(['edit roles', 'delete roles'])
                             <div class="dropdown">
-                                <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="bx bx-dots-vertical-rounded"></i></button>
+                                <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown" data-bs-boundary="viewport"><i class="bx bx-dots-vertical-rounded"></i></button>
                                 <div class="dropdown-menu">
                                     @can('edit roles')
                                     <a class="dropdown-item" href="{{ route('admin.roles.edit', $role->id) }}"><i class="bx bx-edit me-1"></i> Edit</a>
@@ -46,6 +42,10 @@
                             </div>
                             @endcanany
                         </td>
+                        <td><strong>{{ $role->name }}</strong></td>
+                        <td class="text-center">{{ $role->permissions->count() }}</td>
+                        <td class="text-center">{{ $role->users->count() }}</td>
+                        <td>{{ $role->created_at->format('d M Y') }}</td>
                     </tr>
                     @empty
                     <tr><td colspan="6" class="text-center py-4 text-muted">No roles found</td></tr>

@@ -24,19 +24,19 @@
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead class="table-light">
-                    <tr><th>#</th><th>Fuel Company</th><th>Status</th><th class="text-nowrap">Deleted At</th><th class="text-nowrap">Actions</th></tr>
+                    <tr><th>#</th><th class="text-center text-nowrap" style="width: 100px;">Actions</th><th>Fuel Company</th><th>Status</th><th class="text-nowrap">Deleted At</th></tr>
                 </thead>
                 <tbody>
                     @forelse($fuelCompanies as $index => $fuelCompany)
                     <tr>
                         <td class="text-nowrap">{{ $fuelCompanies->firstItem() + $index }}</td>
-                        <td class="text-nowrap"><strong>{{ $fuelCompany->name }}</strong></td>
-                        <td>{{ $fuelCompany->status ?? '-' }}</td>
-                        <td class="text-nowrap">{{ $fuelCompany->deleted_at->format('d M Y, h:i A') }}</td>
                         <td class="text-center text-nowrap">
                             <button type="button" class="btn btn-sm btn-icon btn-outline-success" onclick="handleRestore({{ $fuelCompany->id }}, '{{ $fuelCompany->name }}')" title="Restore"><i class="bx bx-revision"></i></button>
                             <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleForceDelete({{ $fuelCompany->id }}, '{{ $fuelCompany->name }}')" title="Permanently Delete"><i class="bx bx-trash"></i></button>
                         </td>
+                        <td class="text-nowrap"><strong>{{ $fuelCompany->name }}</strong></td>
+                        <td>{{ $fuelCompany->status ?? '-' }}</td>
+                        <td class="text-nowrap">{{ $fuelCompany->deleted_at->format('d M Y, h:i A') }}</td>
                     </tr>
                     @empty
                     <tr><td colspan="5" class="text-center py-4 text-muted">No fuel companies in recycle bin</td></tr>

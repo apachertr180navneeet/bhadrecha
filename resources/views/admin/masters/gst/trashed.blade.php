@@ -24,20 +24,20 @@
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead class="table-light">
-                    <tr><th>#</th><th>GST Rate</th><th>Percentage</th><th>Description</th><th class="text-nowrap">Deleted At</th><th class="text-nowrap">Actions</th></tr>
+                    <tr><th>#</th><th class="text-center text-nowrap" style="width: 100px;">Actions</th><th>GST Rate</th><th>Percentage</th><th>Description</th><th class="text-nowrap">Deleted At</th></tr>
                 </thead>
                 <tbody>
                     @forelse($gstMasters as $index => $gst)
                     <tr>
                         <td class="text-nowrap">{{ $gstMasters->firstItem() + $index }}</td>
-                        <td class="text-nowrap"><strong>{{ $gst->gst_rate ?? '-' }}</strong></td>
-                        <td>{{ $gst->percentage ?? '-' }}</td>
-                        <td style="max-width: 200px">{{ $gst->description ?? '-' }}</td>
-                        <td class="text-nowrap">{{ $gst->deleted_at->format('d M Y, h:i A') }}</td>
                         <td class="text-center text-nowrap">
                             <button type="button" class="btn btn-sm btn-icon btn-outline-success" onclick="handleRestore({{ $gst->id }}, '{{ $gst->gst_rate }}')" title="Restore"><i class="bx bx-revision"></i></button>
                             <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleForceDelete({{ $gst->id }}, '{{ $gst->gst_rate }}')" title="Permanently Delete"><i class="bx bx-trash"></i></button>
                         </td>
+                        <td class="text-nowrap"><strong>{{ $gst->gst_rate ?? '-' }}</strong></td>
+                        <td>{{ $gst->percentage ?? '-' }}</td>
+                        <td style="max-width: 200px">{{ $gst->description ?? '-' }}</td>
+                        <td class="text-nowrap">{{ $gst->deleted_at->format('d M Y, h:i A') }}</td>
                     </tr>
                     @empty
                     <tr><td colspan="6" class="text-center py-4 text-muted">No GST entries in recycle bin</td></tr>

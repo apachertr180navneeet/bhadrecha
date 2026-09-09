@@ -195,6 +195,7 @@
                     <thead class="table-light">
                         <tr>
                             <th style="width: 60px;">#</th>
+                            <th class="text-center" style="width: 100px;">Actions</th>
                             <th>LR Number</th>
                             <th>
                                 <a href="{{ request()->fullUrlWithQuery(['date_sort' => request('date_sort') === 'oldest' ? 'latest' : 'oldest']) }}" class="text-dark text-decoration-none d-inline-flex align-items-center gap-1">
@@ -206,25 +207,12 @@
                             <th>Branch</th>
                             <th class="text-end">Advance Amount</th>
                             <th>Remarks</th>
-                            <th class="text-center" style="width: 100px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($records as $key => $row)
                             <tr>
                                 <td>{{ $records->firstItem() + $key }}</td>
-                                <td><span class="badge bg-label-primary fs-6">{{ $row->builty?->lr_no ?? '-' }}</span></td>
-                                <td>{{ $row->date?->format('d-m-Y') ?? '-' }}</td>
-                                <td>{{ $row->company?->name ?? '-' }}</td>
-                                <td>{{ $row->branch?->name ?? '-' }}</td>
-                                <td class="text-end fw-bold text-success">₹ {{ number_format($row->advance_amount, 2) }}</td>
-                                <td>
-                                    @if($row->remarks)
-                                        <span class="text-wrap" style="max-width: 250px; display: inline-block;">{{ $row->remarks }}</span>
-                                    @else
-                                        <span class="text-muted small">-</span>
-                                    @endif
-                                </td>
                                 <td class="text-center">
                                     <div class="d-inline-flex gap-1">
                                         <a href="{{ route('admin.reports.bilty-advance-details.index', array_merge(request()->query(), ['edit' => $row->id])) }}" class="btn btn-icon btn-sm btn-outline-primary" title="Edit">
@@ -238,6 +226,18 @@
                                             </button>
                                         </form>
                                     </div>
+                                </td>
+                                <td><span class="badge bg-label-primary fs-6">{{ $row->builty?->lr_no ?? '-' }}</span></td>
+                                <td>{{ $row->date?->format('d-m-Y') ?? '-' }}</td>
+                                <td>{{ $row->company?->name ?? '-' }}</td>
+                                <td>{{ $row->branch?->name ?? '-' }}</td>
+                                <td class="text-end fw-bold text-success">₹ {{ number_format($row->advance_amount, 2) }}</td>
+                                <td>
+                                    @if($row->remarks)
+                                        <span class="text-wrap" style="max-width: 250px; display: inline-block;">{{ $row->remarks }}</span>
+                                    @else
+                                        <span class="text-muted small">-</span>
+                                    @endif
                                 </td>
                             </tr>
                         @empty

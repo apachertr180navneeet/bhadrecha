@@ -20,41 +20,26 @@
 <table class="table table-hover" id="servicesTable">
                     <thead>
                         <tr>
+                            @if(auth()->user()->can('edit services') || auth()->user()->can('delete services'))
+                            <th class="text-center text-nowrap" style="width: 80px;">Actions</th>
+                            @endif
                             <th>Service Name</th>
                             <th>Category</th>
                             <th>Duration (mins)</th>
                             <th>Price</th>
                             <th>Status</th>
-                            @if(auth()->user()->can('edit services') || auth()->user()->can('delete services'))
-                            <th>Actions</th>
-                            @endif
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($services as $service)
                         <tr>
-                            <td class="fw-semibold">{{ $service->service_name }}</td>
-                            <td>{{ $service->category->name ?? 'N/A' }}</td>
-                            <td>{{ $service->duration }}</td>
-                            <td>₹{{ number_format($service->price, 2) }}</td>
-                            <td>
-                                @can('edit services')
-                                <button class="btn btn-sm toggle-status {{ $service->status ? 'btn-success' : 'btn-secondary' }}" data-url="{{ route('admin.services.toggle-status', $service->id) }}" data-status="{{ $service->status }}">
-                                    {{ $service->status ? 'Active' : 'Inactive' }}
-                                </button>
-                                @else
-                                <span class="badge {{ $service->status ? 'bg-label-success' : 'bg-label-secondary' }}">
-                                    {{ $service->status ? 'Active' : 'Inactive' }}
-                                </span>
-                                @endcan
-                            </td>
                             @if(auth()->user()->can('edit services') || auth()->user()->can('delete services'))
-                            <td>
+                            <td class="text-center text-nowrap">
                                 <div class="dropdown">
-                                    <button class="btn p-0 dropdown-toggle hide-arrow" type="button" data-bs-toggle="dropdown">
+                                    <button class="btn p-0 dropdown-toggle hide-arrow" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport">
                                         <i class="bx bx-dots-vertical-rounded"></i>
                                     </button>
-                                    <ul class="dropdown-menu dropdown-menu-end">
+                                    <ul class="dropdown-menu">
                                         @can('edit services')
                                         <li>
                                             <a class="dropdown-item" href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editServiceModal"
@@ -78,6 +63,21 @@
                                 </div>
                             </td>
                             @endif
+                            <td class="fw-semibold">{{ $service->service_name }}</td>
+                            <td>{{ $service->category->name ?? 'N/A' }}</td>
+                            <td>{{ $service->duration }}</td>
+                            <td>₹{{ number_format($service->price, 2) }}</td>
+                            <td>
+                                @can('edit services')
+                                <button class="btn btn-sm toggle-status {{ $service->status ? 'btn-success' : 'btn-secondary' }}" data-url="{{ route('admin.services.toggle-status', $service->id) }}" data-status="{{ $service->status }}">
+                                    {{ $service->status ? 'Active' : 'Inactive' }}
+                                </button>
+                                @else
+                                <span class="badge {{ $service->status ? 'bg-label-success' : 'bg-label-secondary' }}">
+                                    {{ $service->status ? 'Active' : 'Inactive' }}
+                                </span>
+                                @endcan
+                            </td>
                         </tr>
                         @endforeach
                     </tbody>

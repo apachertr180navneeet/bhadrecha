@@ -14,6 +14,7 @@
                 <thead>
                     <tr>
                         <th>#</th>
+                        <th class="text-center text-nowrap" style="width: 100px;">Actions</th>
                         <th>Name</th>
                         <th>Phone</th>
                         <th>Email</th>
@@ -21,13 +22,16 @@
                         <th>City</th>
                         @if(auth()->user()->isSuperAdmin())<th>Company</th><th>Branch</th>@endif
                         <th>Deleted At</th>
-                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($consignees as $index => $consignee)
                     <tr>
                         <td>{{ $consignees->firstItem() + $index }}</td>
+                        <td class="text-center text-nowrap">
+                            <button type="button" class="btn btn-sm btn-icon btn-outline-success" onclick="handleRestore({{ $consignee->id }}, '{{ $consignee->name }}')" title="Restore"><i class="bx bx-revision"></i></button>
+                            <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleForceDelete({{ $consignee->id }}, '{{ $consignee->name }}')" title="Permanently Delete"><i class="bx bx-trash"></i></button>
+                        </td>
                         <td><strong>{{ $consignee->name }}</strong></td>
                         <td>{{ $consignee->phone }}</td>
                         <td>{{ $consignee->email ?? '-' }}</td>
@@ -38,10 +42,6 @@
                         <td>{{ $consignee->branch->name ?? '-' }}</td>
                         @endif
                         <td>{{ $consignee->deleted_at->format('d M Y, h:i A') }}</td>
-                        <td class="text-center text-nowrap">
-                            <button type="button" class="btn btn-sm btn-icon btn-outline-success" onclick="handleRestore({{ $consignee->id }}, '{{ $consignee->name }}')" title="Restore"><i class="bx bx-revision"></i></button>
-                            <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleForceDelete({{ $consignee->id }}, '{{ $consignee->name }}')" title="Permanently Delete"><i class="bx bx-trash"></i></button>
-                        </td>
                     </tr>
                     @empty
                     <tr><td colspan="{{ auth()->user()->isSuperAdmin() ? 11 : 9 }}" class="text-center">No consignees in recycle bin</td></tr>

@@ -203,6 +203,7 @@
                         <thead class="table-light">
                             <tr>
                                 <th class="text-center" style="width: 40px;">#</th>
+                                <th class="text-center no-print" style="width: 80px;">Action</th>
                                 <th>Customer Name</th>
                                 <th>Contact</th>
                                 <th>Store / Branch</th>
@@ -211,13 +212,21 @@
                                 <th class="text-end fw-bold text-danger">Total Due (₹)</th>
                                 <th class="text-center">Pending Items</th>
                                 <th class="text-center">Last Transaction</th>
-                                <th class="text-center no-print">Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($customerSummaries as $idx => $cs)
                                 <tr>
                                     <td class="text-center text-muted small">{{ $idx + 1 }}</td>
+                                    <td class="text-center no-print">
+                                        @if(isset($cs['customer']) && $cs['customer'])
+                                            <a href="{{ route('admin.customers.show', $cs['customer']->id) }}" class="btn btn-xs btn-outline-primary" title="View Customer Details">
+                                                <i class="bx bx-user me-1"></i> Profile
+                                            </a>
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <div class="avatar avatar-sm me-2">
@@ -268,15 +277,6 @@
                                     <td class="text-center small text-muted">
                                         {{ $cs['last_date'] !== 'N/A' ? \Carbon\Carbon::parse($cs['last_date'])->format('d M Y') : 'N/A' }}
                                     </td>
-                                    <td class="text-center no-print">
-                                        @if(isset($cs['customer']) && $cs['customer'])
-                                            <a href="{{ route('admin.customers.show', $cs['customer']->id) }}" class="btn btn-xs btn-outline-primary" title="View Customer Details">
-                                                <i class="bx bx-user me-1"></i> Profile
-                                            </a>
-                                        @else
-                                            <span class="text-muted">-</span>
-                                        @endif
-                                    </td>
                                 </tr>
                             @empty
                                 <tr>
@@ -298,6 +298,7 @@
                         <thead class="table-light">
                             <tr>
                                 <th class="text-center" style="width: 40px;">#</th>
+                                <th class="text-center no-print" style="width: 80px;">Action</th>
                                 <th>Appointment #</th>
                                 <th>Date & Time</th>
                                 <th>Customer</th>
@@ -307,7 +308,6 @@
                                 <th class="text-end">Paid (₹)</th>
                                 <th class="text-end fw-bold text-danger">Due Amount (₹)</th>
                                 <th class="text-center">Status</th>
-                                <th class="text-center no-print">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -317,6 +317,11 @@
                                 @endphp
                                 <tr>
                                     <td class="text-center text-muted small">{{ $idx + 1 }}</td>
+                                    <td class="text-center no-print">
+                                        <a href="{{ route('admin.appointments.index', ['date' => $apt->appointment_date ? \Carbon\Carbon::parse($apt->appointment_date)->format('Y-m-d') : null]) }}" class="btn btn-xs btn-outline-primary" title="View Appointment">
+                                            <i class="bx bx-edit-alt me-1"></i> Settle
+                                        </a>
+                                    </td>
                                     <td>
                                         <span class="fw-bold text-primary">{{ $apt->appointment_number ?? ('#' . $apt->id) }}</span>
                                     </td>
@@ -351,11 +356,6 @@
                                             {{ $apt->payment_status ?? 'Pending' }}
                                         </span>
                                     </td>
-                                    <td class="text-center no-print">
-                                        <a href="{{ route('admin.appointments.index', ['date' => $apt->appointment_date ? \Carbon\Carbon::parse($apt->appointment_date)->format('Y-m-d') : null]) }}" class="btn btn-xs btn-outline-primary" title="View Appointment">
-                                            <i class="bx bx-edit-alt me-1"></i> Settle
-                                        </a>
-                                    </td>
                                 </tr>
                             @empty
                                 <tr>
@@ -377,6 +377,7 @@
                         <thead class="table-light">
                             <tr>
                                 <th class="text-center" style="width: 40px;">#</th>
+                                <th class="text-center no-print" style="width: 80px;">Action</th>
                                 <th>Customer</th>
                                 <th>Package Details</th>
                                 <th>Purchase Date</th>
@@ -384,13 +385,20 @@
                                 <th class="text-end">Total Package (₹)</th>
                                 <th class="text-end text-success">Advance Paid (₹)</th>
                                 <th class="text-end fw-bold text-danger">Remaining Due (₹)</th>
-                                <th class="text-center no-print">Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($outstandingPackages as $idx => $pkg)
                                 <tr>
                                     <td class="text-center text-muted small">{{ $idx + 1 }}</td>
+                                    <td class="text-center no-print">
+                                        <button type="button" class="btn btn-xs btn-outline-success open-add-payment-btn" 
+                                                data-id="{{ $pkg->id }}" 
+                                                data-remaining="{{ $pkg->remaining }}"
+                                                data-customer="{{ $pkg->customer->name ?? 'Customer' }}">
+                                            <i class="bx bx-plus me-1"></i> Collect
+                                        </button>
+                                    </td>
                                     <td>
                                         <div class="fw-semibold text-dark">{{ $pkg->customer->name ?? 'N/A' }}</div>
                                         @if($pkg->customer && $pkg->customer->phone)
@@ -410,14 +418,6 @@
                                     <td class="text-end fw-semibold">₹{{ number_format($pkg->amount, 2) }}</td>
                                     <td class="text-end text-success fw-semibold">₹{{ number_format($pkg->advance ?? 0, 2) }}</td>
                                     <td class="text-end fw-bold text-danger fs-6">₹{{ number_format($pkg->remaining, 2) }}</td>
-                                    <td class="text-center no-print">
-                                        <button type="button" class="btn btn-xs btn-outline-success open-add-payment-btn" 
-                                                data-id="{{ $pkg->id }}" 
-                                                data-remaining="{{ $pkg->remaining }}"
-                                                data-customer="{{ $pkg->customer->name ?? 'Customer' }}">
-                                            <i class="bx bx-plus me-1"></i> Collect
-                                        </button>
-                                    </td>
                                 </tr>
                             @empty
                                 <tr>

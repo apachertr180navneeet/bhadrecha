@@ -28,30 +28,26 @@
                         <thead>
                             <tr>
                                 <th>S.No.</th>
+                                @if(auth()->user()->can('view customers') || auth()->user()->can('edit customers') || auth()->user()->can('delete customers'))
+                                <th class="text-nowrap" style="width: 80px;">Actions</th>
+                                @endif
                                 <th>Name</th>
                                 <th>Mobile</th>
                                 <th>Email</th>
                                 <th>Gender</th>
-                                @if(auth()->user()->can('view customers') || auth()->user()->can('edit customers') || auth()->user()->can('delete customers'))
-                                <th>Actions</th>
-                                @endif
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($customers as $index => $customer)
                             <tr>
                                 <td>{{ $customers->firstItem() + $index }}</td>
-                                <td>{{ $customer->name }}</td>
-                                <td>{{ $customer->mobile }}</td>
-                                <td>{{ $customer->email }}</td>
-                                <td>{{ ucfirst($customer->gender ?? 'N/A') }}</td>
                                 @if(auth()->user()->can('view customers') || auth()->user()->can('edit customers') || auth()->user()->can('delete customers'))
                                 <td>
                                     <div class="dropdown">
                                         <button class="btn p-0 dropdown-toggle hide-arrow" type="button" data-bs-toggle="dropdown">
                                             <i class="bx bx-dots-vertical-rounded"></i>
                                         </button>
-                                        <ul class="dropdown-menu dropdown-menu-end">
+                                        <ul class="dropdown-menu">
                                             @can('view customers')
                                             <li>
                                                 <a class="dropdown-item" href="{{ route('admin.customers.show', $customer->id) }}">
@@ -77,6 +73,10 @@
                                     </div>
                                 </td>
                                 @endif
+                                <td>{{ $customer->name }}</td>
+                                <td>{{ $customer->mobile }}</td>
+                                <td>{{ $customer->email }}</td>
+                                <td>{{ ucfirst($customer->gender ?? 'N/A') }}</td>
                             </tr>
                             @empty
                             <tr>

@@ -21,6 +21,7 @@
                     <thead class="table-dark">
                         <tr>
                             <th>#</th>
+                            <th class="text-center" style="width: 90px;">Actions</th>
                             <th>Invoice No</th>
                             <th>Date</th>
                             <th>Consignor</th>
@@ -32,13 +33,28 @@
                             <th class="text-end">Total</th>
                             <th class="text-center">LRs</th>
                             <th class="text-center">Status</th>
-                            <th class="text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($invoices as $index => $inv)
                             <tr id="invoice-row-{{ $inv->id }}">
                                 <td class="text-muted small">{{ $invoices->firstItem() + $index }}</td>
+                                {{-- ── Action Buttons ── --}}
+                                <td class="text-center">
+                                    <div class="d-flex gap-1 justify-content-center">
+                                        <a href="{{ route('admin.transport.billing.create', ['ids' => $inv->bulties->pluck('id')->join(',')]) }}"
+                                           class="btn btn-sm btn-outline-secondary"
+                                           title="View / Edit Invoice">
+                                            <i class="bx bx-show"></i>
+                                        </a>
+                                        <a href="{{ route('admin.transport.billing.invoices.print', $inv->id) }}"
+                                           target="_blank"
+                                           class="btn btn-sm btn-outline-primary"
+                                           title="Print Invoice">
+                                            <i class="bx bx-printer"></i>
+                                        </a>
+                                    </div>
+                                </td>
                                 <td>
                                     <span class="fw-bold text-primary">{{ $inv->bill_number ?? $inv->invoice_no }}</span>
                                     <small class="text-muted d-block" style="font-size:10px;">{{ $inv->invoice_no }}</small>
@@ -76,23 +92,6 @@
                                         <span class="sdr-label">{{ $sc['label'] }}</span>
                                         <i class="bx bx-chevron-down sdr-arrow"></i>
                                     </button>
-                                </td>
-
-                                {{-- ── Action Buttons ── --}}
-                                <td class="text-center">
-                                    <div class="d-flex gap-1 justify-content-center">
-                                        <a href="{{ route('admin.transport.billing.create', ['ids' => $inv->bulties->pluck('id')->join(',')]) }}"
-                                           class="btn btn-sm btn-outline-secondary"
-                                           title="View / Edit Invoice">
-                                            <i class="bx bx-show"></i>
-                                        </a>
-                                        <a href="{{ route('admin.transport.billing.invoices.print', $inv->id) }}"
-                                           target="_blank"
-                                           class="btn btn-sm btn-outline-primary"
-                                           title="Print Invoice">
-                                            <i class="bx bx-printer"></i>
-                                        </a>
-                                    </div>
                                 </td>
                             </tr>
                         @empty

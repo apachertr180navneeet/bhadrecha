@@ -15,23 +15,23 @@
                 <table class="table table-hover">
                     <thead>
                         <tr>
+                            <th style="width: 80px;">Actions</th>
                             <th>Role Name</th>
                             <th>Permission Count</th>
                             <th>User Count</th>
-                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($roles as $role)
                             <tr>
-                                <td>{{ $role->name }}</td>
-                                <td>{{ $role->permissions_count }}</td>
-                                <td>{{ $role->users_count }}</td>
                                 <td>
                                     <a href="#" class="btn btn-sm btn-info">
                                         <i class="bx bx-show"></i>
                                     </a>
                                 </td>
+                                <td>{{ $role->name }}</td>
+                                <td>{{ $role->permissions_count }}</td>
+                                <td>{{ $role->users_count }}</td>
                             </tr>
                         @empty
                             <tr>

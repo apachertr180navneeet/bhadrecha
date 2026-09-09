@@ -51,19 +51,16 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th class="text-center" style="width: 120px;">Actions</th>
                         <th>Name</th>
                         <th>Description</th>
                         <th>Status</th>
-                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($packagings as $key => $packaging)
                     <tr>
                         <td>{{ ($packagings->currentPage() - 1) * $packagings->perPage() + $key + 1 }}</td>
-                        <td class="fw-semibold">{{ $packaging->name }}</td>
-                        <td>{{ $packaging->description ?? '-' }}</td>
-                        <td><span class="badge bg-label-{{ $packaging->status == 'active' ? 'success' : 'danger' }}">{{ ucfirst($packaging->status) }}</span></td>
                         <td class="text-center text-nowrap">
                             <a href="{{ route('admin.masters.packagings.edit', $packaging->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
                             <form action="{{ route('admin.masters.packagings.toggle-status', $packaging->id) }}" method="POST" class="d-inline">@csrf
@@ -71,6 +68,9 @@
                             </form>
                             <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleDelete({{ $packaging->id }}, '{{ $packaging->name }}')" title="Delete"><i class="bx bx-trash"></i></button>
                         </td>
+                        <td class="fw-semibold">{{ $packaging->name }}</td>
+                        <td>{{ $packaging->description ?? '-' }}</td>
+                        <td><span class="badge bg-label-{{ $packaging->status == 'active' ? 'success' : 'danger' }}">{{ ucfirst($packaging->status) }}</span></td>
                     </tr>
                     @empty
                     <tr>

@@ -21,6 +21,9 @@
                     <thead>
                         <tr>
                             <th>ID</th>
+                            @if(auth()->user()->can('view packages') || auth()->user()->can('edit packages') || auth()->user()->can('delete packages'))
+                            <th class="text-nowrap" style="width: 80px;">Actions</th>
+                            @endif
                             <th>Customer</th>
                             <th>Services Included & Qty</th>
                             <th>Duration</th>
@@ -30,51 +33,19 @@
                             <th>Amount</th>
                             <th>Advance</th>
                             <th>Remaining</th>
-                            @if(auth()->user()->can('view packages') || auth()->user()->can('edit packages') || auth()->user()->can('delete packages'))
-                            <th>Actions</th>
-                            @endif
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($packages as $package)
                         <tr>
                             <td>{{ $package->id }}</td>
-                            <td class="fw-semibold">{{ $package->customer->name ?? 'N/A' }}</td>
-                            <td>
-                                @php
-                                    $items = $package->services_with_qty;
-                                @endphp
-                                @if(count($items) > 0)
-                                    @foreach($items as $sItem)
-                                        @php $sObj = isset($services) ? $services->get($sItem['service_id']) : null; @endphp
-                                        <span class="badge bg-label-primary me-1 mb-1" style="font-size: 0.8rem;">
-                                            {{ $sObj->service_name ?? ('Service #'.$sItem['service_id']) }} <strong>(Qty: {{ $sItem['qty'] }})</strong>
-                                        </span>
-                                    @endforeach
-                                @else
-                                    <span class="text-muted">-</span>
-                                @endif
-                            </td>
-                            <td>{{ $package->duration->name ?? 'N/A' }}</td>
-                            <td>{{ $package->start_date ? \Carbon\Carbon::parse($package->start_date)->format('d-m-Y') : '-' }}</td>
-                            <td>{{ $package->end_date ? \Carbon\Carbon::parse($package->end_date)->format('d-m-Y') : '-' }}</td>
-                            <td class="text-center fw-bold">{{ $package->qty }}</td>
-                            <td>₹{{ number_format($package->amount, 2) }}</td>
-                            <td>₹{{ number_format($package->advance, 2) }}</td>
-                            <td>
-                                @if($package->remaining > 0)
-                                    <span class="text-danger fw-semibold">₹{{ number_format($package->remaining, 2) }}</span>
-                                @else
-                                    <span class="text-success fw-semibold">₹0.00</span>
-                                @endif
-                            </td>
                             @if(auth()->user()->can('view packages') || auth()->user()->can('edit packages') || auth()->user()->can('delete packages'))
                             <td>
                                 <div class="dropdown">
                                     <button class="btn p-0 dropdown-toggle hide-arrow" type="button" data-bs-toggle="dropdown">
                                         <i class="bx bx-dots-vertical-rounded"></i>
                                     </button>
-                                    <ul class="dropdown-menu dropdown-menu-end">
+                                    <ul class="dropdown-menu">
                                         @can('edit packages')
                                         <li>
                                             <a class="dropdown-item" href="{{ route('admin.packages.edit', $package->id) }}">
@@ -105,6 +76,35 @@
                                 </div>
                             </td>
                             @endif
+                            <td class="fw-semibold">{{ $package->customer->name ?? 'N/A' }}</td>
+                            <td>
+                                @php
+                                    $items = $package->services_with_qty;
+                                @endphp
+                                @if(count($items) > 0)
+                                    @foreach($items as $sItem)
+                                        @php $sObj = isset($services) ? $services->get($sItem['service_id']) : null; @endphp
+                                        <span class="badge bg-label-primary me-1 mb-1" style="font-size: 0.8rem;">
+                                            {{ $sObj->service_name ?? ('Service #'.$sItem['service_id']) }} <strong>(Qty: {{ $sItem['qty'] }})</strong>
+                                        </span>
+                                    @endforeach
+                                @else
+                                    <span class="text-muted">-</span>
+                                @endif
+                            </td>
+                            <td>{{ $package->duration->name ?? 'N/A' }}</td>
+                            <td>{{ $package->start_date ? \Carbon\Carbon::parse($package->start_date)->format('d-m-Y') : '-' }}</td>
+                            <td>{{ $package->end_date ? \Carbon\Carbon::parse($package->end_date)->format('d-m-Y') : '-' }}</td>
+                            <td class="text-center fw-bold">{{ $package->qty }}</td>
+                            <td>₹{{ number_format($package->amount, 2) }}</td>
+                            <td>₹{{ number_format($package->advance, 2) }}</td>
+                            <td>
+                                @if($package->remaining > 0)
+                                    <span class="text-danger fw-semibold">₹{{ number_format($package->remaining, 2) }}</span>
+                                @else
+                                    <span class="text-success fw-semibold">₹0.00</span>
+                                @endif
+                            </td>
                         </tr>
                         @endforeach
                     </tbody>

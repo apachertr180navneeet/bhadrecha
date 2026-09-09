@@ -134,11 +134,11 @@
                                 <table class="table table-bordered table-sm align-middle bg-white mb-0" id="packageServicesTable">
                                     <thead class="table-light">
                                         <tr>
+                                            <th style="width: 60px;" class="text-center">Action</th>
                                             <th>Service Name</th>
                                             <th style="width: 150px;">Price (₹)</th>
                                             <th style="width: 160px;">Quantity (Qty) <span class="text-danger">*</span></th>
                                             <th style="width: 160px;">Subtotal (₹)</th>
-                                            <th style="width: 60px;" class="text-center">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody id="packageServicesBody">
@@ -146,10 +146,10 @@
                                     </tbody>
                                     <tfoot class="table-light">
                                         <tr>
+                                            <th></th>
                                             <th colspan="2" class="text-end fw-bold">Total Services & Amount:</th>
                                             <th id="totalServicesQtyDisplay" class="fw-bold text-primary fs-6">0</th>
                                             <th id="totalServicesAmountDisplay" class="fw-bold text-success fs-6">₹0.00</th>
-                                            <th></th>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -175,18 +175,18 @@
                             <table class="table table-bordered table-sm" id="paymentTable">
                                 <thead class="table-light">
                                     <tr>
+                                        <th style="width: 50px; text-align: center;">Act</th>
                                         <th>Date</th>
                                         <th>Amount Paid</th>
-                                        <th style="width: 50px; text-align: center;">Act</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td><input type="date" name="payment_date[]" class="form-control form-control-sm payment-date" value="{{ date('Y-m-d') }}" required></td>
-                                        <td><input type="number" name="payment_amount[]" class="form-control form-control-sm payment-amount" value="0" step="0.01" min="0" required></td>
                                         <td class="text-center">
                                             <button type="button" class="btn btn-sm btn-icon btn-danger remove-payment"><i class="bx bx-trash"></i></button>
                                         </td>
+                                        <td><input type="date" name="payment_date[]" class="form-control form-control-sm payment-date" value="{{ date('Y-m-d') }}" required></td>
+                                        <td><input type="number" name="payment_amount[]" class="form-control form-control-sm payment-amount" value="0" step="0.01" min="0" required></td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -400,6 +400,9 @@
             }
 
             let rowHtml = `<tr data-service-id="${serviceId}">
+                <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-icon btn-outline-danger remove-service-row"><i class="bx bx-trash"></i></button>
+                </td>
                 <td>
                     <strong>${serviceName}</strong>
                     <input type="hidden" name="service_ids[]" value="${serviceId}">
@@ -412,9 +415,6 @@
                 </td>
                 <td class="fw-bold text-success service-subtotal">
                     ₹${servicePrice.toFixed(2)}
-                </td>
-                <td class="text-center">
-                    <button type="button" class="btn btn-sm btn-icon btn-outline-danger remove-service-row"><i class="bx bx-trash"></i></button>
                 </td>
             </tr>`;
 
@@ -458,11 +458,11 @@
         $('#addPaymentBtn').on('click', function() {
             let today = new Date().toISOString().split('T')[0];
             let row = `<tr>
-                <td><input type="date" name="payment_date[]" class="form-control form-control-sm payment-date" value="${today}" required></td>
-                <td><input type="number" name="payment_amount[]" class="form-control form-control-sm payment-amount" value="0" step="0.01" min="0" required></td>
                 <td class="text-center">
                     <button type="button" class="btn btn-sm btn-icon btn-danger remove-payment"><i class="bx bx-trash"></i></button>
                 </td>
+                <td><input type="date" name="payment_date[]" class="form-control form-control-sm payment-date" value="${today}" required></td>
+                <td><input type="number" name="payment_amount[]" class="form-control form-control-sm payment-amount" value="0" step="0.01" min="0" required></td>
             </tr>`;
             $('#paymentTable tbody').append(row);
         });

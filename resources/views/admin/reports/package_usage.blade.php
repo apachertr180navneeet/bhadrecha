@@ -145,6 +145,7 @@
                 <table class="table table-hover align-middle" id="packageUsageTable">
                     <thead class="table-light">
                         <tr>
+                            <th class="text-center" style="width: 100px;">Actions</th>
                             <th>Package ID</th>
                             <th>Customer</th>
                             <th>Taken Date</th>
@@ -154,7 +155,6 @@
                             <th class="text-center">Used Qty</th>
                             <th class="text-center">Remaining Qty</th>
                             <th class="text-center">Status</th>
-                            <th class="text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -167,6 +167,11 @@
                             $st = $package->calculated_status ?? 'Active';
                         @endphp
                         <tr>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-sm btn-outline-primary view-usage-details" data-id="{{ $package->id }}">
+                                    <i class="bx bx-show me-1"></i> Details
+                                </button>
+                            </td>
                             <td class="fw-bold text-primary">#{{ $package->id }}</td>
                             <td>
                                 <span class="fw-semibold text-dark">{{ $package->customer->name ?? 'N/A' }}</span>
@@ -204,11 +209,6 @@
                                 @else
                                     <span class="badge bg-label-danger"><i class="bx bx-x-circle me-1"></i>Expired</span>
                                 @endif
-                            </td>
-                            <td class="text-center">
-                                <button type="button" class="btn btn-sm btn-outline-primary view-usage-details" data-id="{{ $package->id }}">
-                                    <i class="bx bx-show me-1"></i> Details
-                                </button>
                             </td>
                         </tr>
                         @endforeach

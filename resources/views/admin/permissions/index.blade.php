@@ -19,19 +19,15 @@
         <div class="table-responsive text-nowrap">
             <table class="table table-hover">
                 <thead class="table-light">
-                    <tr><th>#</th><th>Name</th><th>Group</th><th class="text-center">Roles</th><th class="text-nowrap">Created</th><th class="text-nowrap">Actions</th></tr>
+                    <tr><th>#</th><th class="text-nowrap" style="width: 80px;">Actions</th><th>Name</th><th>Group</th><th class="text-center">Roles</th><th class="text-nowrap">Created</th></tr>
                 </thead>
                 <tbody>
                     @forelse($permissions as $index => $permission)
                     <tr>
                         <td>{{ $permissions->firstItem() + $index }}</td>
-                        <td><code>{{ $permission->name }}</code></td>
-                        <td>{{ $permission->group ?: '-' }}</td>
-                        <td class="text-center">{{ $permission->roles->count() }}</td>
-                        <td>{{ $permission->created_at->format('d M Y') }}</td>
                         <td>
                             <div class="dropdown">
-                                <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="bx bx-dots-vertical-rounded"></i></button>
+                                <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown" data-bs-boundary="viewport"><i class="bx bx-dots-vertical-rounded"></i></button>
                                 <div class="dropdown-menu">
                                     <a class="dropdown-item" href="{{ route('admin.permissions.edit', $permission->id) }}"><i class="bx bx-edit me-1"></i> Edit</a>
                                     @if($permission->roles->count() == 0)
@@ -40,6 +36,10 @@
                                 </div>
                             </div>
                         </td>
+                        <td><code>{{ $permission->name }}</code></td>
+                        <td>{{ $permission->group ?: '-' }}</td>
+                        <td class="text-center">{{ $permission->roles->count() }}</td>
+                        <td>{{ $permission->created_at->format('d M Y') }}</td>
                     </tr>
                     @empty
                     <tr><td colspan="5" class="text-center py-4 text-muted">No permissions found</td></tr>

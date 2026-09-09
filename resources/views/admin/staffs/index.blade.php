@@ -20,6 +20,9 @@
 <table class="table table-hover" id="staffsTable">
                     <thead>
                         <tr>
+                            @if(auth()->user()->can('edit staffs') || auth()->user()->can('delete staffs'))
+                            <th class="text-center text-nowrap" style="width: 80px;">Actions</th>
+                            @endif
                             <th>Name</th>
                             <th>Email</th>
                             <th>Phone</th>
@@ -28,39 +31,18 @@
                             <th>Working Hours</th>
                             <th>Salary</th>
                             <th>Status</th>
-                            @if(auth()->user()->can('edit staffs') || auth()->user()->can('delete staffs'))
-                            <th>Actions</th>
-                            @endif
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($staffs as $staff)
                         <tr>
-                            <td class="fw-semibold">{{ $staff->first_name }} {{ $staff->last_name }}</td>
-                            <td>{{ $staff->email }}</td>
-                            <td>{{ $staff->phone ?? 'N/A' }}</td>
-                            <td>{{ $staff->position ?? 'N/A' }}</td>
-                            <td>{{ $staff->shift_time ?? 'N/A' }}</td>
-                            <td>{{ $staff->working_hours ?? 'N/A' }}</td>
-                            <td>{{ $staff->salary ? '₹' . number_format($staff->salary, 2) : 'N/A' }}</td>
-                            <td>
-                                @can('edit staffs')
-                                <button class="btn btn-sm toggle-status {{ $staff->status ? 'btn-success' : 'btn-secondary' }}" data-url="{{ route('admin.staffs.toggle-status', $staff->id) }}" data-status="{{ $staff->status }}">
-                                    {{ $staff->status ? 'Active' : 'Inactive' }}
-                                </button>
-                                @else
-                                <span class="badge {{ $staff->status ? 'bg-label-success' : 'bg-label-secondary' }}">
-                                    {{ $staff->status ? 'Active' : 'Inactive' }}
-                                </span>
-                                @endcan
-                            </td>
                             @if(auth()->user()->can('edit staffs') || auth()->user()->can('delete staffs'))
-                            <td>
+                            <td class="text-center text-nowrap">
                                 <div class="dropdown">
-                                    <button class="btn p-0 dropdown-toggle hide-arrow" type="button" data-bs-toggle="dropdown">
+                                    <button class="btn p-0 dropdown-toggle hide-arrow" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport">
                                         <i class="bx bx-dots-vertical-rounded"></i>
                                     </button>
-                                    <ul class="dropdown-menu dropdown-menu-end">
+                                    <ul class="dropdown-menu">
                                         @can('edit staffs')
                                         <li>
                                             <a class="dropdown-item" href="{{ route('admin.staffs.edit', $staff->id) }}">
@@ -79,6 +61,24 @@
                                 </div>
                             </td>
                             @endif
+                            <td class="fw-semibold">{{ $staff->first_name }} {{ $staff->last_name }}</td>
+                            <td>{{ $staff->email }}</td>
+                            <td>{{ $staff->phone ?? 'N/A' }}</td>
+                            <td>{{ $staff->position ?? 'N/A' }}</td>
+                            <td>{{ $staff->shift_time ?? 'N/A' }}</td>
+                            <td>{{ $staff->working_hours ?? 'N/A' }}</td>
+                            <td>{{ $staff->salary ? '₹' . number_format($staff->salary, 2) : 'N/A' }}</td>
+                            <td>
+                                @can('edit staffs')
+                                <button class="btn btn-sm toggle-status {{ $staff->status ? 'btn-success' : 'btn-secondary' }}" data-url="{{ route('admin.staffs.toggle-status', $staff->id) }}" data-status="{{ $staff->status }}">
+                                    {{ $staff->status ? 'Active' : 'Inactive' }}
+                                </button>
+                                @else
+                                <span class="badge {{ $staff->status ? 'bg-label-success' : 'bg-label-secondary' }}">
+                                    {{ $staff->status ? 'Active' : 'Inactive' }}
+                                </span>
+                                @endcan
+                            </td>
                         </tr>
                         @endforeach
                     </tbody>

@@ -295,6 +295,7 @@
                             <thead class="table-light">
                                 <tr>
                                     <th>S.No</th>
+                                    <th class="text-center" style="width: 110px;">Action</th>
                                     <th>Company</th>
                                     <th>Branch Name</th>
                                     <th class="text-center">Total Bills</th>
@@ -303,7 +304,6 @@
                                     <th class="text-end">Total Receivable</th>
                                     <th class="text-end">Total Received</th>
                                     <th class="text-end">Outstanding Amount</th>
-                                    <th class="text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -322,6 +322,11 @@
                                 @endphp
                                 <tr>
                                     <td>{{ $bSno++ }}</td>
+                                    <td class="text-center">
+                                        <a href="{{ route('admin.reports.sales-ledger', array_merge(request()->except('branch_id', 'page'), ['branch_id' => $item['branch_id']])) }}#sales-ledger" class="btn btn-sm btn-outline-primary" title="View Invoices for this Branch">
+                                            <i class="bx bx-list-ul me-1"></i> View Bills
+                                        </a>
+                                    </td>
                                     <td><span class="fw-semibold text-dark">{{ $item['company_name'] }}</span></td>
                                     <td><span class="fw-bold text-primary">{{ $item['branch_name'] }}</span></td>
                                     <td class="text-center"><span class="badge bg-label-info">{{ $item['total_bills'] }}</span></td>
@@ -334,11 +339,6 @@
                                             ₹ {{ number_format($item['outstanding_amount'], 2) }}
                                         </span>
                                     </td>
-                                    <td class="text-center">
-                                        <a href="{{ route('admin.reports.sales-ledger', array_merge(request()->except('branch_id', 'page'), ['branch_id' => $item['branch_id']])) }}#sales-ledger" class="btn btn-sm btn-outline-primary" title="View Invoices for this Branch">
-                                            <i class="bx bx-list-ul me-1"></i> View Bills
-                                        </a>
-                                    </td>
                                 </tr>
                                 @empty
                                 <tr>
@@ -349,14 +349,13 @@
                             @if(count($branchOverviewData) > 0)
                             <tfoot class="table-light fw-bold border-top border-dark">
                                 <tr>
-                                    <th colspan="3" class="text-end">GRAND TOTAL:</th>
+                                    <th colspan="4" class="text-end">GRAND TOTAL:</th>
                                     <th class="text-center"><span class="badge bg-primary">{{ $bSumBills }}</span></th>
                                     <th class="text-end">₹ {{ number_format($bSumWoGst, 2) }}</th>
                                     <th class="text-end">₹ {{ number_format($bSumGst, 2) }}</th>
                                     <th class="text-end text-primary">₹ {{ number_format($bSumRecv, 2) }}</th>
                                     <th class="text-end text-success">₹ {{ number_format($bSumTotRecv, 2) }}</th>
                                     <th class="text-end text-danger">₹ {{ number_format($bSumOut, 2) }}</th>
-                                    <th></th>
                                 </tr>
                             </tfoot>
                             @endif
@@ -371,6 +370,9 @@
                             <thead class="table-light">
                                 <tr>
                                     <th>S.No</th>
+                                    @if(auth()->user()->can('edit sales ledger') || auth()->user()->isSuperAdmin())
+                                    <th class="text-center" style="width: 110px;">Action</th>
+                                    @endif
                                     <th>
                                         <a href="{{ request()->fullUrlWithQuery(['date_sort' => request('date_sort') === 'oldest' ? 'latest' : 'oldest']) }}#sales-ledger" class="text-dark text-decoration-none d-inline-flex align-items-center gap-1">
                                             Date
@@ -391,9 +393,6 @@
                                     <th class="text-end">Total Recv.</th>
                                     <th class="text-end">Outstanding</th>
                                     <th>Status</th>
-                                    @if(auth()->user()->can('edit sales ledger') || auth()->user()->isSuperAdmin())
-                                    <th class="text-center">Action</th>
-                                    @endif
                                 </tr>
                             </thead>
                             <tbody class="table-border-bottom-0">
@@ -407,40 +406,6 @@
                                     @endphp
                                     <tr>
                                         <td>{{ $invoices->firstItem() + $index }}</td>
-                                        <td>{{ $invoice->invoice_date?->format('d-m-Y') }}</td>
-                                        <td>{{ $invoice->company?->name ?? 'N/A' }}</td>
-                                        <td>{{ $invoice->branch?->name ?? 'N/A' }}</td>
-                                        <td>
-                                            <div class="bill-no-cell">
-                                                <a href="{{ route('admin.transport.invoices.show', $invoice->id) }}" class="fw-bold text-primary" title="View / Print Invoice" target="_blank">
-                                                    {{ $displayBillNo }}
-                                                </a>
-                                                @if(auth()->user()->can('edit sales ledger') || auth()->user()->isSuperAdmin())
-                                                <button type="button" class="btn btn-xs btn-outline-primary p-1 btn-edit-bill" data-id="{{ $invoice->id }}" title="Edit Bill Details">
-                                                    <i class="bx bx-edit fs-6"></i>
-                                                </button>
-                                                @endif
-                                            </div>
-                                        </td>
-                                        <td>{{ $invoice->consignor_name }}</td>
-                                        <td class="text-end">₹ {{ number_format($amountWithoutGst, 2) }}</td>
-                                        <td class="text-end">₹ {{ number_format($invoice->total_gst, 2) }}</td>
-                                        <td class="text-end text-danger">₹ {{ number_format($invoice->tds, 2) }}</td>
-                                        <td class="text-end text-danger">₹ {{ number_format($invoice->deduction, 2) }}</td>
-                                        <td class="text-end fw-bold">₹ {{ number_format($netPayable, 2) }}</td>
-                                        <td class="text-end text-success">₹ {{ number_format($invoice->receiving_amount, 2) }}</td>
-                                        <td class="text-end text-success">₹ {{ number_format($invoice->receiving_gst, 2) }}</td>
-                                        <td class="text-end fw-bold text-success">₹ {{ number_format($totalReceived, 2) }}</td>
-                                        <td class="text-end fw-bold {{ $outstanding > 0 ? 'text-danger' : 'text-success' }}">₹ {{ number_format($outstanding, 2) }}</td>
-                                        <td>
-                                            @if($invoice->status == 'paid')
-                                                <span class="badge bg-label-success">Paid</span>
-                                            @elseif($invoice->status == 'pending')
-                                                <span class="badge bg-label-warning">Pending</span>
-                                            @else
-                                                <span class="badge bg-label-danger">{{ ucfirst($invoice->status) }}</span>
-                                            @endif
-                                        </td>
                                         @if(auth()->user()->can('edit sales ledger') || auth()->user()->isSuperAdmin())
                                         <td class="text-center">
                                             @if($invoice->billReceivings->isNotEmpty())
@@ -488,6 +453,40 @@
                                             @endif
                                         </td>
                                         @endif
+                                        <td>{{ $invoice->invoice_date?->format('d-m-Y') }}</td>
+                                        <td>{{ $invoice->company?->name ?? 'N/A' }}</td>
+                                        <td>{{ $invoice->branch?->name ?? 'N/A' }}</td>
+                                        <td>
+                                            <div class="bill-no-cell">
+                                                <a href="{{ route('admin.transport.invoices.show', $invoice->id) }}" class="fw-bold text-primary" title="View / Print Invoice" target="_blank">
+                                                    {{ $displayBillNo }}
+                                                </a>
+                                                @if(auth()->user()->can('edit sales ledger') || auth()->user()->isSuperAdmin())
+                                                <button type="button" class="btn btn-xs btn-outline-primary p-1 btn-edit-bill" data-id="{{ $invoice->id }}" title="Edit Bill Details">
+                                                    <i class="bx bx-edit fs-6"></i>
+                                                </button>
+                                                @endif
+                                            </div>
+                                        </td>
+                                        <td>{{ $invoice->consignor_name }}</td>
+                                        <td class="text-end">₹ {{ number_format($amountWithoutGst, 2) }}</td>
+                                        <td class="text-end">₹ {{ number_format($invoice->total_gst, 2) }}</td>
+                                        <td class="text-end text-danger">₹ {{ number_format($invoice->tds, 2) }}</td>
+                                        <td class="text-end text-danger">₹ {{ number_format($invoice->deduction, 2) }}</td>
+                                        <td class="text-end fw-bold">₹ {{ number_format($netPayable, 2) }}</td>
+                                        <td class="text-end text-success">₹ {{ number_format($invoice->receiving_amount, 2) }}</td>
+                                        <td class="text-end text-success">₹ {{ number_format($invoice->receiving_gst, 2) }}</td>
+                                        <td class="text-end fw-bold text-success">₹ {{ number_format($totalReceived, 2) }}</td>
+                                        <td class="text-end fw-bold {{ $outstanding > 0 ? 'text-danger' : 'text-success' }}">₹ {{ number_format($outstanding, 2) }}</td>
+                                        <td>
+                                            @if($invoice->status == 'paid')
+                                                <span class="badge bg-label-success">Paid</span>
+                                            @elseif($invoice->status == 'pending')
+                                                <span class="badge bg-label-warning">Pending</span>
+                                            @else
+                                                <span class="badge bg-label-danger">{{ ucfirst($invoice->status) }}</span>
+                                            @endif
+                                        </td>
                                     </tr>
                                 @empty
                                     <tr>
@@ -511,6 +510,9 @@
                             <thead class="table-light">
                                 <tr>
                                     <th>#</th>
+                                    @if(auth()->user()->can('edit sales ledger') || auth()->user()->isSuperAdmin())
+                                    <th class="text-center" style="width: 90px;">Action</th>
+                                    @endif
                                     <th>Date</th>
                                     <th>Bill No</th>
                                     <th>Consigner</th>
@@ -522,9 +524,6 @@
                                     <th class="text-end">TDS</th>
                                     <th class="text-end">Deduction</th>
                                     <th>Reason</th>
-                                    @if(auth()->user()->can('edit sales ledger') || auth()->user()->isSuperAdmin())
-                                    <th class="text-center">Action</th>
-                                    @endif
                                 </tr>
                             </thead>
                             <tbody>
@@ -534,17 +533,6 @@
                                 @endphp
                                 <tr>
                                     <td>{{ $idx + 1 }}</td>
-                                    <td>{{ $rec->date?->format('d-m-Y') }}</td>
-                                    <td><strong class="text-primary">{{ $recBillNo }}</strong></td>
-                                    <td>{{ $rec->invoice?->consignor_name ?? 'N/A' }}</td>
-                                    <td>{{ $rec->company?->name ?? 'N/A' }}</td>
-                                    <td>{{ $rec->branch?->name ?? 'N/A' }}</td>
-                                    <td class="text-end text-success fw-semibold">₹ {{ number_format($rec->receiving_amount, 2) }}</td>
-                                    <td class="text-end text-success">₹ {{ number_format($rec->receiving_gst, 2) }}</td>
-                                    <td class="text-end fw-bold text-success">₹ {{ number_format($rec->receiving_amount + $rec->receiving_gst, 2) }}</td>
-                                    <td class="text-end text-danger">₹ {{ number_format($rec->tds, 2) }}</td>
-                                    <td class="text-end text-danger">₹ {{ number_format($rec->deduction, 2) }}</td>
-                                    <td><small class="text-muted">{{ $rec->deduction_reason ?: '-' }}</small></td>
                                     @if(auth()->user()->can('edit sales ledger') || auth()->user()->isSuperAdmin())
                                     <td class="text-center">
                                         <button type="button" class="btn btn-xs btn-outline-primary btn-edit-receiving" data-id="{{ $rec->id }}" title="Edit">
@@ -559,6 +547,17 @@
                                         </form>
                                     </td>
                                     @endif
+                                    <td>{{ $rec->date?->format('d-m-Y') }}</td>
+                                    <td><strong class="text-primary">{{ $recBillNo }}</strong></td>
+                                    <td>{{ $rec->invoice?->consignor_name ?? 'N/A' }}</td>
+                                    <td>{{ $rec->company?->name ?? 'N/A' }}</td>
+                                    <td>{{ $rec->branch?->name ?? 'N/A' }}</td>
+                                    <td class="text-end text-success fw-semibold">₹ {{ number_format($rec->receiving_amount, 2) }}</td>
+                                    <td class="text-end text-success">₹ {{ number_format($rec->receiving_gst, 2) }}</td>
+                                    <td class="text-end fw-bold text-success">₹ {{ number_format($rec->receiving_amount + $rec->receiving_gst, 2) }}</td>
+                                    <td class="text-end text-danger">₹ {{ number_format($rec->tds, 2) }}</td>
+                                    <td class="text-end text-danger">₹ {{ number_format($rec->deduction, 2) }}</td>
+                                    <td><small class="text-muted">{{ $rec->deduction_reason ?: '-' }}</small></td>
                                 </tr>
                                 @empty
                                 <tr>

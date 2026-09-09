@@ -51,6 +51,7 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th class="text-center" style="width: 120px;">Action</th>
                         <th>Name</th>
                         <th>Phone</th>
                         <th>Email</th>
@@ -58,20 +59,12 @@
                         <th>Contact Person</th>
                         <th>City</th>
                         <th>Status</th>
-                        <th class="text-center">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($suppliers as $index => $supplier)
                     <tr>
                         <td>{{ $suppliers->firstItem() + $index }}</td>
-                        <td><strong>{{ $supplier->name }}</strong></td>
-                        <td>{{ $supplier->phone ?? '-' }}</td>
-                        <td>{{ $supplier->email ?? '-' }}</td>
-                        <td>{{ $supplier->gstin ?? '-' }}</td>
-                        <td>{{ $supplier->contact_person ?? '-' }}</td>
-                        <td>{{ $supplier->city ?? '-' }}</td>
-                        <td><span class="badge bg-label-{{ $supplier->status == 'active' ? 'success' : 'danger' }}">{{ ucfirst($supplier->status) }}</span></td>
                         <td class="text-center text-nowrap">
                             <a href="{{ route('admin.masters.suppliers.edit', $supplier->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
                             <form action="{{ route('admin.masters.suppliers.toggle-status', $supplier->id) }}" method="POST" class="d-inline">
@@ -82,6 +75,13 @@
                             </form>
                             <button type="button" class="btn btn-sm btn-icon btn-outline-danger" title="Delete" onclick="handleDelete({{ $supplier->id }}, '{{ $supplier->name }}')"><i class="bx bx-trash"></i></button>
                         </td>
+                        <td><strong>{{ $supplier->name }}</strong></td>
+                        <td>{{ $supplier->phone ?? '-' }}</td>
+                        <td>{{ $supplier->email ?? '-' }}</td>
+                        <td>{{ $supplier->gstin ?? '-' }}</td>
+                        <td>{{ $supplier->contact_person ?? '-' }}</td>
+                        <td>{{ $supplier->city ?? '-' }}</td>
+                        <td><span class="badge bg-label-{{ $supplier->status == 'active' ? 'success' : 'danger' }}">{{ ucfirst($supplier->status) }}</span></td>
                     </tr>
                     @empty
                     <tr><td colspan="9" class="text-center py-4 text-muted">No suppliers found</td></tr>

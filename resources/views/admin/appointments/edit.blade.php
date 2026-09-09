@@ -179,11 +179,11 @@
                             <table class="table table-borderless services-table mb-0">
                                 <thead>
                                     <tr>
+                                        <th style="min-width: 50px; width: 6%; text-align: center;">Action</th>
                                         <th style="min-width: 200px; width: 32%;">Service <span class="text-danger">*</span></th>
                                         <th style="min-width: 220px; width: 36%;">Stylist(s)</th>
                                         <th style="min-width: 110px; width: 14%;">Price (₹)</th>
                                         <th style="min-width: 100px; width: 12%;">Duration (min)</th>
-                                        <th style="min-width: 50px; width: 6%; text-align: center;">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody id="servicesContainer">
@@ -193,6 +193,11 @@
                                     @if($existingServices && $existingServices->count() > 0)
                                         @foreach($existingServices as $idx => $item)
                                             <tr class="service-row" data-index="{{ $idx }}">
+                                                <td class="text-center">
+                                                    <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn" {{ $existingServices->count() > 1 ? '' : 'disabled' }} title="Remove Service">
+                                                        <i class="bx bx-trash"></i>
+                                                    </button>
+                                                </td>
                                                 <td>
                                                     <div class="custom-ajax-wrapper service-picker-wrapper">
                                                         <div class="input-group input-group-sm">
@@ -234,15 +239,15 @@
                                                 <td>
                                                     <input type="number" class="form-control item-duration" name="items[{{ $idx }}][duration]" value="{{ $item->duration }}" placeholder="0" readonly>
                                                 </td>
-                                                <td class="text-center">
-                                                    <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn" {{ $existingServices->count() > 1 ? '' : 'disabled' }} title="Remove Service">
-                                                        <i class="bx bx-trash"></i>
-                                                    </button>
-                                                </td>
                                             </tr>
                                         @endforeach
                                     @else
                                         <tr class="service-row" data-index="0">
+                                            <td class="text-center">
+                                                <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn" disabled title="At least one service is required">
+                                                    <i class="bx bx-trash"></i>
+                                                </button>
+                                            </td>
                                             <td>
                                                 <div class="custom-ajax-wrapper service-picker-wrapper">
                                                     <div class="input-group input-group-sm">
@@ -283,11 +288,6 @@
                                             </td>
                                             <td>
                                                 <input type="number" class="form-control item-duration" name="items[0][duration]" value="{{ $appointment->service->duration ?? '' }}" placeholder="0" readonly>
-                                            </td>
-                                            <td class="text-center">
-                                                <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn" disabled title="At least one service is required">
-                                                    <i class="bx bx-trash"></i>
-                                                </button>
                                             </td>
                                         </tr>
                                     @endif
@@ -613,6 +613,7 @@
         $('#addServiceRowBtn').on('click', function() {
             const newRow = `
                 <tr class="service-row" data-index="${itemIndex}">
+                    <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger remove-row-btn" title="Remove Service"><i class="bx bx-trash"></i></button></td>
                     <td>
                         <div class="custom-ajax-wrapper service-picker-wrapper">
                             <div class="input-group input-group-sm">
@@ -636,7 +637,6 @@
                     </td>
                     <td><input type="number" step="0.01" min="0" class="form-control item-price" name="items[${itemIndex}][price]" placeholder="0.00"></td>
                     <td><input type="number" class="form-control item-duration" name="items[${itemIndex}][duration]" placeholder="0" readonly></td>
-                    <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger remove-row-btn" title="Remove Service"><i class="bx bx-trash"></i></button></td>
                 </tr>
             `;
             $('#servicesContainer').append(newRow);

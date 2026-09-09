@@ -43,39 +43,24 @@
                             <thead>
                                 <tr>
                                     <th>#</th>
+                                    @if(auth()->user()->can('edit items') || auth()->user()->can('delete items'))
+                                    <th class="text-nowrap" style="width: 80px;">Actions</th>
+                                    @endif
                                     <th>Name</th>
                                     <th>Status</th>
-                                    @if(auth()->user()->can('edit items') || auth()->user()->can('delete items'))
-                                    <th class="text-end">Actions</th>
-                                    @endif
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse($items as $item)
                                 <tr>
                                     <td>{{ $loop->iteration + ($items->currentPage() - 1) * $items->perPage() }}</td>
-                                    <td>
-                                        <span class="fw-bold text-dark">{{ $item->name }}</span>
-                                    </td>
-                                    <td>
-                                        @if(auth()->user()->can('edit items'))
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input toggle-status" type="checkbox" data-id="{{ $item->id }}" {{ $item->status == 1 ? 'checked' : '' }}>
-                                            <label class="form-check-label small">{{ $item->status == 1 ? 'Active' : 'Inactive' }}</label>
-                                        </div>
-                                        @else
-                                        <span class="badge bg-label-{{ $item->status == 1 ? 'success' : 'danger' }}">
-                                            {{ $item->status == 1 ? 'Active' : 'Inactive' }}
-                                        </span>
-                                        @endif
-                                    </td>
                                     @if(auth()->user()->can('edit items') || auth()->user()->can('delete items'))
-                                    <td class="text-end">
+                                    <td>
                                         <div class="dropdown">
                                             <button class="btn p-0 dropdown-toggle hide-arrow" type="button" data-bs-toggle="dropdown">
                                                 <i class="bx bx-dots-vertical-rounded"></i>
                                             </button>
-                                            <ul class="dropdown-menu dropdown-menu-end">
+                                            <ul class="dropdown-menu">
                                                 @can('edit items')
                                                 <li>
                                                     <a class="dropdown-item btn-edit-item" href="javascript:void(0);" data-id="{{ $item->id }}">
@@ -94,6 +79,21 @@
                                         </div>
                                     </td>
                                     @endif
+                                    <td>
+                                        <span class="fw-bold text-dark">{{ $item->name }}</span>
+                                    </td>
+                                    <td>
+                                        @if(auth()->user()->can('edit items'))
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input toggle-status" type="checkbox" data-id="{{ $item->id }}" {{ $item->status == 1 ? 'checked' : '' }}>
+                                            <label class="form-check-label small">{{ $item->status == 1 ? 'Active' : 'Inactive' }}</label>
+                                        </div>
+                                        @else
+                                        <span class="badge bg-label-{{ $item->status == 1 ? 'success' : 'danger' }}">
+                                            {{ $item->status == 1 ? 'Active' : 'Inactive' }}
+                                        </span>
+                                        @endif
+                                    </td>
                                 </tr>
                                 @empty
                                 <tr>

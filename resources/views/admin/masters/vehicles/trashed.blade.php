@@ -26,6 +26,8 @@
 
                         <th>#</th>
 
+                        <th class="text-center" style="width: 100px;">Actions</th>
+
                         <th>Vehicle No</th>
 
                         <th>Type</th>
@@ -37,8 +39,6 @@
                         <th>Insurance</th>
 
                         <th>Deleted At</th>
-
-                        <th>Actions</th>
 
                     </tr>
 
@@ -52,6 +52,14 @@
 
                         <td>{{ $vehicles->firstItem() + $index }}</td>
 
+                        <td class="text-center text-nowrap">
+
+                            <button type="button" class="btn btn-sm btn-icon btn-outline-success" onclick="handleRestore({{ $vehicle->id }}, '{{ $vehicle->vehicle_number }}')" title="Restore"><i class="bx bx-revision"></i></button>
+
+                            <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleForceDelete({{ $vehicle->id }}, '{{ $vehicle->vehicle_number }}')" title="Permanently Delete"><i class="bx bx-trash"></i></button>
+
+                        </td>
+
                         <td><strong>{{ $vehicle->vehicle_number }}</strong></td>
 
                         <td>{{ $vehicle->vehicle_type ?? '-' }}</td>
@@ -63,14 +71,6 @@
                         <td>{{ $vehicle->insurance_expiry ? date('d M Y', strtotime($vehicle->insurance_expiry)) : '-' }}</td>
 
                         <td>{{ $vehicle->deleted_at->format('d M Y, h:i A') }}</td>
-
-                        <td class="text-center text-nowrap">
-
-                            <button type="button" class="btn btn-sm btn-icon btn-outline-success" onclick="handleRestore({{ $vehicle->id }}, '{{ $vehicle->vehicle_number }}')" title="Restore"><i class="bx bx-revision"></i></button>
-
-                            <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleForceDelete({{ $vehicle->id }}, '{{ $vehicle->vehicle_number }}')" title="Permanently Delete"><i class="bx bx-trash"></i></button>
-
-                        </td>
 
                     </tr>
 

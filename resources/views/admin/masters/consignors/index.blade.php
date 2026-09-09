@@ -51,23 +51,12 @@
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead class="table-light">
-                    <tr><th>#</th><th>Vendor Code</th><th>Name</th><th>Phone</th><th>Email</th><th>GSTIN</th><th>City</th>@if(auth()->user()->isSuperAdmin())<th>Company</th><th>Branch</th>@endif<th class="text-nowrap">Status</th><th class="text-nowrap">Actions</th></tr>
+                    <tr><th>#</th><th class="text-center text-nowrap" style="width: 140px;">Actions</th><th>Vendor Code</th><th>Name</th><th>Phone</th><th>Email</th><th>GSTIN</th><th>City</th>@if(auth()->user()->isSuperAdmin())<th>Company</th><th>Branch</th>@endif<th class="text-nowrap">Status</th></tr>
                 </thead>
                 <tbody>
                     @forelse($consignors as $index => $consignor)
                     <tr>
                         <td class="text-nowrap">{{ $consignors->firstItem() + $index }}</td>
-                        <td class="text-nowrap">{{ $consignor->vendor_code ?? '-' }}</td>
-                        <td class="text-nowrap"><strong>{{ $consignor->name }}</strong></td>
-                        <td class="text-nowrap">{{ $consignor->phone }}</td>
-                        <td style="max-width: 200px">{{ $consignor->email ?? '-' }}</td>
-                        <td>{{ $consignor->gstin ?? '-' }}</td>
-                        <td>{{ $consignor->city ?? '-' }}</td>
-                        @if(auth()->user()->isSuperAdmin())
-                        <td>{{ $consignor->company->name ?? '-' }}</td>
-                        <td>{{ $consignor->branch->name ?? '-' }}</td>
-                        @endif
-                        <td class="text-nowrap"><span class="badge bg-label-{{ $consignor->status == 'active' ? 'success' : 'danger' }}">{{ ucfirst($consignor->status) }}</span></td>
                         <td class="text-center text-nowrap">
                             @can('edit consignors')
                             <a href="{{ route('admin.masters.consignors.edit', $consignor->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
@@ -80,6 +69,17 @@
                             <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleDelete({{ $consignor->id }}, '{{ $consignor->name }}')" title="Delete"><i class="bx bx-trash"></i></button>
                             @endcan
                         </td>
+                        <td class="text-nowrap">{{ $consignor->vendor_code ?? '-' }}</td>
+                        <td class="text-nowrap"><strong>{{ $consignor->name }}</strong></td>
+                        <td class="text-nowrap">{{ $consignor->phone }}</td>
+                        <td style="max-width: 200px">{{ $consignor->email ?? '-' }}</td>
+                        <td>{{ $consignor->gstin ?? '-' }}</td>
+                        <td>{{ $consignor->city ?? '-' }}</td>
+                        @if(auth()->user()->isSuperAdmin())
+                        <td>{{ $consignor->company->name ?? '-' }}</td>
+                        <td>{{ $consignor->branch->name ?? '-' }}</td>
+                        @endif
+                        <td class="text-nowrap"><span class="badge bg-label-{{ $consignor->status == 'active' ? 'success' : 'danger' }}">{{ ucfirst($consignor->status) }}</span></td>
                     </tr>
                     @empty
                     <tr><td colspan="{{ auth()->user()->isSuperAdmin() ? 11 : 9 }}" class="text-center py-4 text-muted">No consignors found</td></tr>

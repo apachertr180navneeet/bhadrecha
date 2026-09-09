@@ -28,19 +28,16 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th class="text-center text-nowrap" style="width: 100px;">Action</th>
                         <th>Vehicle</th>
                         <th>Service Type</th>
                         <th>Deleted At</th>
-                        <th class="text-center">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($schedules as $schedule)
                     <tr>
                         <td>{{ $loop->iteration }}</td>
-                        <td>{{ $schedule->vehicle?->vehicle_number ?? 'N/A' }}</td>
-                        <td>{{ $schedule->service_type }}</td>
-                        <td>{{ $schedule->deleted_at->format('d-m-Y h:i A') }}</td>
                         <td class="text-center text-nowrap">
                             @if(auth()->user()->can('delete service schedules') || auth()->user()->isSuperAdmin())
                             <form method="POST" action="{{ route('admin.maintenance.service-schedule.restore', $schedule->id) }}" class="d-inline">
@@ -53,6 +50,9 @@
                             </form>
                             @endif
                         </td>
+                        <td>{{ $schedule->vehicle?->vehicle_number ?? 'N/A' }}</td>
+                        <td>{{ $schedule->service_type }}</td>
+                        <td>{{ $schedule->deleted_at->format('d-m-Y h:i A') }}</td>
                     </tr>
                     @empty
                     <tr>

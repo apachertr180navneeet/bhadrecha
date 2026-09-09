@@ -61,6 +61,7 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th class="text-center text-nowrap" style="width: 150px;">Actions</th>
                         <th>Loan ID</th>
                         @if(auth()->user()->isSuperAdmin())<th>Company</th>@endif
                         <th>Bank</th>
@@ -72,13 +73,27 @@
                         <th>Paid</th>
                         <th>Remaining</th>
                         <th>Status</th>
-                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($loans as $key => $loan)
                     <tr>
                         <td>{{ ($loans->currentPage() - 1) * $loans->perPage() + $key + 1 }}</td>
+                        <td class="text-center text-nowrap">
+                            @canany(['record company loan payments', 'edit company loans'])
+                            <button type="button" class="btn btn-sm btn-icon btn-outline-success" onclick="showPayModal({{ $loan->id }}, '{{ $loan->loan_id }}', {{ $loan->emi_amount }})" title="Record Payment"><i class="bx bx-money"></i></button>
+                            @endcanany
+                            <button type="button" class="btn btn-sm btn-icon btn-outline-info" onclick="showPayments({{ $loan->id }}, '{{ $loan->loan_id }}')" title="View Payments"><i class="bx bx-list-ul"></i></button>
+                            @can('edit company loans')
+                            <a href="{{ route('admin.loan.company-loan.edit', $loan->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
+                            <form action="{{ route('admin.loan.company-loan.toggle-status', $loan->id) }}" method="POST" class="d-inline">@csrf
+                                <button type="submit" class="btn btn-sm btn-icon btn-outline-{{ $loan->status == 'active' ? 'warning' : 'success' }}" title="Change Status"><i class="bx bx-{{ $loan->status == 'active' ? 'pause' : 'play' }}"></i></button>
+                            </form>
+                            @endcan
+                            @can('delete company loans')
+                            <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleDelete({{ $loan->id }}, '{{ $loan->loan_id }}')" title="Delete"><i class="bx bx-trash"></i></button>
+                            @endcan
+                        </td>
                         <td class="fw-semibold">{{ $loan->loan_id }}</td>
                         @if(auth()->user()->isSuperAdmin())<td>{{ $loan->company->name ?? '-' }}</td>@endif
                         <td>{{ $loan->bank->name ?? '-' }}</td>
@@ -94,21 +109,6 @@
                                 $statusClass = $loan->status == 'active' ? 'success' : ($loan->status == 'closed' ? 'secondary' : 'danger');
                             @endphp
                             <span class="badge bg-label-{{ $statusClass }}">{{ ucfirst($loan->status) }}</span>
-                        </td>
-                        <td class="text-center text-nowrap">
-                            @canany(['record company loan payments', 'edit company loans'])
-                            <button type="button" class="btn btn-sm btn-icon btn-outline-success" onclick="showPayModal({{ $loan->id }}, '{{ $loan->loan_id }}', {{ $loan->emi_amount }})" title="Record Payment"><i class="bx bx-money"></i></button>
-                            @endcanany
-                            <button type="button" class="btn btn-sm btn-icon btn-outline-info" onclick="showPayments({{ $loan->id }}, '{{ $loan->loan_id }}')" title="View Payments"><i class="bx bx-list-ul"></i></button>
-                            @can('edit company loans')
-                            <a href="{{ route('admin.loan.company-loan.edit', $loan->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
-                            <form action="{{ route('admin.loan.company-loan.toggle-status', $loan->id) }}" method="POST" class="d-inline">@csrf
-                                <button type="submit" class="btn btn-sm btn-icon btn-outline-{{ $loan->status == 'active' ? 'warning' : 'success' }}" title="Change Status"><i class="bx bx-{{ $loan->status == 'active' ? 'pause' : 'play' }}"></i></button>
-                            </form>
-                            @endcan
-                            @can('delete company loans')
-                            <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleDelete({{ $loan->id }}, '{{ $loan->loan_id }}')" title="Delete"><i class="bx bx-trash"></i></button>
-                            @endcan
                         </td>
                     </tr>
                     @empty

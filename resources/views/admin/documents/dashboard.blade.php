@@ -146,17 +146,20 @@
                     <table class="table table-hover">
                         <thead class="table-light">
                             <tr>
+                                <th style="width: 70px;">Action</th>
                                 <th>Doc Number</th>
                                 <th>Document Name</th>
                                 <th>Category</th>
                                 <th>Uploaded By</th>
                                 <th>Uploaded At</th>
-                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($recentUploads as $recent)
                             <tr>
+                                <td>
+                                    <a href="{{ route('admin.documents.show', $recent->id) }}" class="btn btn-icon btn-sm btn-outline-primary"><i class="bx bx-right-arrow-alt"></i></a>
+                                </td>
                                 <td><span class="fw-semibold text-primary">{{ $recent->document_number }}</span></td>
                                 <td>
                                     <div class="d-flex align-items-center">
@@ -167,9 +170,6 @@
                                 <td><span class="badge bg-label-info">{{ $recent->category?->name ?? 'N/A' }}</span></td>
                                 <td><small>{{ $recent->uploader?->full_name ?? 'System' }}</small></td>
                                 <td><small>{{ $recent->created_at->diffForHumans() }}</small></td>
-                                <td>
-                                    <a href="{{ route('admin.documents.show', $recent->id) }}" class="btn btn-icon btn-sm btn-outline-primary"><i class="bx bx-right-arrow-alt"></i></a>
-                                </td>
                             </tr>
                             @empty
                             <tr>

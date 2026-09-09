@@ -47,6 +47,7 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th class="text-center text-nowrap" style="width: 100px;">Actions</th>
                         <th>Company</th>
                         <th>Format Name</th>
                         <th>Depot</th>
@@ -55,21 +56,12 @@
                         <th>GRN New Page</th>
                         <th>GST Rate</th>
                         <th>Created By</th>
-                        <th class="text-nowrap">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($formats as $index => $format)
                     <tr>
                         <td class="text-nowrap">{{ $formats->firstItem() + $index }}</td>
-                        <td>{{ $format->company?->name ?? '-' }}</td>
-                        <td><strong>{{ $format->format_name }}</strong></td>
-                        <td>{{ $format->depot?->name ?? '—' }}</td>
-                        <td>{{ $format->party?->name ?? '—' }}</td>
-                        <td>{{ is_array($format->visible_fields) ? count($format->visible_fields) : 0 }} fields</td>
-                        <td>{!! $format->grn_new_page ? '<span class="badge bg-label-success">Yes</span>' : '<span class="badge bg-label-secondary">No</span>' !!}</td>
-                        <td>{{ $format->gstMaster?->gst_rate ?? '—' }}</td>
-                        <td>{{ $format->user?->name ?? '-' }}</td>
                         <td class="text-center text-nowrap">
                             <a href="{{ route('admin.masters.bill-formats.edit', $format->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit">
                                 <i class="bx bx-edit"></i>
@@ -79,6 +71,14 @@
                                 <i class="bx bx-trash"></i>
                             </button>
                         </td>
+                        <td>{{ $format->company?->name ?? '-' }}</td>
+                        <td><strong>{{ $format->format_name }}</strong></td>
+                        <td>{{ $format->depot?->name ?? '—' }}</td>
+                        <td>{{ $format->party?->name ?? '—' }}</td>
+                        <td>{{ is_array($format->visible_fields) ? count($format->visible_fields) : 0 }} fields</td>
+                        <td>{!! $format->grn_new_page ? '<span class="badge bg-label-success">Yes</span>' : '<span class="badge bg-label-secondary">No</span>' !!}</td>
+                        <td>{{ $format->gstMaster?->gst_rate ?? '—' }}</td>
+                        <td>{{ $format->user?->name ?? '-' }}</td>
                     </tr>
                     @empty
                     <tr><td colspan="10" class="text-center py-4 text-muted">No bill formats found</td></tr>

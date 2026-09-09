@@ -25,25 +25,19 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th class="text-nowrap" style="width: 60px;">Actions</th>
                         <th>LR No</th>
                         <th>Consignor</th>
                         <th>Consignee</th>
                         <th>From → To</th>
                         <th>Amount</th>
                         <th class="text-nowrap">Deleted At</th>
-                        <th class="text-nowrap">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($bulties as $index => $bulty)
                     <tr>
                         <td class="text-nowrap">{{ $bulties->firstItem() + $index }}</td>
-                        <td class="fw-semibold">{{ $bulty->lr_no }}</td>
-                        <td>{{ $bulty->consignor->name ?? '-' }}</td>
-                        <td>{{ $bulty->consignee->name ?? '-' }}</td>
-                        <td>{{ $bulty->originCity->name ?? '-' }} <i class="bx bx-chevron-right mx-1 text-muted"></i> {{ $bulty->destinationCity->name ?? '-' }}</td>
-                        <td>₹{{ number_format($bulty->total_amount, 2) }}</td>
-                        <td class="text-nowrap">{{ $bulty->deleted_at->format('d M Y, h:i A') }}</td>
                         <td class="text-nowrap">
                             @canany(['restore bulties', 'force delete bulties'])
                             <div class="dropdown">
@@ -59,6 +53,12 @@
                             </div>
                             @endcanany
                         </td>
+                        <td class="fw-semibold">{{ $bulty->lr_no }}</td>
+                        <td>{{ $bulty->consignor->name ?? '-' }}</td>
+                        <td>{{ $bulty->consignee->name ?? '-' }}</td>
+                        <td>{{ $bulty->originCity->name ?? '-' }} <i class="bx bx-chevron-right mx-1 text-muted"></i> {{ $bulty->destinationCity->name ?? '-' }}</td>
+                        <td>₹{{ number_format($bulty->total_amount, 2) }}</td>
+                        <td class="text-nowrap">{{ $bulty->deleted_at->format('d M Y, h:i A') }}</td>
                     </tr>
                     @empty
                     <tr><td colspan="8" class="text-center py-4 text-muted">No bilties in recycle bin</td></tr>

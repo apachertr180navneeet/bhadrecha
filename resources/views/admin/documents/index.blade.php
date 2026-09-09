@@ -167,6 +167,7 @@
                     <thead class="table-light">
                         <tr>
                             <th width="30"><input type="checkbox" id="selectAll" class="form-check-input"></th>
+                            <th class="text-center text-nowrap" style="width: 100px;">Actions</th>
                             <th>Doc Number</th>
                             <th>Document Name</th>
                             <th>Category</th>
@@ -176,7 +177,6 @@
                             <th>Uploaded By</th>
                             <th>Expiry Date</th>
                             <th>Status</th>
-                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -218,6 +218,7 @@ $(document).ready(function() {
                     return '<input type="checkbox" name="document_ids[]" value="' + data + '" class="form-check-input doc-checkbox">';
                 }
             },
+            { data: 'actions', orderable: false, searchable: false, className: 'text-center text-nowrap' },
             { data: 'document_number', name: 'document_number' },
             { 
                 data: 'name', 
@@ -258,10 +259,9 @@ $(document).ready(function() {
                     if(statusStr === 'draft') badge = 'bg-warning';
                     return '<span class="badge ' + badge + '">' + statusStr.toUpperCase() + '</span>';
                 }
-            },
-            { data: 'actions', orderable: false, searchable: false }
+            }
         ],
-        order: [[1, 'desc']],
+        order: [[2, 'desc']],
         pageLength: 25
     });
 

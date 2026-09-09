@@ -51,17 +51,15 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th class="text-center" style="width: 120px;">Actions</th>
                         <th>Fuel Company</th>
                         <th>Status</th>
-                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($fuelCompanies as $key => $fuelCompany)
                     <tr>
                         <td>{{ ($fuelCompanies->currentPage() - 1) * $fuelCompanies->perPage() + $key + 1 }}</td>
-                        <td class="fw-semibold">{{ $fuelCompany->name }}</td>
-                        <td><span class="badge bg-label-{{ $fuelCompany->status == 'active' ? 'success' : 'danger' }}">{{ ucfirst($fuelCompany->status) }}</span></td>
                         <td class="text-center text-nowrap">
                             <a href="{{ route('admin.masters.fuel-companies.edit', $fuelCompany->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
                             <form action="{{ route('admin.masters.fuel-companies.toggle-status', $fuelCompany->id) }}" method="POST" class="d-inline">@csrf
@@ -69,6 +67,8 @@
                             </form>
                             <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleDelete({{ $fuelCompany->id }}, '{{ $fuelCompany->name }}')" title="Delete"><i class="bx bx-trash"></i></button>
                         </td>
+                        <td class="fw-semibold">{{ $fuelCompany->name }}</td>
+                        <td><span class="badge bg-label-{{ $fuelCompany->status == 'active' ? 'success' : 'danger' }}">{{ ucfirst($fuelCompany->status) }}</span></td>
                     </tr>
                     @empty
                     <tr><td colspan="4" class="text-center py-4"><p class="text-muted mb-0">No fuel companies found</p></td></tr>

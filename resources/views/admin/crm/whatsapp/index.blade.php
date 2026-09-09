@@ -107,18 +107,27 @@
 <table class="table table-hover" id="waLogsTable">
                         <thead>
                             <tr>
+                                <th class="text-nowrap" style="width: 80px;">Action</th>
                                 <th>Date</th>
                                 <th>Customer</th>
                                 <th>Mobile</th>
                                 <th>Message</th>
                                 <th>Type</th>
                                 <th>Status</th>
-                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($logs as $log)
                             <tr>
+                                <td>
+                                    @if($log->whatsapp_url)
+                                        <a href="{{ $log->whatsapp_url }}" target="_blank" class="btn btn-sm btn-success px-2 py-1" title="Open WhatsApp Chat">
+                                            <i class="bx bxl-whatsapp me-1"></i> Send
+                                        </a>
+                                    @else
+                                        <span class="text-muted small">N/A</span>
+                                    @endif
+                                </td>
                                 <td>{{ \Carbon\Carbon::parse($log->created_at)->format('d M Y h:i A') }}</td>
                                 <td class="fw-semibold">{{ $log->customer->name ?? 'N/A' }}</td>
                                 <td>{{ $log->mobile ?? $log->customer->mobile ?? 'N/A' }}</td>
@@ -131,15 +140,6 @@
                                         <span class="badge bg-label-danger">Failed</span>
                                     @else
                                         <span class="badge bg-label-warning">Pending</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if($log->whatsapp_url)
-                                        <a href="{{ $log->whatsapp_url }}" target="_blank" class="btn btn-sm btn-success px-2 py-1" title="Open WhatsApp Chat">
-                                            <i class="bx bxl-whatsapp me-1"></i> Send
-                                        </a>
-                                    @else
-                                        <span class="text-muted small">N/A</span>
                                     @endif
                                 </td>
                             </tr>

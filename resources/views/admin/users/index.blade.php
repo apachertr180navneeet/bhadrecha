@@ -62,23 +62,16 @@
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead class="table-light">
-                    <tr><th>#</th><th>Name</th><th>Email</th><th>Phone</th><th>Company</th><th>Branch</th><th>Role</th><th class="text-nowrap">Status</th><th class="text-nowrap">Actions</th></tr>
+                    <tr><th>#</th><th class="text-nowrap" style="width: 80px;">Actions</th><th>Name</th><th>Email</th><th>Phone</th><th>Company</th><th>Branch</th><th>Role</th><th class="text-nowrap">Status</th></tr>
                 </thead>
                 <tbody>
                     @forelse($users as $index => $user)
                         <tr>
                             <td>{{ $users->firstItem() + $index }}</td>
-                            <td>{{ $user->first_name }} {{ $user->last_name }}</td>
-                            <td>{{ $user->email }}</td>
-                            <td>{{ $user->phone }}</td>
-                            <td>{{ $user->company->name ?? 'N/A' }}</td>
-                            <td>{{ $user->branch->name ?? 'N/A' }}</td>
-                            <td>{{ $user->roles->pluck('name')->implode(', ') }}</td>
-                            <td><span class="badge bg-label-{{ $user->status == 'active' ? 'success' : 'danger' }}">{{ ucfirst($user->status) }}</span></td>
                             <td>
                                 @canany(['view users', 'edit users', 'delete users'])
                                 <div class="dropdown">
-                                    <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="bx bx-dots-vertical-rounded"></i></button>
+                                    <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown" data-bs-boundary="viewport"><i class="bx bx-dots-vertical-rounded"></i></button>
                                     <div class="dropdown-menu">
                                         @can('view users')
                                         <a class="dropdown-item" href="{{ route('admin.users.show', $user->id) }}"><i class="bx bx-show me-1"></i> View</a>
@@ -96,6 +89,13 @@
                                 </div>
                                 @endcanany
                             </td>
+                            <td>{{ $user->first_name }} {{ $user->last_name }}</td>
+                            <td>{{ $user->email }}</td>
+                            <td>{{ $user->phone }}</td>
+                            <td>{{ $user->company->name ?? 'N/A' }}</td>
+                            <td>{{ $user->branch->name ?? 'N/A' }}</td>
+                            <td>{{ $user->roles->pluck('name')->implode(', ') }}</td>
+                            <td><span class="badge bg-label-{{ $user->status == 'active' ? 'success' : 'danger' }}">{{ ucfirst($user->status) }}</span></td>
                         </tr>
                     @empty
                         <tr><td colspan="9" class="text-center py-4 text-muted">No users found</td></tr>

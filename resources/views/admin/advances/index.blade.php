@@ -73,6 +73,9 @@
             <table class="table table-hover mb-0">
                 <thead class="table-light">
                     <tr>
+                        @if(auth()->user()->isSuperAdmin() || auth()->user()->isCompanyAdmin())
+                        <th class="py-3 text-center text-nowrap" style="width: 120px;">Actions</th>
+                        @endif
                         <th class="py-3">Employee</th>
                         <th class="py-3">Company</th>
                         <th class="py-3 text-end">Amount</th>
@@ -81,14 +84,38 @@
                         <th class="py-3">Reason</th>
                         <th class="py-3">Status</th>
                         <th class="py-3">Approved By</th>
-                        @if(auth()->user()->isSuperAdmin() || auth()->user()->isCompanyAdmin())
-                        <th class="py-3 text-center">Actions</th>
-                        @endif
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($advances as $adv)
                     <tr>
+                        @if(auth()->user()->isSuperAdmin() || auth()->user()->isCompanyAdmin())
+                        <td class="text-center text-nowrap">
+                            @if($adv->status === 'pending')
+                                @if(auth()->user()->isCompanyAdmin() && $adv->user->company_id !== auth()->user()->company_id)
+                                    <span class="text-muted small">-</span>
+                                @else
+                                <div class="d-flex justify-content-center gap-1">
+                                    <form method="POST" action="{{ route('admin.advances.approve', $adv->id) }}" style="display:inline">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-success" title="Approve"><i class="bx bx-check"></i></button>
+                                    </form>
+                                    <form method="POST" action="{{ route('admin.advances.reject', $adv->id) }}" style="display:inline">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Reject"><i class="bx bx-x"></i></button>
+                                    </form>
+                                </div>
+                                @endif
+                            @elseif($adv->status === 'approved')
+                                <form method="POST" action="{{ route('admin.advances.mark-paid', $adv->id) }}" style="display:inline">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-primary" title="Mark Paid"><i class="bx bx-money"></i> Mark Paid</button>
+                                </form>
+                            @else
+                                <span class="text-muted small">-</span>
+                            @endif
+                        </td>
+                        @endif
                         <td>
                             <span class="fw-semibold text-dark">{{ $adv->user->full_name }}</span>
                             @if(auth()->user()->isSuperAdmin() || auth()->user()->isCompanyAdmin())
@@ -118,33 +145,6 @@
                         <td><small class="text-muted">{{ Str::limit($adv->reason, 50) }}</small></td>
                         <td><span class="adv-status status-{{ $adv->status }}">{{ ucfirst($adv->status) }}</span></td>
                         <td><small class="text-muted">{{ $adv->approver?->full_name ?? '-' }}</small></td>
-                        @if(auth()->user()->isSuperAdmin() || auth()->user()->isCompanyAdmin())
-                        <td class="text-center">
-                            @if($adv->status === 'pending')
-                                @if(auth()->user()->isCompanyAdmin() && $adv->user->company_id !== auth()->user()->company_id)
-                                    <span class="text-muted small">-</span>
-                                @else
-                                <div class="d-flex justify-content-center gap-1">
-                                    <form method="POST" action="{{ route('admin.advances.approve', $adv->id) }}" style="display:inline">
-                                        @csrf
-                                        <button type="submit" class="btn btn-sm btn-success" title="Approve"><i class="bx bx-check"></i></button>
-                                    </form>
-                                    <form method="POST" action="{{ route('admin.advances.reject', $adv->id) }}" style="display:inline">
-                                        @csrf
-                                        <button type="submit" class="btn btn-sm btn-danger" title="Reject"><i class="bx bx-x"></i></button>
-                                    </form>
-                                </div>
-                                @endif
-                            @elseif($adv->status === 'approved')
-                                <form method="POST" action="{{ route('admin.advances.mark-paid', $adv->id) }}" style="display:inline">
-                                    @csrf
-                                    <button type="submit" class="btn btn-sm btn-primary" title="Mark Paid"><i class="bx bx-money"></i> Mark Paid</button>
-                                </form>
-                            @else
-                                <span class="text-muted small">-</span>
-                            @endif
-                        </td>
-                        @endif
                     </tr>
                     @empty
                     <tr><td colspan="7" class="text-center py-4">No advance records found.</td></tr>

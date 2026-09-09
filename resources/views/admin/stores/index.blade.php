@@ -17,40 +17,26 @@
                         <thead>
                             <tr>
                                 <th>S.No.</th>
+                                @if(auth()->user()->can('edit stores') || auth()->user()->can('delete stores'))
+                                <th class="text-center text-nowrap" style="width: 80px;">Actions</th>
+                                @endif
                                 <th>Store Name</th>
                                 <th>Phone</th>
                                 <th>Email</th>
                                 <th>Status</th>
-                                @if(auth()->user()->can('edit stores') || auth()->user()->can('delete stores'))
-                                <th>Actions</th>
-                                @endif
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($stores as $store)
                             <tr data-id="{{ $store->id }}">
                                 <td></td>
-                                <td>{{ $store->store_name }}</td>
-                                <td>{{ $store->phone }}</td>
-                                <td>{{ $store->email }}</td>
-                                <td>
-                                    @can('edit stores')
-                                    <button class="btn btn-sm toggle-status {{ $store->status ? 'btn-success' : 'btn-secondary' }}" data-status="{{ $store->status }}">
-                                        {{ $store->status ? 'Active' : 'Inactive' }}
-                                    </button>
-                                    @else
-                                    <span class="badge {{ $store->status ? 'bg-label-success' : 'bg-label-secondary' }}">
-                                        {{ $store->status ? 'Active' : 'Inactive' }}
-                                    </span>
-                                    @endcan
-                                </td>
                                 @if(auth()->user()->can('edit stores') || auth()->user()->can('delete stores'))
-                                <td>
+                                <td class="text-center text-nowrap">
                                     <div class="dropdown">
-                                        <button class="btn p-0 dropdown-toggle hide-arrow" type="button" data-bs-toggle="dropdown">
+                                        <button class="btn p-0 dropdown-toggle hide-arrow" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport">
                                             <i class="bx bx-dots-vertical-rounded"></i>
                                         </button>
-                                        <ul class="dropdown-menu dropdown-menu-end">
+                                        <ul class="dropdown-menu">
                                             @can('edit stores')
                                             <li>
                                                 <a class="dropdown-item edit-store" href="javascript:void(0);">
@@ -69,6 +55,20 @@
                                     </div>
                                 </td>
                                 @endif
+                                <td>{{ $store->store_name }}</td>
+                                <td>{{ $store->phone }}</td>
+                                <td>{{ $store->email }}</td>
+                                <td>
+                                    @can('edit stores')
+                                    <button class="btn btn-sm toggle-status {{ $store->status ? 'btn-success' : 'btn-secondary' }}" data-status="{{ $store->status }}">
+                                        {{ $store->status ? 'Active' : 'Inactive' }}
+                                    </button>
+                                    @else
+                                    <span class="badge {{ $store->status ? 'bg-label-success' : 'bg-label-secondary' }}">
+                                        {{ $store->status ? 'Active' : 'Inactive' }}
+                                    </span>
+                                    @endcan
+                                </td>
                             </tr>
                             @endforeach
                         </tbody>

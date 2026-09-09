@@ -50,21 +50,11 @@
 
         <div class="table-responsive text-nowrap">
             <table class="table table-hover">
-                <thead class="table-light"><tr><th>#</th><th>Name</th><th>Phone</th><th>Email</th><th>GSTIN</th><th>City</th>@if(auth()->user()->isSuperAdmin())<th>Company</th><th>Branch</th>@endif<th>Status</th><th>Actions</th></tr></thead>
+                <thead class="table-light"><tr><th>#</th><th class="text-center text-nowrap" style="width: 140px;">Actions</th><th>Name</th><th>Phone</th><th>Email</th><th>GSTIN</th><th>City</th>@if(auth()->user()->isSuperAdmin())<th>Company</th><th>Branch</th>@endif<th>Status</th></tr></thead>
                 <tbody>
                     @forelse($consignees as $index => $consignee)
                     <tr>
                         <td>{{ $consignees->firstItem() + $index }}</td>
-                        <td><strong>{{ $consignee->name }}</strong></td>
-                        <td>{{ $consignee->phone }}</td>
-                        <td>{{ $consignee->email ?? '-' }}</td>
-                        <td>{{ $consignee->gstin ?? '-' }}</td>
-                        <td>{{ $consignee->city ?? '-' }}</td>
-                        @if(auth()->user()->isSuperAdmin())
-                        <td>{{ $consignee->company->name ?? '-' }}</td>
-                        <td>{{ $consignee->branch->name ?? '-' }}</td>
-                        @endif
-                        <td><span class="badge bg-label-{{ $consignee->status == 'active' ? 'success' : 'danger' }}">{{ ucfirst($consignee->status) }}</span></td>
                         <td class="text-center text-nowrap">
                             @can('edit consignees')
                             <a href="{{ route('admin.masters.consignees.edit', $consignee->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
@@ -77,6 +67,16 @@
                             <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleDelete({{ $consignee->id }}, '{{ $consignee->name }}')" title="Delete"><i class="bx bx-trash"></i></button>
                             @endcan
                         </td>
+                        <td><strong>{{ $consignee->name }}</strong></td>
+                        <td>{{ $consignee->phone }}</td>
+                        <td>{{ $consignee->email ?? '-' }}</td>
+                        <td>{{ $consignee->gstin ?? '-' }}</td>
+                        <td>{{ $consignee->city ?? '-' }}</td>
+                        @if(auth()->user()->isSuperAdmin())
+                        <td>{{ $consignee->company->name ?? '-' }}</td>
+                        <td>{{ $consignee->branch->name ?? '-' }}</td>
+                        @endif
+                        <td><span class="badge bg-label-{{ $consignee->status == 'active' ? 'success' : 'danger' }}">{{ ucfirst($consignee->status) }}</span></td>
                     </tr>
                     @empty
                     <tr><td colspan="{{ auth()->user()->isSuperAdmin() ? 10 : 8 }}" class="text-center py-4 text-muted">No consignees found</td></tr>

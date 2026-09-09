@@ -202,6 +202,7 @@
                         <table class="table table-hover align-middle table-sm-compact">
                             <thead class="table-light">
                                 <tr>
+                                    <th class="text-center" style="width: 90px;">Actions</th>
                                     <th>AdBlue Company</th>
                                     @if(request()->filled('date_from'))
                                     <th class="text-end">Opening Balance</th>
@@ -210,24 +211,11 @@
                                     <th class="text-end">AdBlue Amount (+)</th>
                                     <th class="text-end">Payments Made (-)</th>
                                     <th class="text-end">Net Outstanding</th>
-                                    <th class="text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse($overviewData as $item)
                                 <tr>
-                                    <td class="fw-semibold text-dark">{{ $item['company_name'] }}</td>
-                                    @if(request()->filled('date_from'))
-                                    <td class="text-end fw-semibold">₹{{ number_format($item['opening_balance'] ?? 0, 2) }}</td>
-                                    @endif
-                                    <td class="text-end">{{ number_format($item['total_qty'], 2) }} L</td>
-                                    <td class="text-end">₹{{ number_format($item['adblue_amount'], 2) }}</td>
-                                    <td class="text-end text-success">₹{{ number_format($item['payment_amount'], 2) }}</td>
-                                    <td class="text-end">
-                                        <span class="badge {{ $item['net_outstanding'] > 0 ? 'bg-label-danger' : 'bg-label-success' }} fw-bold">
-                                            ₹{{ number_format($item['net_outstanding'], 2) }}
-                                        </span>
-                                    </td>
                                     <td class="text-center">
                                         <div class="d-flex justify-content-center gap-1">
                                             <button class="btn btn-sm btn-icon btn-outline-primary" onclick="viewLedgerForCompany({{ $item['adblue_company_id'] }})" title="View Ledger">
@@ -239,6 +227,18 @@
                                             </button>
                                             @endif
                                         </div>
+                                    </td>
+                                    <td class="fw-semibold text-dark">{{ $item['company_name'] }}</td>
+                                    @if(request()->filled('date_from'))
+                                    <td class="text-end fw-semibold">₹{{ number_format($item['opening_balance'] ?? 0, 2) }}</td>
+                                    @endif
+                                    <td class="text-end">{{ number_format($item['total_qty'], 2) }} L</td>
+                                    <td class="text-end">₹{{ number_format($item['adblue_amount'], 2) }}</td>
+                                    <td class="text-end text-success">₹{{ number_format($item['payment_amount'], 2) }}</td>
+                                    <td class="text-end">
+                                        <span class="badge {{ $item['net_outstanding'] > 0 ? 'bg-label-danger' : 'bg-label-success' }} fw-bold">
+                                            ₹{{ number_format($item['net_outstanding'], 2) }}
+                                        </span>
                                     </td>
                                 </tr>
                                 @empty
@@ -330,26 +330,20 @@
                         <table class="table table-hover align-middle table-sm">
                             <thead class="table-light">
                                 <tr>
+                                    @if(!request()->routeIs('admin.reports.*'))
+                                    <th class="text-center" style="width: 90px;">Actions</th>
+                                    @endif
                                     <th>Date</th>
                                     <th>Operating Company</th>
                                     <th>AdBlue Company</th>
                                     <th>Method</th>
                                     <th class="text-end">Amount</th>
                                     <th>Remark</th>
-                                    @if(!request()->routeIs('admin.reports.*'))
-                                    <th class="text-center">Actions</th>
-                                    @endif
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse($payments as $p)
                                 <tr>
-                                    <td>{{ $p->date ? $p->date->format('d-m-Y') : '-' }}</td>
-                                    <td><span class="badge bg-label-info">{{ $p->company->name ?? '-' }}</span></td>
-                                    <td class="fw-semibold text-primary">{{ $p->adblueCompany->name ?? '-' }}</td>
-                                    <td><span class="badge bg-label-secondary">{{ $p->payment_method ?? 'Bank Transfer' }}</span></td>
-                                    <td class="text-end fw-bold text-success">₹{{ number_format($p->amount, 2) }}</td>
-                                    <td>{{ $p->remark ?? '-' }}</td>
                                     @if(!request()->routeIs('admin.reports.*'))
                                     <td class="text-center">
                                         <div class="d-flex justify-content-center gap-1">
@@ -366,6 +360,12 @@
                                         </div>
                                     </td>
                                     @endif
+                                    <td>{{ $p->date ? $p->date->format('d-m-Y') : '-' }}</td>
+                                    <td><span class="badge bg-label-info">{{ $p->company->name ?? '-' }}</span></td>
+                                    <td class="fw-semibold text-primary">{{ $p->adblueCompany->name ?? '-' }}</td>
+                                    <td><span class="badge bg-label-secondary">{{ $p->payment_method ?? 'Bank Transfer' }}</span></td>
+                                    <td class="text-end fw-bold text-success">₹{{ number_format($p->amount, 2) }}</td>
+                                    <td>{{ $p->remark ?? '-' }}</td>
                                 </tr>
                                 @empty
                                 <tr>

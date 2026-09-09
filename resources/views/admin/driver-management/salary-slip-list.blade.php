@@ -32,6 +32,7 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th class="text-center text-nowrap" style="width: 100px;">Action</th>
                         <th>Driver</th>
                         <th>Driver ID</th>
                         <th>Phone</th>
@@ -40,22 +41,13 @@
                         <th class="text-end">Deductions</th>
                         <th class="text-end">Net Payable</th>
                         <th>Generated</th>
-                        <th class="text-center">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($slips as $slip)
                     <tr>
                         <td>{{ $loop->iteration }}</td>
-                        <td>{{ $slip->driver?->name ?? 'N/A' }}</td>
-                        <td>{{ $slip->driver?->driver_id ?? '-' }}</td>
-                        <td>{{ $slip->driver?->phone ?? '-' }}</td>
-                        <td>{{ Carbon\Carbon::create()->month($slip->month)->format('F') }} {{ $slip->year }}</td>
-                        <td class="text-end">₹ {{ number_format($slip->salary_amount, 2) }}</td>
-                        <td class="text-end text-danger">₹ {{ number_format($slip->total_deductions, 2) }}</td>
-                        <td class="text-end fw-semibold">₹ {{ number_format($slip->net_payable, 2) }}</td>
-                        <td>{{ $slip->generated_at ? $slip->generated_at->format('d-m-Y') : '-' }}</td>
-                        <td class="text-center">
+                        <td class="text-center text-nowrap">
                             @canany(['view driver salary slips', 'generate driver salary slips'])
                             <a href="{{ route('admin.driver-management.salary-slip', ['driver_id' => $slip->driver_id, 'month' => $slip->month, 'year' => $slip->year]) }}" class="btn btn-sm btn-icon btn-outline-primary" title="View"><i class="bx bx-show"></i></a>
                             @endcanany
@@ -66,6 +58,14 @@
                             </form>
                             @endcan
                         </td>
+                        <td>{{ $slip->driver?->name ?? 'N/A' }}</td>
+                        <td>{{ $slip->driver?->driver_id ?? '-' }}</td>
+                        <td>{{ $slip->driver?->phone ?? '-' }}</td>
+                        <td>{{ Carbon\Carbon::create()->month($slip->month)->format('F') }} {{ $slip->year }}</td>
+                        <td class="text-end">₹ {{ number_format($slip->salary_amount, 2) }}</td>
+                        <td class="text-end text-danger">₹ {{ number_format($slip->total_deductions, 2) }}</td>
+                        <td class="text-end fw-semibold">₹ {{ number_format($slip->net_payable, 2) }}</td>
+                        <td>{{ $slip->generated_at ? $slip->generated_at->format('d-m-Y') : '-' }}</td>
                     </tr>
                     @empty
                     <tr>

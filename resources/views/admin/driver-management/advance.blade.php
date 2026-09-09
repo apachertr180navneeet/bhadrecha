@@ -104,6 +104,7 @@
             <table class="table table-hover mb-0">
                 <thead class="table-light">
                     <tr>
+                        <th class="text-center text-nowrap" style="width: 100px;">Action</th>
                         <th>Driver</th>
                         <th>Driver ID</th>
                         <th>Phone</th>
@@ -113,12 +114,18 @@
                         <th>Status</th>
                         <th>Date</th>
                         <th>Remark</th>
-                        <th class="text-center">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($advances as $advance)
                     <tr>
+                        <td class="text-center text-nowrap">
+                            <a href="{{ route('admin.driver-management.advance.edit', $advance) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
+                            <form method="POST" action="{{ route('admin.driver-management.advance.destroy', $advance) }}" class="d-inline" onsubmit="return confirm('Delete this advance record?')">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="btn btn-sm btn-icon btn-outline-danger" title="Delete"><i class="bx bx-trash"></i></button>
+                            </form>
+                        </td>
                         <td>{{ $advance->driver?->name ?? '-' }}</td>
                         <td>{{ $advance->driver?->driver_id ?? '-' }}</td>
                         <td>{{ $advance->driver?->phone ?? '-' }}</td>
@@ -134,13 +141,6 @@
                         </td>
                         <td>{{ $advance->date->format('d-m-Y') }}</td>
                         <td>{{ $advance->remark ?? '-' }}</td>
-                        <td class="text-center text-nowrap">
-                            <a href="{{ route('admin.driver-management.advance.edit', $advance) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
-                            <form method="POST" action="{{ route('admin.driver-management.advance.destroy', $advance) }}" class="d-inline" onsubmit="return confirm('Delete this advance record?')">
-                                @csrf @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-icon btn-outline-danger" title="Delete"><i class="bx bx-trash"></i></button>
-                            </form>
-                        </td>
                     </tr>
                     @empty
                     <tr>

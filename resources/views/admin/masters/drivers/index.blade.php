@@ -55,12 +55,23 @@
         <div class="table-responsive text-nowrap">
             <table class="table table-hover">
                 <thead class="table-light">
-                    <tr><th>#</th><th>Driver ID</th><th>Name</th><th>Phone</th><th>License Number</th><th>License Expiry</th><th>City</th><th>Status</th><th>Docs</th><th>Actions</th></tr>
+                    <tr><th>#</th><th class="text-center" style="width: 120px;">Actions</th><th>Driver ID</th><th>Name</th><th>Phone</th><th>License Number</th><th>License Expiry</th><th>City</th><th>Status</th><th>Docs</th></tr>
                 </thead>
                 <tbody>
                     @forelse($drivers as $index => $driver)
                     <tr>
                         <td>{{ $drivers->firstItem() + $index }}</td>
+                        <td class="text-center text-nowrap">
+                            @can('edit drivers')
+                            <a href="{{ route('admin.masters.drivers.edit', $driver->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
+                            <form action="{{ route('admin.masters.drivers.toggle-status', $driver->id) }}" method="POST" class="d-inline">@csrf
+                                <button type="submit" class="btn btn-sm btn-icon btn-outline-{{ $driver->status == 'active' ? 'warning' : 'success' }}" title="{{ $driver->status == 'active' ? 'Deactivate' : 'Activate' }}"><i class="bx bx-{{ $driver->status == 'active' ? 'pause' : 'play' }}"></i></button>
+                            </form>
+                            @endcan
+                            @can('delete drivers')
+                            <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleDelete({{ $driver->id }}, '{{ $driver->name }}')" title="Delete"><i class="bx bx-trash"></i></button>
+                            @endcan
+                        </td>
                         <td>{{ $driver->driver_id ?? '-' }}</td>
                         <td><strong>{{ $driver->name }}</strong></td>
                         <td>{{ $driver->phone }}</td>
@@ -76,17 +87,6 @@
                                 <i class="bx bx-file {{ $uploaded > 0 ? 'text-success' : 'text-muted' }}"></i>
                                 {{ $uploaded }}/6
                             </span>
-                        </td>
-                        <td class="text-center text-nowrap">
-                            @can('edit drivers')
-                            <a href="{{ route('admin.masters.drivers.edit', $driver->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
-                            <form action="{{ route('admin.masters.drivers.toggle-status', $driver->id) }}" method="POST" class="d-inline">@csrf
-                                <button type="submit" class="btn btn-sm btn-icon btn-outline-{{ $driver->status == 'active' ? 'warning' : 'success' }}" title="{{ $driver->status == 'active' ? 'Deactivate' : 'Activate' }}"><i class="bx bx-{{ $driver->status == 'active' ? 'pause' : 'play' }}"></i></button>
-                            </form>
-                            @endcan
-                            @can('delete drivers')
-                            <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleDelete({{ $driver->id }}, '{{ $driver->name }}')" title="Delete"><i class="bx bx-trash"></i></button>
-                            @endcan
                         </td>
                     </tr>
                     @empty

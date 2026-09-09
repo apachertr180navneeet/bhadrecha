@@ -24,20 +24,20 @@
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead class="table-light">
-                    <tr><th>#</th><th>Bank</th><th>Branch</th><th>IFSC</th><th class="text-nowrap">Deleted At</th><th class="text-nowrap">Actions</th></tr>
+                    <tr><th>#</th><th class="text-center text-nowrap" style="width: 100px;">Actions</th><th>Bank</th><th>Branch</th><th>IFSC</th><th class="text-nowrap">Deleted At</th></tr>
                 </thead>
                 <tbody>
                     @forelse($branches as $index => $branch)
                     <tr>
                         <td class="text-nowrap">{{ $branches->firstItem() + $index }}</td>
-                        <td><span class="badge bg-label-info">{{ $branch->bank?->name ?? '-' }}</span></td>
-                        <td><strong>{{ $branch->branch_name ?? '-' }}</strong></td>
-                        <td><span class="badge bg-label-primary">{{ $branch->ifsc ?? '-' }}</span></td>
-                        <td class="text-nowrap">{{ $branch->deleted_at->format('d M Y, h:i A') }}</td>
                         <td class="text-center text-nowrap">
                             <button type="button" class="btn btn-sm btn-icon btn-outline-success" onclick="handleRestore({{ $branch->id }}, '{{ $branch->branch_name }}')" title="Restore"><i class="bx bx-revision"></i></button>
                             <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleForceDelete({{ $branch->id }}, '{{ $branch->branch_name }}')" title="Permanently Delete"><i class="bx bx-trash"></i></button>
                         </td>
+                        <td><span class="badge bg-label-info">{{ $branch->bank?->name ?? '-' }}</span></td>
+                        <td><strong>{{ $branch->branch_name ?? '-' }}</strong></td>
+                        <td><span class="badge bg-label-primary">{{ $branch->ifsc ?? '-' }}</span></td>
+                        <td class="text-nowrap">{{ $branch->deleted_at->format('d M Y, h:i A') }}</td>
                     </tr>
                     @empty
                     <tr><td colspan="6" class="text-center py-4 text-muted">No branches in recycle bin</td></tr>

@@ -20,46 +20,27 @@
 <table class="table table-hover">
                 <thead>
                     <tr>
+                        @if(auth()->user()->can('approve leave requests') || auth()->user()->can('delete leave requests'))
+                        <th class="text-nowrap" style="width: 80px;">Actions</th>
+                        @endif
                         <th>Staff</th>
                         <th>Start Date</th>
                         <th>End Date</th>
                         <th>Reason</th>
                         <th style="width:90px;">Status</th>
                         <th>Admin Remarks</th>
-                        @if(auth()->user()->can('approve leave requests') || auth()->user()->can('delete leave requests'))
-                        <th style="width:140px;">Actions</th>
-                        @endif
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($leaves as $leave)
                     <tr id="leave-row-{{ $leave->id }}">
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="avatar avatar-sm me-3" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;">
-                                    <span class="avatar-initial rounded-circle bg-label-primary" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:600;">
-                                        {{ strtoupper(substr($leave->staff->full_name ?? '--', 0, 2)) }}
-                                    </span>
-                                </div>
-                                <span class="fw-semibold">{{ $leave->staff->full_name ?? 'N/A' }}</span>
-                            </div>
-                        </td>
-                        <td>{{ \Carbon\Carbon::parse($leave->start_date)->format('d M Y') }}</td>
-                        <td>{{ \Carbon\Carbon::parse($leave->end_date)->format('d M Y') }}</td>
-                        <td>{{ $leave->reason }}</td>
-                        <td>
-                            <span class="badge bg-label-{{ $leave->status == 'approved' ? 'success' : ($leave->status == 'rejected' ? 'danger' : 'warning') }}" id="leave-status-{{ $leave->id }}">
-                                {{ ucfirst($leave->status) }}
-                            </span>
-                        </td>
-                        <td>{{ $leave->admin_remarks ?? '-' }}</td>
                         @if(auth()->user()->can('approve leave requests') || auth()->user()->can('delete leave requests'))
                         <td>
                             <div class="dropdown">
                                 <button class="btn p-0 dropdown-toggle hide-arrow" type="button" data-bs-toggle="dropdown">
                                     <i class="bx bx-dots-vertical-rounded"></i>
                                 </button>
-                                <ul class="dropdown-menu dropdown-menu-end">
+                                <ul class="dropdown-menu">
                                     @can('approve leave requests')
                                     @if($leave->status == 'pending')
                                     <li>
@@ -85,6 +66,25 @@
                             </div>
                         </td>
                         @endif
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar avatar-sm me-3" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;">
+                                    <span class="avatar-initial rounded-circle bg-label-primary" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:600;">
+                                        {{ strtoupper(substr($leave->staff->full_name ?? '--', 0, 2)) }}
+                                    </span>
+                                </div>
+                                <span class="fw-semibold">{{ $leave->staff->full_name ?? 'N/A' }}</span>
+                            </div>
+                        </td>
+                        <td>{{ \Carbon\Carbon::parse($leave->start_date)->format('d M Y') }}</td>
+                        <td>{{ \Carbon\Carbon::parse($leave->end_date)->format('d M Y') }}</td>
+                        <td>{{ $leave->reason }}</td>
+                        <td>
+                            <span class="badge bg-label-{{ $leave->status == 'approved' ? 'success' : ($leave->status == 'rejected' ? 'danger' : 'warning') }}" id="leave-status-{{ $leave->id }}">
+                                {{ ucfirst($leave->status) }}
+                            </span>
+                        </td>
+                        <td>{{ $leave->admin_remarks ?? '-' }}</td>
                     </tr>
                     @empty
                     <tr>

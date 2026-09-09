@@ -106,6 +106,9 @@
                     <thead>
                         <tr>
                             <th>S. No.</th>
+                            @if(auth()->user()->can('view appointments') || auth()->user()->can('edit appointments') || auth()->user()->can('delete appointments'))
+                            <th class="text-nowrap" style="width: 80px;">Actions</th>
+                            @endif
                             <th>Appt No.</th>
                             <th>Client</th>
                             <th>Stylist</th>
@@ -113,15 +116,41 @@
                             <th>Date / Time</th>
                             <th>Status</th>
                             <th>Amount</th>
-                            @if(auth()->user()->can('view appointments') || auth()->user()->can('edit appointments') || auth()->user()->can('delete appointments'))
-                            <th>Actions</th>
-                            @endif
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($appointments as $index => $appointment)
                         <tr>
                             <td class="fw-semibold text-muted">{{ method_exists($appointments, 'firstItem') ? ($appointments->firstItem() + $index) : ($index + 1) }}</td>
+                            @if(auth()->user()->can('view appointments') || auth()->user()->can('edit appointments') || auth()->user()->can('delete appointments'))
+                            <td>
+                                <div class="dropdown">
+                                    <button class="btn p-0 dropdown-toggle hide-arrow" type="button" data-bs-toggle="dropdown" data-bs-boundary="window">
+                                        <i class="bx bx-dots-vertical-rounded"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        @can('view appointments')
+                                        <li><a class="dropdown-item view-appointment" href="javascript:void(0);" data-id="{{ $appointment->id }}"><i class="bx bx-show me-1"></i> View</a></li>
+                                        @endcan
+                                        @can('edit appointments')
+                                        <li><a class="dropdown-item" href="{{ route('admin.appointments.edit', $appointment->id) }}"><i class="bx bx-edit-alt me-1"></i> Edit</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item status-update text-warning" href="javascript:void(0);" data-id="{{ $appointment->id }}" data-status="pending"><i class="bx bx-time-five me-1"></i> Mark Pending</a></li>
+                                        <li><a class="dropdown-item status-update" href="javascript:void(0);" data-id="{{ $appointment->id }}" data-status="confirmed"><i class="bx bx-check-circle me-1"></i> Confirm</a></li>
+                                        <li><a class="dropdown-item status-update" href="javascript:void(0);" data-id="{{ $appointment->id }}" data-status="checked_in"><i class="bx bx-log-in me-1"></i> Check In</a></li>
+                                        <li><a class="dropdown-item status-update" href="javascript:void(0);" data-id="{{ $appointment->id }}" data-status="in_progress"><i class="bx bx-timer me-1"></i> In Progress</a></li>
+                                        <li><a class="dropdown-item status-update" href="javascript:void(0);" data-id="{{ $appointment->id }}" data-status="completed"><i class="bx bx-check me-1"></i> Complete</a></li>
+                                        <li><a class="dropdown-item status-update text-dark" href="javascript:void(0);" data-id="{{ $appointment->id }}" data-status="no_show"><i class="bx bx-user-x me-1"></i> Mark No Show</a></li>
+                                        <li><a class="dropdown-item status-update text-danger" href="javascript:void(0);" data-id="{{ $appointment->id }}" data-status="cancelled"><i class="bx bx-x-circle me-1"></i> Cancel</a></li>
+                                        @endcan
+                                        @can('delete appointments')
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item text-danger delete-appointment" href="javascript:void(0);" data-id="{{ $appointment->id }}"><i class="bx bx-trash me-1"></i> Delete</a></li>
+                                        @endcan
+                                    </ul>
+                                </div>
+                            </td>
+                            @endif
                             <td>
                                 <span class="fw-bold text-primary font-monospace">{{ $appointment->appointment_number ?? '#' . $appointment->id }}</span>
                             </td>
@@ -135,12 +164,12 @@
                                 @if($appointment->appointmentServices->count() > 0)
                                     @foreach($appointment->appointmentServices as $item)
                                         @php
-                                            $members = $item->staffMembers();
-                                            $names = $members->count() > 0 ? $members->pluck('full_name')->implode(', ') : ($item->staff->full_name ?? $item->staff->name ?? 'Unassigned');
+                                             $members = $item->staffMembers();
+                                             $names = $members->count() > 0 ? $members->pluck('full_name')->implode(', ') : ($item->staff->full_name ?? $item->staff->name ?? 'Unassigned');
                                         @endphp
                                         <div><small class="fw-semibold" title="{{ $names }}"><i class="bx bx-user me-1"></i>{{ $names }}</small></div>
                                     @endforeach
-                                @else
+                                 @else
                                     {{ $appointment->staff->full_name ?? $appointment->staff->name ?? 'N/A' }}
                                 @endif
                             </td>
@@ -225,35 +254,6 @@
                                     @endif
                                 @endif
                             </td>
-                            @if(auth()->user()->can('view appointments') || auth()->user()->can('edit appointments') || auth()->user()->can('delete appointments'))
-                            <td>
-                                <div class="dropdown">
-                                    <button class="btn p-0 dropdown-toggle hide-arrow" type="button" data-bs-toggle="dropdown" data-bs-boundary="window">
-                                        <i class="bx bx-dots-vertical-rounded"></i>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end">
-                                        @can('view appointments')
-                                        <li><a class="dropdown-item view-appointment" href="javascript:void(0);" data-id="{{ $appointment->id }}"><i class="bx bx-show me-1"></i> View</a></li>
-                                        @endcan
-                                        @can('edit appointments')
-                                        <li><a class="dropdown-item" href="{{ route('admin.appointments.edit', $appointment->id) }}"><i class="bx bx-edit-alt me-1"></i> Edit</a></li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item status-update text-warning" href="javascript:void(0);" data-id="{{ $appointment->id }}" data-status="pending"><i class="bx bx-time-five me-1"></i> Mark Pending</a></li>
-                                        <li><a class="dropdown-item status-update" href="javascript:void(0);" data-id="{{ $appointment->id }}" data-status="confirmed"><i class="bx bx-check-circle me-1"></i> Confirm</a></li>
-                                        <li><a class="dropdown-item status-update" href="javascript:void(0);" data-id="{{ $appointment->id }}" data-status="checked_in"><i class="bx bx-log-in me-1"></i> Check In</a></li>
-                                        <li><a class="dropdown-item status-update" href="javascript:void(0);" data-id="{{ $appointment->id }}" data-status="in_progress"><i class="bx bx-timer me-1"></i> In Progress</a></li>
-                                        <li><a class="dropdown-item status-update" href="javascript:void(0);" data-id="{{ $appointment->id }}" data-status="completed"><i class="bx bx-check me-1"></i> Complete</a></li>
-                                        <li><a class="dropdown-item status-update text-dark" href="javascript:void(0);" data-id="{{ $appointment->id }}" data-status="no_show"><i class="bx bx-user-x me-1"></i> Mark No Show</a></li>
-                                        <li><a class="dropdown-item status-update text-danger" href="javascript:void(0);" data-id="{{ $appointment->id }}" data-status="cancelled"><i class="bx bx-x-circle me-1"></i> Cancel</a></li>
-                                        @endcan
-                                        @can('delete appointments')
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item text-danger delete-appointment" href="javascript:void(0);" data-id="{{ $appointment->id }}"><i class="bx bx-trash me-1"></i> Delete</a></li>
-                                        @endcan
-                                    </ul>
-                                </div>
-                            </td>
-                            @endif
                         </tr>
                         @endforeach
                     </tbody>

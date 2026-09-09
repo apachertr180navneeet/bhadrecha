@@ -176,18 +176,23 @@
                             <table class="table table-hover">
                                 <thead class="table-light">
                                     <tr>
+                                        <th class="text-center text-nowrap" style="width: 70px;">Action</th>
                                         <th>Version</th>
                                         <th>Original File Name</th>
                                         <th>Size</th>
                                         <th>Uploaded By</th>
                                         <th>Changelog</th>
                                         <th>Date</th>
-                                        <th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach($document->versions as $ver)
                                     <tr class="{{ $ver->version_number == $document->version ? 'table-primary' : '' }}">
+                                        <td class="text-center text-nowrap">
+                                            <a href="{{ route('admin.documents.versions.download', $ver->id) }}" class="btn btn-icon btn-sm btn-outline-success" title="Download Version">
+                                                <i class="bx bx-download"></i>
+                                            </a>
+                                        </td>
                                         <td>
                                             <span class="badge bg-primary">v{{ $ver->version_number }}</span>
                                             @if($ver->version_number == $document->version)
@@ -199,11 +204,6 @@
                                         <td><small>{{ $ver->uploader?->full_name }}</small></td>
                                         <td><small class="text-muted">{{ Str::limit($ver->changelog ?? 'N/A', 30) }}</small></td>
                                         <td><small>{{ $ver->created_at->format('d M Y, h:i A') }}</small></td>
-                                        <td>
-                                            <a href="{{ route('admin.documents.versions.download', $ver->id) }}" class="btn btn-icon btn-sm btn-outline-success" title="Download Version">
-                                                <i class="bx bx-download"></i>
-                                            </a>
-                                        </td>
                                     </tr>
                                     @endforeach
                                 </tbody>

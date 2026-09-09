@@ -223,6 +223,7 @@
                         <table class="table table-hover align-middle table-sm-compact">
                             <thead class="table-light">
                                 <tr>
+                                    <th class="text-center" style="width: 70px;">Actions</th>
                                     <th>Fuel Company</th>
                                     <th>Fuel Pump</th>
                                     @if(request()->filled('date_from'))
@@ -233,12 +234,23 @@
                                     <th class="text-end">Driver Advance (+)</th>
                                     <th class="text-end">Payments Made (-)</th>
                                     <th class="text-end">Net Outstanding</th>
-                                    <th class="text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse($overviewData as $item)
                                 <tr>
+                                    <td class="text-center">
+                                        <div class="d-flex justify-content-center gap-1">
+                                            <button class="btn btn-sm btn-icon btn-outline-primary" onclick="viewLedgerForPump({{ $item['fuel_company_id'] }}, {{ $item['fuel_pump_id'] }})" title="View Ledger">
+                                                <i class="bx bx-book-open"></i>
+                                            </button>
+                                            @if(!request()->routeIs('admin.reports.*'))
+                                            <button class="btn btn-sm btn-icon btn-outline-success" onclick="recordPaymentForPump({{ $item['fuel_company_id'] }}, {{ $item['fuel_pump_id'] }})" title="Record Payment">
+                                                <i class="bx bx-credit-card"></i>
+                                            </button>
+                                            @endif
+                                        </div>
+                                    </td>
                                     <td class="fw-semibold text-dark">{{ $item['company_name'] }}</td>
                                     <td class="fw-semibold text-primary">{{ $item['pump_name'] }}</td>
                                     @if(request()->filled('date_from'))
@@ -253,22 +265,10 @@
                                             ₹{{ number_format($item['net_outstanding'], 2) }}
                                         </span>
                                     </td>
-                                    <td class="text-center">
-                                        <div class="d-flex justify-content-center gap-1">
-                                            <button class="btn btn-sm btn-icon btn-outline-primary" onclick="viewLedgerForPump({{ $item['fuel_company_id'] }}, {{ $item['fuel_pump_id'] }})" title="View Ledger">
-                                                <i class="bx bx-book-open"></i>
-                                            </button>
-                                            @if(!request()->routeIs('admin.reports.*'))
-                                            <button class="btn btn-sm btn-icon btn-outline-success" onclick="recordPaymentForPump({{ $item['fuel_company_id'] }}, {{ $item['fuel_pump_id'] }})" title="Record Payment">
-                                                <i class="bx bx-credit-card"></i>
-                                            </button>
-                                            @endif
-                                        </div>
-                                    </td>
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="8" class="text-center text-muted py-4">No pump outstandings found.</td>
+                                    <td colspan="9" class="text-center text-muted py-4">No pump outstandings found.</td>
                                 </tr>
                                 @endforelse
                             </tbody>
@@ -353,6 +353,9 @@
                         <table class="table table-hover align-middle table-sm">
                             <thead class="table-light">
                                 <tr>
+                                    @if(!request()->routeIs('admin.reports.*'))
+                                    <th class="text-center" style="width: 90px;">Actions</th>
+                                    @endif
                                     <th>Date</th>
                                     <th>Operating Company</th>
                                     <th>Fuel Company</th>
@@ -360,21 +363,11 @@
                                     <th>Method</th>
                                     <th class="text-end">Amount</th>
                                     <th>Remark</th>
-                                    @if(!request()->routeIs('admin.reports.*'))
-                                    <th class="text-center">Actions</th>
-                                    @endif
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse($payments as $p)
                                 <tr>
-                                    <td>{{ $p->date ? $p->date->format('d-m-Y') : '-' }}</td>
-                                    <td><span class="badge bg-label-info">{{ $p->company->name ?? '-' }}</span></td>
-                                    <td>{{ $p->fuelCompany->name ?? '-' }}</td>
-                                    <td class="fw-semibold text-primary">{{ $p->fuelPump->name ?? '-' }}</td>
-                                    <td><span class="badge bg-label-secondary">{{ $p->payment_method ?? 'Bank Transfer' }}</span></td>
-                                    <td class="text-end fw-bold text-success">₹{{ number_format($p->amount, 2) }}</td>
-                                    <td>{{ $p->remark ?? '-' }}</td>
                                     @if(!request()->routeIs('admin.reports.*'))
                                     <td class="text-center">
                                         <div class="d-flex justify-content-center gap-1">
@@ -391,6 +384,13 @@
                                         </div>
                                     </td>
                                     @endif
+                                    <td>{{ $p->date ? $p->date->format('d-m-Y') : '-' }}</td>
+                                    <td><span class="badge bg-label-info">{{ $p->company->name ?? '-' }}</span></td>
+                                    <td>{{ $p->fuelCompany->name ?? '-' }}</td>
+                                    <td class="fw-semibold text-primary">{{ $p->fuelPump->name ?? '-' }}</td>
+                                    <td><span class="badge bg-label-secondary">{{ $p->payment_method ?? 'Bank Transfer' }}</span></td>
+                                    <td class="text-end fw-bold text-success">₹{{ number_format($p->amount, 2) }}</td>
+                                    <td>{{ $p->remark ?? '-' }}</td>
                                 </tr>
                                 @empty
                                 <tr>

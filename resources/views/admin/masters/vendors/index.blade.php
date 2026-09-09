@@ -59,6 +59,7 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th class="text-center" style="width: 120px;">Action</th>
                         <th>Vendor Code</th>
                         <th>Name</th>
                         <th>Phone</th>
@@ -67,21 +68,12 @@
                         <th>Contact Person</th>
                         <th>City</th>
                         <th>Status</th>
-                        <th class="text-center">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($vendors as $index => $vendor)
                     <tr>
                         <td>{{ $vendors->firstItem() + $index }}</td>
-                        <td>{{ $vendor->vendor_code ?? '-' }}</td>
-                        <td><strong>{{ $vendor->name }}</strong></td>
-                        <td>{{ $vendor->phone ?? '-' }}</td>
-                        <td>{{ $vendor->email ?? '-' }}</td>
-                        <td>{{ $vendor->gstin ?? '-' }}</td>
-                        <td>{{ $vendor->contact_person ?? '-' }}</td>
-                        <td>{{ $vendor->city ?? '-' }}</td>
-                        <td><span class="badge bg-label-{{ $vendor->status == 'active' ? 'success' : 'danger' }}">{{ ucfirst($vendor->status) }}</span></td>
                         <td class="text-center text-nowrap">
                             @can('edit vendors')
                             <a href="{{ route('admin.masters.vendors.edit', $vendor->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
@@ -96,6 +88,14 @@
                             <button type="button" class="btn btn-sm btn-icon btn-outline-danger" title="Delete" onclick="handleDelete({{ $vendor->id }}, '{{ $vendor->name }}')"><i class="bx bx-trash"></i></button>
                             @endcan
                         </td>
+                        <td>{{ $vendor->vendor_code ?? '-' }}</td>
+                        <td><strong>{{ $vendor->name }}</strong></td>
+                        <td>{{ $vendor->phone ?? '-' }}</td>
+                        <td>{{ $vendor->email ?? '-' }}</td>
+                        <td>{{ $vendor->gstin ?? '-' }}</td>
+                        <td>{{ $vendor->contact_person ?? '-' }}</td>
+                        <td>{{ $vendor->city ?? '-' }}</td>
+                        <td><span class="badge bg-label-{{ $vendor->status == 'active' ? 'success' : 'danger' }}">{{ ucfirst($vendor->status) }}</span></td>
                     </tr>
                     @empty
                     <tr><td colspan="10" class="text-center py-4 text-muted">No vendors found</td></tr>

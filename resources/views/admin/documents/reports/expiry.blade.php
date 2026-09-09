@@ -25,19 +25,27 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th class="text-center text-nowrap" style="width: 100px;">Actions</th>
                         <th>Document Number</th>
                         <th>Title</th>
                         <th>Category</th>
                         <th>Company</th>
                         <th>Expiry Date</th>
                         <th>Status</th>
-                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($documents as $index => $doc)
                     <tr>
                         <td>{{ $index + 1 }}</td>
+                        <td class="text-center text-nowrap">
+                            <a href="{{ route('admin.documents.show', $doc->id) }}" class="btn btn-icon btn-sm btn-outline-primary" title="View Document">
+                                <i class="bx bx-show"></i>
+                            </a>
+                            <a href="{{ route('admin.documents.download', $doc->id) }}" class="btn btn-icon btn-sm btn-outline-success" title="Download">
+                                <i class="bx bx-download"></i>
+                            </a>
+                        </td>
                         <td><strong class="text-primary">{{ $doc->document_number }}</strong></td>
                         <td>{{ $doc->name }}</td>
                         <td><span class="badge bg-label-info">{{ $doc->category?->name }}</span></td>
@@ -53,14 +61,6 @@
                         </td>
                         <td>
                             <span class="badge bg-label-secondary">{{ ucfirst($doc->status) }}</span>
-                        </td>
-                        <td>
-                            <a href="{{ route('admin.documents.show', $doc->id) }}" class="btn btn-icon btn-sm btn-outline-primary" title="View Document">
-                                <i class="bx bx-show"></i>
-                            </a>
-                            <a href="{{ route('admin.documents.download', $doc->id) }}" class="btn btn-icon btn-sm btn-outline-success" title="Download">
-                                <i class="bx bx-download"></i>
-                            </a>
                         </td>
                     </tr>
                     @empty

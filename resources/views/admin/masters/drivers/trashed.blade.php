@@ -24,12 +24,16 @@
         <div class="table-responsive text-nowrap">
             <table class="table table-hover">
                 <thead class="table-light">
-                    <tr><th>#</th><th>Driver ID</th><th>Name</th><th>Phone</th><th>License Number</th><th>License Expiry</th><th>City</th><th class="text-nowrap">Deleted At</th><th class="text-nowrap">Actions</th></tr>
+                    <tr><th>#</th><th class="text-center text-nowrap" style="width: 100px;">Actions</th><th>Driver ID</th><th>Name</th><th>Phone</th><th>License Number</th><th>License Expiry</th><th>City</th><th class="text-nowrap">Deleted At</th></tr>
                 </thead>
                 <tbody>
                     @forelse($drivers as $index => $driver)
                     <tr>
                         <td>{{ $drivers->firstItem() + $index }}</td>
+                        <td class="text-center text-nowrap">
+                            <button type="button" class="btn btn-sm btn-icon btn-outline-success" onclick="handleRestore({{ $driver->id }}, '{{ $driver->name }}')" title="Restore"><i class="bx bx-revision"></i></button>
+                            <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleForceDelete({{ $driver->id }}, '{{ $driver->name }}')" title="Permanently Delete"><i class="bx bx-trash"></i></button>
+                        </td>
                         <td>{{ $driver->driver_id ?? '-' }}</td>
                         <td><strong>{{ $driver->name }}</strong></td>
                         <td>{{ $driver->phone }}</td>
@@ -37,10 +41,6 @@
                         <td>{{ $driver->license_expiry ? \Carbon\Carbon::parse($driver->license_expiry)->format('d-m-Y') : '-' }}</td>
                         <td>{{ $driver->city ?? '-' }}</td>
                         <td>{{ $driver->deleted_at->format('d M Y, h:i A') }}</td>
-                        <td class="text-center text-nowrap">
-                            <button type="button" class="btn btn-sm btn-icon btn-outline-success" onclick="handleRestore({{ $driver->id }}, '{{ $driver->name }}')" title="Restore"><i class="bx bx-revision"></i></button>
-                            <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleForceDelete({{ $driver->id }}, '{{ $driver->name }}')" title="Permanently Delete"><i class="bx bx-trash"></i></button>
-                        </td>
                     </tr>
                     @empty
                     <tr><td colspan="9" class="text-center py-4 text-muted">No drivers in recycle bin</td></tr>

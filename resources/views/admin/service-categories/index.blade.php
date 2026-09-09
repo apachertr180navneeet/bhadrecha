@@ -20,39 +20,25 @@
 <table class="table table-hover" id="categoriesTable">
                     <thead>
                         <tr>
+                            @if(auth()->user()->can('edit service categories') || auth()->user()->can('delete service categories'))
+                            <th class="text-center text-nowrap" style="width: 80px;">Actions</th>
+                            @endif
                             <th>Name</th>
                             <th>Description</th>
                             <th>Status</th>
                             <th>Services Count</th>
-                            @if(auth()->user()->can('edit service categories') || auth()->user()->can('delete service categories'))
-                            <th>Actions</th>
-                            @endif
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($categories as $category)
                         <tr>
-                            <td class="fw-semibold">{{ $category->name }}</td>
-                            <td>{{ Str::limit($category->description, 50) }}</td>
-                            <td>
-                                @can('edit service categories')
-                                <button class="btn btn-sm toggle-status {{ $category->status ? 'btn-success' : 'btn-secondary' }}" data-url="{{ route('admin.service-categories.toggle-status', $category->id) }}" data-status="{{ $category->status }}">
-                                    {{ $category->status ? 'Active' : 'Inactive' }}
-                                </button>
-                                @else
-                                <span class="badge {{ $category->status ? 'bg-label-success' : 'bg-label-secondary' }}">
-                                    {{ $category->status ? 'Active' : 'Inactive' }}
-                                </span>
-                                @endcan
-                            </td>
-                            <td><span class="badge bg-label-primary">{{ $category->services_count ?? 0 }}</span></td>
                             @if(auth()->user()->can('edit service categories') || auth()->user()->can('delete service categories'))
-                            <td>
+                            <td class="text-center text-nowrap">
                                 <div class="dropdown">
-                                    <button class="btn p-0 dropdown-toggle hide-arrow" type="button" data-bs-toggle="dropdown">
+                                    <button class="btn p-0 dropdown-toggle hide-arrow" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport">
                                         <i class="bx bx-dots-vertical-rounded"></i>
                                     </button>
-                                    <ul class="dropdown-menu dropdown-menu-end">
+                                    <ul class="dropdown-menu">
                                         @can('edit service categories')
                                         <li>
                                             <a class="dropdown-item" href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editCategoryModal"
@@ -75,6 +61,20 @@
                                 </div>
                             </td>
                             @endif
+                            <td class="fw-semibold">{{ $category->name }}</td>
+                            <td>{{ Str::limit($category->description, 50) }}</td>
+                            <td>
+                                @can('edit service categories')
+                                <button class="btn btn-sm toggle-status {{ $category->status ? 'btn-success' : 'btn-secondary' }}" data-url="{{ route('admin.service-categories.toggle-status', $category->id) }}" data-status="{{ $category->status }}">
+                                    {{ $category->status ? 'Active' : 'Inactive' }}
+                                </button>
+                                @else
+                                <span class="badge {{ $category->status ? 'bg-label-success' : 'bg-label-secondary' }}">
+                                    {{ $category->status ? 'Active' : 'Inactive' }}
+                                </span>
+                                @endcan
+                            </td>
+                            <td><span class="badge bg-label-primary">{{ $category->services_count ?? 0 }}</span></td>
                         </tr>
                         @endforeach
                     </tbody>

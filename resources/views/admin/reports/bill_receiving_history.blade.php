@@ -89,6 +89,9 @@
             <table class="table table-hover table-sm">
                 <thead class="table-light">
                     <tr>
+                        @if(auth()->user()->can('edit sales ledger') || auth()->user()->isSuperAdmin())
+                        <th class="text-center" style="width: 110px;">Action</th>
+                        @endif
                         <th>Date</th>
                         <th>Bill Number</th>
                         <th>Bill To</th>
@@ -99,9 +102,6 @@
                         <th class="text-end">TDS</th>
                         <th class="text-end">Deduction</th>
                         <th>Deduction Reason</th>
-                        @if(auth()->user()->can('edit sales ledger') || auth()->user()->isSuperAdmin())
-                        <th class="text-center">Action</th>
-                        @endif
                     </tr>
                 </thead>
                 <tbody class="table-border-bottom-0">
@@ -110,16 +110,6 @@
                             $billNo = !empty($receiving->invoice?->bill_number) ? $receiving->invoice?->bill_number : ($receiving->invoice?->invoice_no ?? ('#'.$receiving->invoice_id));
                         @endphp
                         <tr>
-                            <td>{{ $receiving->date?->format('d-m-Y') }}</td>
-                            <td><strong class="text-primary">{{ $billNo }}</strong></td>
-                            <td>{{ $receiving->invoice?->consignor_name }}</td>
-                            <td>{{ $receiving->company?->name ?? 'N/A' }}</td>
-                            <td>{{ $receiving->branch?->name ?? 'N/A' }}</td>
-                            <td class="text-end text-success fw-bold">₹ {{ number_format($receiving->receiving_amount, 2) }}</td>
-                            <td class="text-end text-success fw-bold">₹ {{ number_format($receiving->receiving_gst, 2) }}</td>
-                            <td class="text-end text-danger">₹ {{ number_format($receiving->tds, 2) }}</td>
-                            <td class="text-end text-danger">₹ {{ number_format($receiving->deduction, 2) }}</td>
-                            <td>{{ $receiving->deduction_reason ?? '-' }}</td>
                             @if(auth()->user()->can('edit sales ledger') || auth()->user()->isSuperAdmin())
                             <td class="text-center">
                                 <div class="btn-group btn-group-sm">
@@ -136,6 +126,16 @@
                                 </div>
                             </td>
                             @endif
+                            <td>{{ $receiving->date?->format('d-m-Y') }}</td>
+                            <td><strong class="text-primary">{{ $billNo }}</strong></td>
+                            <td>{{ $receiving->invoice?->consignor_name }}</td>
+                            <td>{{ $receiving->company?->name ?? 'N/A' }}</td>
+                            <td>{{ $receiving->branch?->name ?? 'N/A' }}</td>
+                            <td class="text-end text-success fw-bold">₹ {{ number_format($receiving->receiving_amount, 2) }}</td>
+                            <td class="text-end text-success fw-bold">₹ {{ number_format($receiving->receiving_gst, 2) }}</td>
+                            <td class="text-end text-danger">₹ {{ number_format($receiving->tds, 2) }}</td>
+                            <td class="text-end text-danger">₹ {{ number_format($receiving->deduction, 2) }}</td>
+                            <td>{{ $receiving->deduction_reason ?? '-' }}</td>
                         </tr>
                     @empty
                         <tr>

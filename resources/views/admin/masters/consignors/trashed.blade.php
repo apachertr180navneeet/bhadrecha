@@ -24,12 +24,16 @@
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead class="table-light">
-                    <tr><th>#</th><th>Name</th><th>Phone</th><th>Email</th><th>GSTIN</th><th>City</th>@if(auth()->user()->isSuperAdmin())<th>Company</th><th>Branch</th>@endif<th class="text-nowrap">Deleted At</th><th class="text-nowrap">Actions</th></tr>
+                    <tr><th>#</th><th class="text-center text-nowrap" style="width: 100px;">Actions</th><th>Name</th><th>Phone</th><th>Email</th><th>GSTIN</th><th>City</th>@if(auth()->user()->isSuperAdmin())<th>Company</th><th>Branch</th>@endif<th class="text-nowrap">Deleted At</th></tr>
                 </thead>
                 <tbody>
                     @forelse($consignors as $index => $consignor)
                     <tr>
                         <td class="text-nowrap">{{ $consignors->firstItem() + $index }}</td>
+                        <td class="text-center text-nowrap">
+                            <button type="button" class="btn btn-sm btn-icon btn-outline-success" onclick="handleRestore({{ $consignor->id }}, '{{ $consignor->name }}')" title="Restore"><i class="bx bx-revision"></i></button>
+                            <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleForceDelete({{ $consignor->id }}, '{{ $consignor->name }}')" title="Permanently Delete"><i class="bx bx-trash"></i></button>
+                        </td>
                         <td class="text-nowrap"><strong>{{ $consignor->name }}</strong></td>
                         <td class="text-nowrap">{{ $consignor->phone }}</td>
                         <td style="max-width: 200px">{{ $consignor->email ?? '-' }}</td>
@@ -40,10 +44,6 @@
                         <td>{{ $consignor->branch->name ?? '-' }}</td>
                         @endif
                         <td class="text-nowrap">{{ $consignor->deleted_at->format('d M Y, h:i A') }}</td>
-                        <td class="text-center text-nowrap">
-                            <button type="button" class="btn btn-sm btn-icon btn-outline-success" onclick="handleRestore({{ $consignor->id }}, '{{ $consignor->name }}')" title="Restore"><i class="bx bx-revision"></i></button>
-                            <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleForceDelete({{ $consignor->id }}, '{{ $consignor->name }}')" title="Permanently Delete"><i class="bx bx-trash"></i></button>
-                        </td>
                     </tr>
                     @empty
                     <tr><td colspan="{{ auth()->user()->isSuperAdmin() ? 11 : 9 }}" class="text-center py-4 text-muted">No consignors in recycle bin</td></tr>

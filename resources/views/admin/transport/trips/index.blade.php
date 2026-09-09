@@ -97,6 +97,7 @@
             <table class="table table-hover">
                 <thead class="table-light">
                     <tr>
+                        <th style="width: 70px;">Actions</th>
                         <th>LR No</th>
                         <th>
                             <a href="{{ request()->fullUrlWithQuery(['date_sort' => request('date_sort') === 'oldest' ? 'latest' : 'oldest']) }}" class="text-dark d-flex align-items-center gap-1 text-decoration-none">
@@ -110,12 +111,38 @@
                         <th>Weight</th>
                         <th>Amount</th>
                         <th>Status</th>
-                        <th class="text-end">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($trips as $trip)
                     <tr>
+                        <td>
+                            <div class="d-inline-flex gap-1">
+                                @if($trip->trip)
+                                    @can('edit trips')
+                                    <a href="{{ route('admin.transport.trips.edit', $trip->trip->id) }}" class="btn btn-sm btn-icon btn-outline-warning" title="Edit Trip">
+                                        <i class="bx bx-edit"></i>
+                                    </a>
+                                    @endcan
+                                @else
+                                    @can('create trips')
+                                    <a href="{{ route('admin.transport.trips.create', $trip->id) }}" class="btn btn-sm btn-icon btn-outline-success" title="Add Trip">
+                                        <i class="bx bx-plus-circle"></i>
+                                    </a>
+                                    @endcan
+                                @endif
+                                @can('view bulties')
+                                <a href="{{ route('admin.transport.bulties.show', $trip->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="View">
+                                    <i class="bx bx-show"></i>
+                                </a>
+                                @endcan
+                                @if($trip->material_document)
+                                <a href="{{ $trip->material_document }}" target="_blank" class="btn btn-sm btn-icon btn-outline-info" title="View Document">
+                                    <i class="bx bx-file"></i>
+                                </a>
+                                @endif
+                            </div>
+                        </td>
                         <td class="fw-semibold">{{ $trip->lr_no }}</td>
                         <td>{{ $trip->lr_date ? date('d M Y', strtotime($trip->lr_date)) : '-' }}</td>
                         <td><strong>{{ $trip->vehicle->vehicle_number ?? '-' }}</strong></td>
@@ -148,33 +175,6 @@
                             @else
                             <span class="badge bg-label-warning">Pending</span>
                             @endif
-                        </td>
-                        <td class="text-end">
-                            <div class="d-inline-flex gap-1">
-                                @if($trip->trip)
-                                    @can('edit trips')
-                                    <a href="{{ route('admin.transport.trips.edit', $trip->trip->id) }}" class="btn btn-sm btn-icon btn-outline-warning" title="Edit Trip">
-                                        <i class="bx bx-edit"></i>
-                                    </a>
-                                    @endcan
-                                @else
-                                    @can('create trips')
-                                    <a href="{{ route('admin.transport.trips.create', $trip->id) }}" class="btn btn-sm btn-icon btn-outline-success" title="Add Trip">
-                                        <i class="bx bx-plus-circle"></i>
-                                    </a>
-                                    @endcan
-                                @endif
-                                @can('view bulties')
-                                <a href="{{ route('admin.transport.bulties.show', $trip->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="View">
-                                    <i class="bx bx-show"></i>
-                                </a>
-                                @endcan
-                                @if($trip->material_document)
-                                <a href="{{ $trip->material_document }}" target="_blank" class="btn btn-sm btn-icon btn-outline-info" title="View Document">
-                                    <i class="bx bx-file"></i>
-                                </a>
-                                @endif
-                            </div>
                         </td>
                     </tr>
                     @empty

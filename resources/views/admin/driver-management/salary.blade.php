@@ -85,27 +85,27 @@
             <table class="table table-hover mb-0">
                 <thead class="table-light">
                     <tr>
+                        <th class="text-center text-nowrap" style="width: 80px;">Action</th>
                         <th>Driver</th>
                         <th>Driver ID</th>
                         <th>Phone</th>
                         <th class="text-end">Salary (₹)</th>
                         <th>Effective From</th>
                         <th>Effective To</th>
-                        <th class="text-center">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($salaries as $salary)
                     <tr>
+                        <td class="text-center text-nowrap">
+                            <a href="{{ route('admin.driver-management.salary.edit', $salary) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
+                        </td>
                         <td>{{ $salary->driver?->name ?? '-' }}</td>
                         <td>{{ $salary->driver?->driver_id ?? '-' }}</td>
                         <td>{{ $salary->driver?->phone ?? '-' }}</td>
                         <td class="text-end">{{ number_format($salary->salary_amount, 2) }}</td>
                         <td>{{ $salary->effective_from->format('d-m-Y') }}</td>
                         <td>{{ $salary->effective_to ? $salary->effective_to->format('d-m-Y') : '-' }}</td>
-                        <td class="text-center">
-                            <a href="{{ route('admin.driver-management.salary.edit', $salary) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
-                        </td>
                     </tr>
                     @empty
                     <tr>

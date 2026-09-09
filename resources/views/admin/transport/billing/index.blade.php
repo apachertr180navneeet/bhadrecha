@@ -77,6 +77,7 @@
                     <thead class="table-dark">
                         <tr>
                             <th><input type="checkbox" id="selectAll"></th>
+                            <th style="width: 50px;">Action</th>
                             <th>LR No</th>
                             <th>
                                 <a href="{{ request()->fullUrlWithQuery(['date_sort' => request('date_sort') === 'oldest' ? 'latest' : 'oldest']) }}" class="text-white text-decoration-none d-inline-flex align-items-center gap-1">
@@ -92,13 +93,17 @@
                             <th>GST (₹)</th>
                             <th>Other (₹)</th>
                             <th>Total (₹)</th>
-                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($bulties as $bulty)
                         <tr>
                             <td><input type="checkbox" class="bulty-checkbox" value="{{ $bulty->id }}"></td>
+                            <td>
+                                <a href="{{ route('admin.transport.bulties.show', $bulty->id) }}" class="btn btn-sm btn-outline-primary" title="View">
+                                    <i class="bx bx-show"></i>
+                                </a>
+                            </td>
                             <td><strong>{{ $bulty->lr_no }}</strong></td>
                             <td>{{ $bulty->lr_date->format('d M Y') }}</td>
                             <td>{{ $bulty->consignor->name ?? '-' }}</td>
@@ -113,11 +118,6 @@
                             <td class="text-end">{{ number_format($bulty->gst_amount, 2) }}</td>
                             <td class="text-end">{{ number_format($bulty->other_charges, 2) }}</td>
                             <td class="text-end"><strong>{{ number_format($bulty->total_amount, 2) }}</strong></td>
-                            <td>
-                                <a href="{{ route('admin.transport.bulties.show', $bulty->id) }}" class="btn btn-sm btn-outline-primary" title="View">
-                                    <i class="bx bx-show"></i>
-                                </a>
-                            </td>
                         </tr>
                         @empty
                         <tr>

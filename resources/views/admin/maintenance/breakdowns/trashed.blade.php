@@ -28,21 +28,17 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th class="text-center text-nowrap" style="width: 100px;">Action</th>
                         <th>Vehicle</th>
                         <th>Issue Type</th>
                         <th>Location</th>
                         <th>Deleted At</th>
-                        <th class="text-center">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($breakdowns as $breakdown)
                     <tr>
                         <td>{{ $loop->iteration }}</td>
-                        <td>{{ $breakdown->vehicle?->vehicle_number ?? 'N/A' }}</td>
-                        <td>{{ $breakdown->issue_type }}</td>
-                        <td class="text-truncate" style="max-width:200px">{{ $breakdown->location }}</td>
-                        <td>{{ $breakdown->deleted_at->format('d-m-Y h:i A') }}</td>
                         <td class="text-center text-nowrap">
                             <form method="POST" action="{{ route('admin.maintenance.breakdowns.restore', $breakdown->id) }}" class="d-inline">
                                 @csrf
@@ -53,6 +49,10 @@
                                 <button type="submit" class="btn btn-sm btn-icon btn-outline-danger" title="Delete Permanently"><i class="bx bx-trash"></i></button>
                             </form>
                         </td>
+                        <td>{{ $breakdown->vehicle?->vehicle_number ?? 'N/A' }}</td>
+                        <td>{{ $breakdown->issue_type }}</td>
+                        <td class="text-truncate" style="max-width:200px">{{ $breakdown->location }}</td>
+                        <td>{{ $breakdown->deleted_at->format('d-m-Y h:i A') }}</td>
                     </tr>
                     @empty
                     <tr>

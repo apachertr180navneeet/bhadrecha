@@ -51,6 +51,7 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <th class="text-center text-nowrap" style="width: 120px;">Actions</th>
                         <th>Fuel Company</th>
                         <th>Fuel Pump Name</th>
                         <th>Status</th>
@@ -58,20 +59,12 @@
                         <th>Owner Name</th>
                         <th>Owner Mobile</th>
                         <th>Address</th>
-                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($fuelPumps as $key => $fuelPump)
                     <tr>
                         <td>{{ ($fuelPumps->currentPage() - 1) * $fuelPumps->perPage() + $key + 1 }}</td>
-                        <td>{{ $fuelPump->fuelCompany->name ?? '-' }}</td>
-                        <td class="fw-semibold">{{ $fuelPump->name }}</td>
-                        <td><span class="badge bg-label-{{ $fuelPump->status == 'active' ? 'success' : 'danger' }}">{{ ucfirst($fuelPump->status) }}</span></td>
-                        <td>{{ $fuelPump->number ?? '-' }}</td>
-                        <td>{{ $fuelPump->owner_name ?? '-' }}</td>
-                        <td>{{ $fuelPump->owner_mobile ?? '-' }}</td>
-                        <td>{{ \Str::limit($fuelPump->address, 40) ?? '-' }}</td>
                         <td class="text-center text-nowrap">
                             <a href="{{ route('admin.masters.fuel-pumps.edit', $fuelPump->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
                             <form action="{{ route('admin.masters.fuel-pumps.toggle-status', $fuelPump->id) }}" method="POST" class="d-inline">@csrf
@@ -79,6 +72,13 @@
                             </form>
                             <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleDelete({{ $fuelPump->id }}, '{{ $fuelPump->name }}')" title="Delete"><i class="bx bx-trash"></i></button>
                         </td>
+                        <td>{{ $fuelPump->fuelCompany->name ?? '-' }}</td>
+                        <td class="fw-semibold">{{ $fuelPump->name }}</td>
+                        <td><span class="badge bg-label-{{ $fuelPump->status == 'active' ? 'success' : 'danger' }}">{{ ucfirst($fuelPump->status) }}</span></td>
+                        <td>{{ $fuelPump->number ?? '-' }}</td>
+                        <td>{{ $fuelPump->owner_name ?? '-' }}</td>
+                        <td>{{ $fuelPump->owner_mobile ?? '-' }}</td>
+                        <td>{{ \Str::limit($fuelPump->address, 40) ?? '-' }}</td>
                     </tr>
                     @empty
                     <tr>
