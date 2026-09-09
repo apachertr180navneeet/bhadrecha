@@ -63,6 +63,13 @@
                         <input type="date" max="9999-12-31" name="date_to" class="form-control" value="{{ request('date_to') }}">
                     </div>
                     <div class="col-auto">
+                        <label class="form-label">Date Sort</label>
+                        <select name="date_sort" class="form-select" onchange="this.form.submit()">
+                            <option value="latest" {{ request('date_sort', 'latest') == 'latest' ? 'selected' : '' }}>Latest to Oldest</option>
+                            <option value="oldest" {{ request('date_sort') == 'oldest' ? 'selected' : '' }}>Oldest to Latest</option>
+                        </select>
+                    </div>
+                    <div class="col-auto">
                         <label class="form-label">&nbsp;</label>
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-primary"><i class="bx bx-filter me-1"></i> Filter</button>
@@ -107,7 +114,12 @@
                 <table class="table table-hover table-sm">
                     <thead class="table-light">
                         <tr>
-                            <th>Date</th>
+                            <th>
+                                <a href="{{ request()->fullUrlWithQuery(['date_sort' => request('date_sort') === 'oldest' ? 'latest' : 'oldest']) }}" class="text-dark text-decoration-none d-inline-flex align-items-center gap-1">
+                                    Date
+                                    <i class="bx {{ request('date_sort') === 'oldest' ? 'bx-sort-up text-primary' : 'bx-sort-down text-primary' }}"></i>
+                                </a>
+                            </th>
                             <th>Vehicle</th>
                             <th>Company</th>
                             <th>Payment Type</th>

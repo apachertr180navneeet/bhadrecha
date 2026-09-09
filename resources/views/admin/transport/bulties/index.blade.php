@@ -44,9 +44,16 @@
 
                 </div>
                 <div class="col-md-2">
+                    <select name="date_sort" class="form-select" onchange="this.form.submit()">
+                        <option value="latest" {{ request('date_sort', 'latest') == 'latest' ? 'selected' : '' }}>Latest to Oldest</option>
+                        <option value="oldest" {{ request('date_sort') == 'oldest' ? 'selected' : '' }}>Oldest to Latest</option>
+                    </select>
+                </div>
+
+                <div class="col-md-1">
                     <button type="submit" class="btn btn-primary w-100">Filter</button>
                 </div>
-                @if(request()->filled('search') || request()->filled('from_date') || request()->filled('to_date'))
+                @if(request()->filled('search') || request()->filled('from_date') || request()->filled('to_date') || request('date_sort') === 'oldest')
                 <div class="col-md-2">
                     <a href="{{ route('admin.transport.bulties.index') }}" class="btn btn-outline-secondary w-100">Clear</a>
                 </div>
@@ -111,7 +118,11 @@
                 <thead class="table-light">
                     <tr>
                         <th>LR No</th>
-                        <th>Date</th>
+                        <th>
+                            <a href="{{ request()->fullUrlWithQuery(['date_sort' => request('date_sort') === 'oldest' ? 'latest' : 'oldest']) }}" class="text-dark d-flex align-items-center gap-1 text-decoration-none">
+                                Date <i class="bx {{ request('date_sort') === 'oldest' ? 'bx-sort-up text-primary' : 'bx-sort-down text-primary' }}"></i>
+                            </a>
+                        </th>
                         <th>Truck No</th>
                         <th>Company</th>
                         <th>Branch</th>

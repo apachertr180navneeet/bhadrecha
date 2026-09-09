@@ -63,10 +63,10 @@
     <div class="card mb-4">
         <div class="card-body">
             <form method="GET" action="{{ route('admin.transport.trips.index') }}" class="row g-3">
-                <div class="col-md-5">
+                <div class="col-md-4">
                     <input type="text" name="search" class="form-control" placeholder="Search LR No, Truck No, Consignor or Consignee..." value="{{ request('search') }}">
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <select name="status" class="form-select">
                         <option value="">All Statuses</option>
                         <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
@@ -75,9 +75,15 @@
                     </select>
                 </div>
                 <div class="col-md-2">
+                    <select name="date_sort" class="form-select" onchange="this.form.submit()">
+                        <option value="latest" {{ request('date_sort', 'latest') == 'latest' ? 'selected' : '' }}>Latest to Oldest</option>
+                        <option value="oldest" {{ request('date_sort') == 'oldest' ? 'selected' : '' }}>Oldest to Latest</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
                     <button type="submit" class="btn btn-primary w-100">Filter</button>
                 </div>
-                @if(request()->filled('search') || request()->filled('status'))
+                @if(request()->filled('search') || request()->filled('status') || request('date_sort') === 'oldest')
                 <div class="col-md-2">
                     <a href="{{ route('admin.transport.trips.index') }}" class="btn btn-outline-secondary w-100">Clear</a>
                 </div>
@@ -92,7 +98,11 @@
                 <thead class="table-light">
                     <tr>
                         <th>LR No</th>
-                        <th>Date</th>
+                        <th>
+                            <a href="{{ request()->fullUrlWithQuery(['date_sort' => request('date_sort') === 'oldest' ? 'latest' : 'oldest']) }}" class="text-dark d-flex align-items-center gap-1 text-decoration-none">
+                                Date <i class="bx {{ request('date_sort') === 'oldest' ? 'bx-sort-up text-primary' : 'bx-sort-down text-primary' }}"></i>
+                            </a>
+                        </th>
                         <th>Truck No</th>
                         <th>Consignor</th>
                         <th>Consignee</th>

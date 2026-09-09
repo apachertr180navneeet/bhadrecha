@@ -48,10 +48,16 @@
                 <div class="col-md-2">
                     <input type="date" name="to_date" class="form-control" value="{{ request('to_date') }}" placeholder="To Date">
                 </div>
+                <div class="col-md-2">
+                    <select name="date_sort" class="form-select" onchange="this.form.submit()">
+                        <option value="latest" {{ request('date_sort', 'latest') == 'latest' ? 'selected' : '' }}>Latest to Oldest</option>
+                        <option value="oldest" {{ request('date_sort') == 'oldest' ? 'selected' : '' }}>Oldest to Latest</option>
+                    </select>
+                </div>
                 <div class="col-md-1">
                     <button type="submit" class="btn btn-primary w-100">Filter</button>
                 </div>
-                @if(request()->filled('search') || request()->filled('consignor_id') || request()->filled('consignee_id') || request()->filled('from_date') || request()->filled('to_date'))
+                @if(request()->filled('search') || request()->filled('consignor_id') || request()->filled('consignee_id') || request()->filled('from_date') || request()->filled('to_date') || request('date_sort') === 'oldest')
                 <div class="col-md-12 text-end">
                     <a href="{{ route('admin.transport.toll-bills.index') }}" class="btn btn-sm btn-outline-secondary">Clear Filters</a>
                 </div>
@@ -68,7 +74,12 @@
                     <thead class="table-dark">
                         <tr>
                             <th>Invoice No</th>
-                            <th>Date</th>
+                            <th>
+                                <a href="{{ request()->fullUrlWithQuery(['date_sort' => request('date_sort') === 'oldest' ? 'latest' : 'oldest']) }}" class="text-white text-decoration-none d-inline-flex align-items-center gap-1">
+                                    Date
+                                    <i class="bx {{ request('date_sort') === 'oldest' ? 'bx-sort-up text-warning' : 'bx-sort-down text-warning' }}"></i>
+                                </a>
+                            </th>
                             <th>Consignor / Party</th>
                             <th>Consignee</th>
                             <th class="text-end">Toll Amount (₹)</th>

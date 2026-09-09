@@ -38,7 +38,11 @@ class BiltyAdvanceDetailController extends Controller
         }
 
         $totalAdvance = (clone $query)->sum('advance_amount');
-        $records = (clone $query)->orderBy('date', 'desc')->orderBy('id', 'desc')->paginate(20)->appends($request->all());
+        $dateSort = $request->get('date_sort', 'latest');
+        $records = (clone $query)->orderBy('date', $dateSort === 'oldest' ? 'asc' : 'desc')
+            ->orderBy('id', $dateSort === 'oldest' ? 'asc' : 'desc')
+            ->paginate(20)
+            ->withQueryString();
 
         $editRecord = null;
         if ($request->filled('edit')) {
@@ -162,7 +166,10 @@ class BiltyAdvanceDetailController extends Controller
             $query->where('branch_id', $request->branch_id);
         }
 
-        $records = $query->orderBy('date', 'desc')->orderBy('id', 'desc')->get();
+        $dateSort = $request->get('date_sort', 'latest');
+        $records = $query->orderBy('date', $dateSort === 'oldest' ? 'asc' : 'desc')
+            ->orderBy('id', $dateSort === 'oldest' ? 'asc' : 'desc')
+            ->get();
 
         $headings = [
             'S.No.',

@@ -51,11 +51,18 @@ class BillingController extends Controller
             $query->whereDate('lr_date', '<=', $request->to_date);
         }
 
-        $bulties = $query->orderBy('lr_date', 'desc')->paginate(15)->withQueryString();
+        $dateSort = $request->get('date_sort', 'latest');
+        if ($dateSort === 'oldest') {
+            $query->orderBy('lr_date', 'asc')->orderBy('id', 'asc');
+        } else {
+            $query->orderBy('lr_date', 'desc')->orderBy('id', 'desc');
+        }
+
+        $bulties = $query->paginate(15)->withQueryString();
 
         $consignors = \App\Models\Consignor::where('status', 'active')->orderBy('name')->get(['id', 'name', 'phone']);
 
-        return view('admin.transport.billing.index', compact('bulties', 'consignors'));
+        return view('admin.transport.billing.index', compact('bulties', 'consignors', 'dateSort'));
     }
 
     public function create(Request $request)
@@ -424,11 +431,18 @@ class BillingController extends Controller
             $query->whereDate('invoice_date', '<=', $request->to_date);
         }
 
-        $invoices = $query->orderBy('invoice_date', 'desc')->paginate(15)->withQueryString();
+        $dateSort = $request->get('date_sort', 'latest');
+        if ($dateSort === 'oldest') {
+            $query->orderBy('invoice_date', 'asc')->orderBy('id', 'asc');
+        } else {
+            $query->orderBy('invoice_date', 'desc')->orderBy('id', 'desc');
+        }
+
+        $invoices = $query->paginate(15)->withQueryString();
         $consignors = Consignor::where('status', 'active')->orderBy('name')->get(['id', 'name', 'phone']);
         $consignees = Consignee::where('status', 'active')->orderBy('name')->get(['id', 'name', 'phone']);
 
-        return view('admin.transport.billing.invoices.index', compact('invoices', 'consignors', 'consignees'));
+        return view('admin.transport.billing.invoices.index', compact('invoices', 'consignors', 'consignees', 'dateSort'));
     }
 
     public function tollBills(Request $request)
@@ -468,11 +482,18 @@ class BillingController extends Controller
             $query->whereDate('invoice_date', '<=', $request->to_date);
         }
 
-        $invoices = $query->orderBy('invoice_date', 'desc')->paginate(15)->withQueryString();
+        $dateSort = $request->get('date_sort', 'latest');
+        if ($dateSort === 'oldest') {
+            $query->orderBy('invoice_date', 'asc')->orderBy('id', 'asc');
+        } else {
+            $query->orderBy('invoice_date', 'desc')->orderBy('id', 'desc');
+        }
+
+        $invoices = $query->paginate(15)->withQueryString();
         $consignors = Consignor::where('status', 'active')->orderBy('name')->get(['id', 'name', 'phone']);
         $consignees = Consignee::where('status', 'active')->orderBy('name')->get(['id', 'name', 'phone']);
 
-        return view('admin.transport.billing.invoices.toll-bills', compact('invoices', 'consignors', 'consignees'));
+        return view('admin.transport.billing.invoices.toll-bills', compact('invoices', 'consignors', 'consignees', 'dateSort'));
     }
 
     public function billGenerate(Invoice $invoice)

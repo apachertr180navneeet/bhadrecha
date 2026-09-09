@@ -123,7 +123,11 @@ class SalesLedgerController extends Controller
 
         uasort($branchOverviewData, fn($a, $b) => strcmp($a['branch_name'], $b['branch_name']));
 
-        $invoices = $query->orderBy('invoice_date', 'desc')->paginate(20);
+        $dateSort = $request->get('date_sort', 'latest');
+        $invoices = $query->orderBy('invoice_date', $dateSort === 'oldest' ? 'asc' : 'desc')
+            ->orderBy('id', $dateSort === 'oldest' ? 'asc' : 'desc')
+            ->paginate(20)
+            ->withQueryString();
 
         $companies = $user->isSuperAdmin() ? \App\Models\Company::where('status', 'active')->get() : collect();
         $branches = \App\Models\Branch::where('status', 'active')->when($companyId && $companyId !== 'all', function ($q) use ($companyId) {
@@ -293,7 +297,10 @@ class SalesLedgerController extends Controller
             );
         }
 
-        $invoices = $query->orderBy('invoice_date', 'desc')->get();
+        $dateSort = $request->get('date_sort', 'latest');
+        $invoices = $query->orderBy('invoice_date', $dateSort === 'oldest' ? 'asc' : 'desc')
+            ->orderBy('id', $dateSort === 'oldest' ? 'asc' : 'desc')
+            ->get();
 
         $headings = [
             'S.No',

@@ -243,9 +243,16 @@
                     <label class="form-label small fw-bold">To Date</label>
                     <input type="date" name="date_to" class="form-control" value="{{ request('date_to') }}">
                 </div>
-                <div class="col-md-6 d-flex align-items-end">
+                <div class="col-md-3 col-sm-6">
+                    <label class="form-label small fw-bold">Date Sort</label>
+                    <select name="date_sort" class="form-select">
+                        <option value="latest" {{ request('date_sort', 'latest') == 'latest' ? 'selected' : '' }}>Latest to Oldest</option>
+                        <option value="oldest" {{ request('date_sort') == 'oldest' ? 'selected' : '' }}>Oldest to Latest</option>
+                    </select>
+                </div>
+                <div class="col-md-3 col-sm-6 d-flex align-items-end">
                     <div class="d-flex gap-2 w-100">
-                        <button type="submit" class="btn btn-primary w-50"><i class="bx bx-search me-1"></i> Apply Filters</button>
+                        <button type="submit" class="btn btn-primary w-50"><i class="bx bx-search me-1"></i> Apply</button>
                         <a href="{{ route('admin.reports.sales-ledger') }}" class="btn btn-outline-secondary w-50"><i class="bx bx-refresh me-1"></i> Reset</a>
                     </div>
                 </div>
@@ -364,7 +371,12 @@
                             <thead class="table-light">
                                 <tr>
                                     <th>S.No</th>
-                                    <th>Date</th>
+                                    <th>
+                                        <a href="{{ request()->fullUrlWithQuery(['date_sort' => request('date_sort') === 'oldest' ? 'latest' : 'oldest']) }}#sales-ledger" class="text-dark text-decoration-none d-inline-flex align-items-center gap-1">
+                                            Date
+                                            <i class="bx {{ request('date_sort') === 'oldest' ? 'bx-sort-up text-primary' : 'bx-sort-down text-primary' }}"></i>
+                                        </a>
+                                    </th>
                                     <th>Company</th>
                                     <th>Branch</th>
                                     <th>Bill No (Edit)</th>

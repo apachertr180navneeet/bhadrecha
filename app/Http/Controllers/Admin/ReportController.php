@@ -250,7 +250,11 @@ class ReportController extends Controller
                 $query->where('company_id', $companyId);
             }
 
-            $transactions = $query->orderBy('lr_date', 'desc')->paginate(25);
+            $dateSort = $request->get('date_sort', 'latest');
+            $transactions = $query->orderBy('lr_date', $dateSort === 'oldest' ? 'asc' : 'desc')
+                ->orderBy('id', $dateSort === 'oldest' ? 'asc' : 'desc')
+                ->paginate(25)
+                ->withQueryString();
 
             $summaryQuery = Bulty::where('consignee_id', $request->consignee_id)
                 ->whereNotIn('status', ['pending', 'planned']);
@@ -306,7 +310,11 @@ class ReportController extends Controller
             $query->whereHas('trip', fn($q) => $q->where('status', $request->trip_status));
         }
 
-        $trips = $query->orderBy('lr_date', 'desc')->paginate(20);
+        $dateSort = $request->get('date_sort', 'latest');
+        $trips = $query->orderBy('lr_date', $dateSort === 'oldest' ? 'asc' : 'desc')
+            ->orderBy('id', $dateSort === 'oldest' ? 'asc' : 'desc')
+            ->paginate(20)
+            ->withQueryString();
 
         $vehicleList = Vehicle::where('status', 'active')
             ->orderBy('vehicle_number')
@@ -359,7 +367,11 @@ class ReportController extends Controller
             DB::raw('COALESCE(SUM(km), 0) as total_km'))
             ->first();
 
-        $fuelDetails = $query->orderBy('date', 'desc')->paginate(20);
+        $dateSort = $request->get('date_sort', 'latest');
+        $fuelDetails = $query->orderBy('date', $dateSort === 'oldest' ? 'asc' : 'desc')
+            ->orderBy('id', $dateSort === 'oldest' ? 'asc' : 'desc')
+            ->paginate(20)
+            ->withQueryString();
 
         $vehicleList = Vehicle::where('status', 'active')
             ->orderBy('vehicle_number')
@@ -412,7 +424,11 @@ class ReportController extends Controller
             DB::raw('COALESCE(SUM(km), 0) as total_km')
         )->first();
 
-        $adblueDetails = $query->orderBy('date', 'desc')->paginate(20);
+        $dateSort = $request->get('date_sort', 'latest');
+        $adblueDetails = $query->orderBy('date', $dateSort === 'oldest' ? 'asc' : 'desc')
+            ->orderBy('id', $dateSort === 'oldest' ? 'asc' : 'desc')
+            ->paginate(20)
+            ->withQueryString();
 
         $vehicleList = Vehicle::where('status', 'active')
             ->orderBy('vehicle_number')
@@ -1715,7 +1731,10 @@ class ReportController extends Controller
             $query = Bulty::with(['originCity', 'destinationCity', 'vehicle'])
                 ->where('consignee_id', $request->consignee_id)->whereNotIn('status', ['pending', 'planned']);
             if ($companyId && $companyId !== 'all') $query->where('company_id', $companyId);
-            $transactions = $query->orderBy('lr_date', 'desc')->get();
+            $dateSort = $request->get('date_sort', 'latest');
+            $transactions = $query->orderBy('lr_date', $dateSort === 'oldest' ? 'asc' : 'desc')
+                ->orderBy('id', $dateSort === 'oldest' ? 'asc' : 'desc')
+                ->get();
 
             $sQuery = Bulty::where('consignee_id', $request->consignee_id)->whereNotIn('status', ['pending', 'planned']);
             if ($companyId && $companyId !== 'all') $sQuery->where('company_id', $companyId);
@@ -1764,7 +1783,10 @@ class ReportController extends Controller
         if ($request->filled('date_to')) $query->whereDate('lr_date', '<=', $request->date_to);
         if ($request->filled('trip_status')) $query->whereHas('trip', fn($q) => $q->where('status', $request->trip_status));
 
-        $trips = $query->orderBy('lr_date', 'desc')->get();
+        $dateSort = $request->get('date_sort', 'latest');
+        $trips = $query->orderBy('lr_date', $dateSort === 'oldest' ? 'asc' : 'desc')
+            ->orderBy('id', $dateSort === 'oldest' ? 'asc' : 'desc')
+            ->get();
 
         if ($format === 'pdf') {
             $title = 'Detailed Trip Report';
@@ -1807,7 +1829,10 @@ class ReportController extends Controller
         if ($request->filled('date_from')) $query->whereDate('date', '>=', $request->date_from);
         if ($request->filled('date_to')) $query->whereDate('date', '<=', $request->date_to);
 
-        $fuelDetails = $query->orderBy('date', 'desc')->get();
+        $dateSort = $request->get('date_sort', 'latest');
+        $fuelDetails = $query->orderBy('date', $dateSort === 'oldest' ? 'asc' : 'desc')
+            ->orderBy('id', $dateSort === 'oldest' ? 'asc' : 'desc')
+            ->get();
         $summary = (clone $query)->select(DB::raw('COALESCE(SUM(quantity),0) as total_qty'), DB::raw('COALESCE(SUM(amount),0) as total_amount'), DB::raw('COALESCE(SUM(km),0) as total_km'))->first();
 
         if ($format === 'pdf') {
@@ -1841,7 +1866,10 @@ class ReportController extends Controller
         if ($request->filled('date_from')) $query->whereDate('date', '>=', $request->date_from);
         if ($request->filled('date_to')) $query->whereDate('date', '<=', $request->date_to);
 
-        $adblueDetails = $query->orderBy('date', 'desc')->get();
+        $dateSort = $request->get('date_sort', 'latest');
+        $adblueDetails = $query->orderBy('date', $dateSort === 'oldest' ? 'asc' : 'desc')
+            ->orderBy('id', $dateSort === 'oldest' ? 'asc' : 'desc')
+            ->get();
         $summary = (clone $query)->select(DB::raw('COALESCE(SUM(quantity),0) as total_qty'), DB::raw('COALESCE(SUM(amount),0) as total_amount'), DB::raw('COALESCE(SUM(km),0) as total_km'))->first();
 
         if ($format === 'pdf') {

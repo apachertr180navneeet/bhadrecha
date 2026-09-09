@@ -176,6 +176,13 @@
                             @endforeach
                         </select>
                     </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">Date Sort</label>
+                        <select name="date_sort" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="latest" {{ request('date_sort', 'latest') == 'latest' ? 'selected' : '' }}>Latest to Oldest</option>
+                            <option value="oldest" {{ request('date_sort') == 'oldest' ? 'selected' : '' }}>Oldest to Latest</option>
+                        </select>
+                    </div>
                     <div class="col-md-2 d-flex gap-2">
                         <button type="submit" class="btn btn-primary btn-sm flex-grow-1"><i class="bx bx-filter me-1"></i> Filter</button>
                         <a href="{{ route('admin.reports.bilty-advance-details.index') }}" class="btn btn-outline-secondary btn-sm">Reset</a>
@@ -189,7 +196,12 @@
                         <tr>
                             <th style="width: 60px;">#</th>
                             <th>LR Number</th>
-                            <th>Date</th>
+                            <th>
+                                <a href="{{ request()->fullUrlWithQuery(['date_sort' => request('date_sort') === 'oldest' ? 'latest' : 'oldest']) }}" class="text-dark text-decoration-none d-inline-flex align-items-center gap-1">
+                                    Date
+                                    <i class="bx {{ request('date_sort') === 'oldest' ? 'bx-sort-up text-primary' : 'bx-sort-down text-primary' }}"></i>
+                                </a>
+                            </th>
                             <th>Company</th>
                             <th>Branch</th>
                             <th class="text-end">Advance Amount</th>

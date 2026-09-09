@@ -127,9 +127,16 @@ class TripController extends Controller
             'reject' => $rejectedCount,
         ];
 
-        $trips = $query->orderBy('updated_at', 'desc')->orderBy('id', 'desc')->paginate(15)->withQueryString();
+        $dateSort = $request->get('date_sort', 'latest');
+        if ($dateSort === 'oldest') {
+            $query->orderBy('lr_date', 'asc')->orderBy('id', 'asc');
+        } else {
+            $query->orderBy('lr_date', 'desc')->orderBy('id', 'desc');
+        }
 
-        return view('admin.transport.trips.index', compact('trips', 'statusCounts', 'totalTrips'));
+        $trips = $query->paginate(15)->withQueryString();
+
+        return view('admin.transport.trips.index', compact('trips', 'statusCounts', 'totalTrips', 'dateSort'));
     }
 
     public function create($builtyId)
@@ -1151,10 +1158,16 @@ class TripController extends Controller
         }
         unset($item);
 
+        $dateSort = $request->get('date_sort', 'latest');
+        if ($dateSort === 'latest') {
+            $ledgerItems = array_reverse($ledgerItems);
+        }
+
         // 4. Paginated Credit Payments tab
         $paymentsQuery = FuelPumpPayment::with(['fuelCompany', 'fuelPump', 'company'])
             ->withoutGlobalScope('company')
-            ->orderBy('date', 'desc');
+            ->orderBy('date', $dateSort === 'oldest' ? 'asc' : 'desc')
+            ->orderBy('id', $dateSort === 'oldest' ? 'asc' : 'desc');
 
         if ($targetCompanyId) {
             $paymentsQuery->where('company_id', $targetCompanyId);
@@ -1171,7 +1184,7 @@ class TripController extends Controller
         if ($request->filled('date_to')) {
             $paymentsQuery->where('date', '<=', $request->date_to);
         }
-        $payments = $paymentsQuery->paginate(15);
+        $payments = $paymentsQuery->paginate(15)->withQueryString();
         if ($request->export === 'excel') {
             return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\FuelLedgerExport($ledgerItems), 'fuel_ledger_'.date('YmdHis').'.xlsx');
         } elseif ($request->export === 'pdf') {
@@ -1604,10 +1617,16 @@ class TripController extends Controller
         }
         unset($item);
 
+        $dateSort = $request->get('date_sort', 'latest');
+        if ($dateSort === 'latest') {
+            $ledgerItems = array_reverse($ledgerItems);
+        }
+
         // 4. Paginated Payments tab
         $paymentsQuery = AdBlueCompanyPayment::with(['adblueCompany', 'company'])
             ->withoutGlobalScope('company')
-            ->orderBy('date', 'desc');
+            ->orderBy('date', $dateSort === 'oldest' ? 'asc' : 'desc')
+            ->orderBy('id', $dateSort === 'oldest' ? 'asc' : 'desc');
 
         if ($targetCompanyId) {
             $paymentsQuery->where('company_id', $targetCompanyId);
@@ -1621,7 +1640,7 @@ class TripController extends Controller
         if ($request->filled('date_to')) {
             $paymentsQuery->where('date', '<=', $request->date_to);
         }
-        $payments = $paymentsQuery->paginate(15);
+        $payments = $paymentsQuery->paginate(15)->withQueryString();
 
         if ($request->export === 'excel') {
             return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\AdBlueLedgerExport($ledgerItems), 'adblue_ledger_'.date('YmdHis').'.xlsx');

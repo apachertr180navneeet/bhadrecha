@@ -154,8 +154,15 @@
                         <label class="form-label small fw-bold">To Date</label>
                         <input type="date" max="9999-12-31" name="date_to" class="form-control" value="{{ request('date_to') }}">
                     </div>
-                    <div class="col-md-4 d-flex align-items-end gap-2">
-                        <button type="submit" class="btn btn-primary w-100"><i class="bx bx-filter-alt me-1"></i> Apply Filters</button>
+                    <div class="col-md-3 col-sm-6">
+                        <label class="form-label small fw-bold">Date Sort</label>
+                        <select name="date_sort" class="form-select">
+                            <option value="latest" {{ request('date_sort', 'latest') == 'latest' ? 'selected' : '' }}>Latest to Oldest</option>
+                            <option value="oldest" {{ request('date_sort') == 'oldest' ? 'selected' : '' }}>Oldest to Latest</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 col-sm-6 d-flex align-items-end gap-2">
+                        <button type="submit" class="btn btn-primary w-100"><i class="bx bx-filter-alt me-1"></i> Apply</button>
                         <a href="{{ route($currentRoute) }}" class="btn btn-outline-secondary w-100"><i class="bx bx-refresh me-1"></i> Reset</a>
                     </div>
                     <div class="col-md-12 d-flex justify-content-end gap-2 mt-3">
@@ -250,7 +257,12 @@
                         <table class="table table-hover align-middle table-sm">
                             <thead class="table-light">
                                 <tr>
-                                    <th>Date</th>
+                                    <th>
+                                        <a href="{{ request()->fullUrlWithQuery(['date_sort' => request('date_sort') === 'oldest' ? 'latest' : 'oldest']) }}#ledger" class="text-dark text-decoration-none d-inline-flex align-items-center gap-1">
+                                            Date
+                                            <i class="bx {{ request('date_sort') === 'oldest' ? 'bx-sort-up text-primary' : 'bx-sort-down text-primary' }}"></i>
+                                        </a>
+                                    </th>
                                     <th>Type</th>
                                     <th>Ref / Method</th>
                                     <th>Vehicle</th>

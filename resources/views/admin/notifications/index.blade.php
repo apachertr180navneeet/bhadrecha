@@ -133,22 +133,29 @@
             <form method="GET" action="{{ route('admin.notifications.index') }}" class="row g-2 align-items-center">
                 <input type="hidden" name="type" value="{{ $type }}">
 
-                <div class="col-md-5">
+                <div class="col-md-4">
                     <div class="input-group input-group-sm">
                         <span class="input-group-text bg-white border-end-0"><i class="bx bx-search text-muted"></i></span>
                         <input type="text" name="search" class="form-control border-start-0" placeholder="Search by LR No, Vehicle, Driver, or Document..." value="{{ $search }}">
                     </div>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-2">
+                    <select name="date_sort" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="latest" {{ request('date_sort', 'latest') == 'latest' ? 'selected' : '' }}>Latest to Oldest</option>
+                        <option value="oldest" {{ request('date_sort') == 'oldest' ? 'selected' : '' }}>Oldest to Latest</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
                     <div class="d-flex gap-1">
-                        <a href="{{ route('admin.notifications.index', ['type' => $type, 'status' => 'all', 'search' => $search]) }}" class="btn btn-sm {{ $status === 'all' ? 'btn-primary' : 'btn-outline-secondary' }}">
+                        <a href="{{ route('admin.notifications.index', ['type' => $type, 'status' => 'all', 'search' => $search, 'date_sort' => request('date_sort')]) }}" class="btn btn-sm {{ $status === 'all' ? 'btn-primary' : 'btn-outline-secondary' }}">
                             All
                         </a>
-                        <a href="{{ route('admin.notifications.index', ['type' => $type, 'status' => 'unread', 'search' => $search]) }}" class="btn btn-sm {{ $status === 'unread' ? 'btn-danger' : 'btn-outline-secondary' }}">
+                        <a href="{{ route('admin.notifications.index', ['type' => $type, 'status' => 'unread', 'search' => $search, 'date_sort' => request('date_sort')]) }}" class="btn btn-sm {{ $status === 'unread' ? 'btn-danger' : 'btn-outline-secondary' }}">
                             Unread ({{ $counts['unread'] ?? 0 }})
                         </a>
-                        <a href="{{ route('admin.notifications.index', ['type' => $type, 'status' => 'read', 'search' => $search]) }}" class="btn btn-sm {{ $status === 'read' ? 'btn-success' : 'btn-outline-secondary' }}">
+                        <a href="{{ route('admin.notifications.index', ['type' => $type, 'status' => 'read', 'search' => $search, 'date_sort' => request('date_sort')]) }}" class="btn btn-sm {{ $status === 'read' ? 'btn-success' : 'btn-outline-secondary' }}">
                             Read
                         </a>
                     </div>
@@ -158,7 +165,7 @@
                     <button type="submit" class="btn btn-sm btn-primary">
                         <i class="bx bx-filter-alt me-1"></i> Apply Filter
                     </button>
-                    @if($search || $type !== 'all' || $status !== 'all')
+                    @if($search || $type !== 'all' || $status !== 'all' || request('date_sort') === 'oldest')
                     <a href="{{ route('admin.notifications.index') }}" class="btn btn-sm btn-outline-secondary ms-1">
                         Reset
                     </a>

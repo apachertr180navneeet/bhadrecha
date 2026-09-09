@@ -75,7 +75,8 @@ class NotificationController extends Controller
             });
         }
 
-        $notifications = $query->orderBy('notifications.created_at', 'desc')->paginate(15)->withQueryString();
+        $dateSort = $request->get('date_sort', 'latest');
+        $notifications = $query->orderBy('notifications.created_at', $dateSort === 'oldest' ? 'asc' : 'desc')->paginate(15)->withQueryString();
 
         // Count metrics for tabs/cards
         $counts = [
