@@ -79,9 +79,11 @@ class BiltyAdvanceDetailController extends Controller
 
         $detail = BiltyAdvanceDetail::create($validated);
 
-        // Sync total advance amount on LR
+        // Sync total advance amount and remaining amount on LR
+        $totalAdv = (float)$bulty->biltyAdvanceDetails()->sum('advance_amount');
         $bulty->update([
-            'advance_amount' => $bulty->biltyAdvanceDetails()->sum('advance_amount')
+            'advance_amount' => $totalAdv,
+            'remaining_amount' => max(0, (float)$bulty->total_amount - $totalAdv),
         ]);
 
         return redirect()->route('admin.reports.bilty-advance-details.index')
@@ -107,16 +109,20 @@ class BiltyAdvanceDetailController extends Controller
         $oldBultyId = $record->bulty_id;
         $record->update($validated);
 
-        // Sync advance amount on LR(s)
+        // Sync advance amount and remaining amount on LR(s)
+        $totalAdv = (float)$bulty->biltyAdvanceDetails()->sum('advance_amount');
         $bulty->update([
-            'advance_amount' => $bulty->biltyAdvanceDetails()->sum('advance_amount')
+            'advance_amount' => $totalAdv,
+            'remaining_amount' => max(0, (float)$bulty->total_amount - $totalAdv),
         ]);
 
         if ($oldBultyId != $bulty->id) {
             $oldBulty = Bulty::find($oldBultyId);
             if ($oldBulty) {
+                $oldAdv = (float)$oldBulty->biltyAdvanceDetails()->sum('advance_amount');
                 $oldBulty->update([
-                    'advance_amount' => $oldBulty->biltyAdvanceDetails()->sum('advance_amount')
+                    'advance_amount' => $oldAdv,
+                    'remaining_amount' => max(0, (float)$oldBulty->total_amount - $oldAdv),
                 ]);
             }
         }
@@ -133,8 +139,10 @@ class BiltyAdvanceDetailController extends Controller
 
         $bulty = Bulty::find($bultyId);
         if ($bulty) {
+            $totalAdv = (float)$bulty->biltyAdvanceDetails()->sum('advance_amount');
             $bulty->update([
-                'advance_amount' => $bulty->biltyAdvanceDetails()->sum('advance_amount')
+                'advance_amount' => $totalAdv,
+                'remaining_amount' => max(0, (float)$bulty->total_amount - $totalAdv),
             ]);
         }
 

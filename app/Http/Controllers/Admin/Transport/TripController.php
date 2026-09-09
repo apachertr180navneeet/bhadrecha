@@ -934,6 +934,7 @@ class TripController extends Controller
         $totalFuelAmountAll = 0;
         $totalAdvanceAmountAll = 0;
         $totalPaymentAmountAll = 0;
+        $openingBalanceAll = 0;
 
         foreach ($overviewData as $key => &$item) {
             $item['company_name'] = isset($companiesMap[$item['fuel_company_id']]) ? $companiesMap[$item['fuel_company_id']]->name : 'Direct / Unknown';
@@ -1454,6 +1455,7 @@ class TripController extends Controller
 
         $totalAdBlueAmountAll = 0;
         $totalPaymentAmountAll = 0;
+        $openingBalanceAll = 0;
 
         foreach ($overviewData as $key => &$item) {
             $item['company_name'] = isset($companiesMap[$item['adblue_company_id']]) ? $companiesMap[$item['adblue_company_id']]->name : 'Unknown Company';

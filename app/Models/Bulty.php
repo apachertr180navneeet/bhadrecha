@@ -235,4 +235,20 @@ class Bulty extends Model
     {
         return $this->belongsTo(Invoice::class, 'toll_invoice_id');
     }
+
+    public function getCalculatedTotalAmountAttribute()
+    {
+        return (float)($this->freight_charges ?? 0) + (float)($this->gst_amount ?? 0) + (float)($this->other_charges ?? 0);
+    }
+
+    public function getCalculatedRemainingAmountAttribute()
+    {
+        $total = $this->total_amount !== null ? (float)$this->total_amount : $this->calculated_total_amount;
+        return max(0, $total - (float)($this->advance_amount ?? 0));
+    }
+
+    public function getDueAmountAttribute()
+    {
+        return $this->calculated_remaining_amount;
+    }
 }

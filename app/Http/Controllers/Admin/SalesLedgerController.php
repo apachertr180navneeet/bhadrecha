@@ -500,11 +500,11 @@ class SalesLedgerController extends Controller
             return response()->json(['success' => false, 'message' => 'Invoice not found']);
         }
         
-        // Calculate base amount (before TDS) for auto TDS calculation
-        $amountWithoutGst = $invoice->total_freight + $invoice->total_other;
-        $grossBaseAmount = $amountWithoutGst + $invoice->total_gst;
-        $baseAmount = $grossBaseAmount - $invoice->deduction;
-        $autoTds = round($baseAmount * 1 / 100, 2); // 1% TDS
+        // Calculate base amount (excluding GST) for auto TDS calculation
+        $amountWithoutGst = (float)($invoice->total_freight + $invoice->total_other);
+        $grossBaseAmount = $amountWithoutGst + (float)$invoice->total_gst;
+        $baseAmount = max(0, $amountWithoutGst - (float)$invoice->deduction);
+        $autoTds = round($baseAmount * 1 / 100, 2); // 1% TDS on taxable value (w/o GST)
         
         return response()->json([
             'success' => true,

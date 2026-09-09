@@ -7,7 +7,15 @@
     </thead>
     <tbody>
 @foreach($trips as $builty)
-@php $trip = $builty->trip; @endphp
+@php
+    $trip = $builty->trip;
+    $totalFuelQty = $trip?->total_fuel_quantity ?? 0;
+    $totalFuelAmt = $trip?->total_fuel_amount ?? 0;
+    $fasttagAmt = $trip?->total_fasttag_amount ?? 0;
+    $adblueAmt = $trip?->total_adblue_amount ?? 0;
+    $otherAmt = $trip?->total_other_amount ?? 0;
+    $advanceAmt = $trip?->total_advance_amount ?? 0;
+@endphp
 @if($currentDriver !== $builty->driver_id)
 @php $currentDriver = $builty->driver_id; @endphp
         <tr><td colspan="8" style="border:none;padding:5px 0 2px;font-weight:bold;border-bottom:1px solid #ddd;">Driver: {{ $builty->driver?->name ?? 'N/A' }}</td></tr>
@@ -15,12 +23,12 @@
         <tr>
             <td>{{ $builty->lr_no }}</td>
             <td>{{ $builty->vehicle?->vehicle_number ?? '-' }}</td>
-            <td class="text-end">{{ number_format($trip?->fuelDetails->sum('quantity') ?? 0, 2) }}</td>
-            <td class="text-end">{{ number_format($trip?->fuelDetails->sum('amount') ?? 0, 2) }}</td>
-            <td class="text-end">{{ $trip ? number_format($trip->fasttag_total_amount, 2) : '-' }}</td>
-            <td class="text-end">{{ $trip ? number_format($trip->adblue_total_amount, 2) : '-' }}</td>
-            <td class="text-end">{{ $trip ? number_format($trip->other_amount, 2) : '-' }}</td>
-            <td class="text-end">{{ $trip ? number_format($trip->advance_total_amount, 2) : '-' }}</td>
+            <td class="text-end">{{ number_format($totalFuelQty, 2) }}</td>
+            <td class="text-end">{{ number_format($totalFuelAmt, 2) }}</td>
+            <td class="text-end">{{ $trip ? number_format($fasttagAmt, 2) : '-' }}</td>
+            <td class="text-end">{{ $trip ? number_format($adblueAmt, 2) : '-' }}</td>
+            <td class="text-end">{{ $trip ? number_format($otherAmt, 2) : '-' }}</td>
+            <td class="text-end">{{ $trip ? number_format($advanceAmt, 2) : '-' }}</td>
         </tr>
 @endforeach
     </tbody>

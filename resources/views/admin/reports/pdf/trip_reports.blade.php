@@ -8,9 +8,12 @@
         @foreach($trips as $builty)
         @php
             $trip = $builty->trip;
-            $totalFuelAmt = $trip?->fuelDetails->sum('amount') ?? 0;
-            $totalExpenses = $totalFuelAmt + ($trip?->fasttag_total_amount ?? 0) + ($trip?->adblue_total_amount ?? 0) + ($trip?->other_amount ?? 0) + ($trip?->advance_total_amount ?? 0);
-            $netProfit = $builty->total_amount - $totalExpenses;
+            $fuelAmt = $trip?->total_fuel_amount ?? 0;
+            $fasttagAmt = $trip?->total_fasttag_amount ?? 0;
+            $adblueAmt = $trip?->total_adblue_amount ?? 0;
+            $otherAmt = $trip?->total_other_amount ?? 0;
+            $advanceAmt = $trip?->total_advance_amount ?? 0;
+            $netProfit = $trip ? $trip->net_profit : $builty->total_amount;
         @endphp
         <tr>
             <td>{{ $builty->lr_no }}</td>
@@ -23,12 +26,12 @@
             <td class="text-end">₹ {{ number_format($builty->other_charges, 0) }}</td>
             <td class="text-end">₹ {{ number_format($builty->total_amount, 0) }}</td>
             <td class="text-end">₹ {{ number_format($builty->advance_amount, 0) }}</td>
-            <td class="text-end">₹ {{ number_format($trip?->advance_total_amount ?? 0, 0) }}</td>
+            <td class="text-end">₹ {{ number_format($advanceAmt, 0) }}</td>
             <td>{{ $trip ? ucfirst($trip->status) : '-' }}</td>
-            <td class="text-end">₹ {{ number_format($totalFuelAmt, 0) }}</td>
-            <td class="text-end">₹ {{ number_format($trip?->fasttag_total_amount ?? 0, 0) }}</td>
-            <td class="text-end">₹ {{ number_format($trip?->adblue_total_amount ?? 0, 0) }}</td>
-            <td class="text-end">₹ {{ number_format($trip?->other_amount ?? 0, 0) }}</td>
+            <td class="text-end">₹ {{ number_format($fuelAmt, 0) }}</td>
+            <td class="text-end">₹ {{ number_format($fasttagAmt, 0) }}</td>
+            <td class="text-end">₹ {{ number_format($adblueAmt, 0) }}</td>
+            <td class="text-end">₹ {{ number_format($otherAmt, 0) }}</td>
             <td class="text-end {{ $netProfit >= 0 ? 'text-success' : 'text-danger' }}">₹ {{ number_format($netProfit, 0) }}</td>
         </tr>
         @endforeach
