@@ -42,6 +42,7 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
     protected $imported = 0;
     protected $updated = 0;
     protected $skipped = 0;
+    protected $unmatchedLrs = [];
     protected $headings = [];
 
     public function registerEvents(): array
@@ -523,6 +524,11 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
     public function getSkippedCount(): int
     {
         return $this->skipped;
+    }
+
+    public function getUnmatchedLrs(): array
+    {
+        return $this->unmatchedLrs;
     }
 
     public function getHeadings(): array
