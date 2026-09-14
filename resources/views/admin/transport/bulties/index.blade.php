@@ -12,7 +12,11 @@
                 </ol>
             </nav>
         </div>
-        <div>
+        <div class="d-flex gap-2 flex-wrap">
+            @canany(['create trips', 'create bulties', 'import trip data'])
+            <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#importTripModal"><i class="bx bx-import me-1"></i> Import</button>
+            <a href="{{ route('admin.transport.trips.download-template') }}" class="btn btn-outline-secondary"><i class="bx bx-download me-1"></i> Template</a>
+            @endcanany
             @canany(['restore bulties', 'force delete bulties'])
             <a href="{{ route('admin.transport.bulties.trashed') }}" class="btn btn-outline-danger"><i class="bx bx-trash me-1"></i> Recycle Bin</a>
             @endcanany
@@ -206,6 +210,37 @@
 
 <form id="delete-form" method="POST" style="display: none;">@csrf @method('DELETE')</form>
 <form id="reject-form" method="POST" style="display: none;">@csrf</form>
+
+<div class="modal fade" id="importTripModal" tabindex="-1" aria-labelledby="importTripModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ route('admin.transport.trips.import') }}" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title" id="importTripModalLabel">Import Builty & Trips</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3">Upload an Excel/CSV file to create or update <strong>Builty (LR)</strong> and <strong>Trip</strong> records together in the same sheet.</p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Choose Excel File (.xlsx, .xls, .csv) <span class="text-danger">*</span></label>
+                        <input type="file" name="file" class="form-control" accept=".xlsx,.xls,.csv" required>
+                    </div>
+                    <div class="alert alert-info py-2 mb-0">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="small"><i class="bx bx-info-circle me-1"></i> Need sample format?</span>
+                            <a href="{{ route('admin.transport.trips.download-template') }}" class="btn btn-sm btn-link text-primary p-0 text-decoration-none fw-semibold">Download Template</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="bx bx-upload me-1"></i> Import Bilties & Trips</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection
 
 @section('script')
