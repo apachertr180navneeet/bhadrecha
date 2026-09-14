@@ -285,6 +285,8 @@ Route::name('admin.')->prefix('admin')->group(function () {
             Route::post('bulties/{bulty}/send-mail', [BultyController::class, 'sendMail'])->name('bulties.send-mail');
 
             Route::get('trips', [TripController::class, 'index'])->name('trips.index');
+            Route::get('trips/download-template', [TripController::class, 'downloadTemplate'])->name('trips.download-template');
+            Route::post('trips/import', [TripController::class, 'import'])->name('trips.import');
             Route::get('trips/create/{builty}', [TripController::class, 'create'])->name('trips.create');
             Route::post('trips', [TripController::class, 'store'])->name('trips.store');
             Route::get('trips/{trip}/edit', [TripController::class, 'edit'])->name('trips.edit');

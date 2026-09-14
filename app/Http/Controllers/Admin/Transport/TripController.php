@@ -12,7 +12,10 @@ use App\Imports\FuelDetailImport;
 use App\Imports\OtherAmountDetailImport;
 use App\Exports\AdvanceDetailTemplateExport;
 use App\Imports\AdvanceDetailImport;
+use App\Exports\TripTemplateExport;
+use App\Imports\TripImport;
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\AdBlueCompany;
 use App\Models\Bulty;
 use App\Models\FuelCompany;
@@ -37,10 +40,14 @@ class TripController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        $baseQuery = Bulty::whereNotNull('material_document');
+        $baseQuery = Bulty::where(function ($q) {
+            $q->whereNotNull('material_document')->orWhereHas('trip');
+        });
 
         $query = Bulty::with(['consignor', 'consignee', 'originCity', 'destinationCity', 'bultyItems', 'trip', 'vehicle'])
-            ->whereNotNull('material_document');
+            ->where(function ($q) {
+                $q->whereNotNull('material_document')->orWhereHas('trip');
+            });
 
         if ($request->filled('search')) {
             $search = trim($request->search);
@@ -530,6 +537,69 @@ class TripController extends Controller
             return false;
         }
         return true;
+    }
+
+    public function downloadTemplate()
+    {
+        if (!$this->authorizeImportAction()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        ActivityLog::log('trip_template_downloaded', 'Downloaded trip import template');
+        return Excel::download(new TripTemplateExport, 'trip_import_template.xlsx');
+    }
+
+    public function import(Request $request)
+    {
+        if (!$this->authorizeImportAction()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $request->validate(['file' => 'required|mimes:xlsx,xls,csv']);
+
+        $import = new TripImport;
+        try {
+            Excel::import($import, $request->file('file'));
+            $imported = $import->getImportedCount();
+            $updated = $import->getUpdatedCount();
+            $skipped = $import->getSkippedCount();
+            $unmatched = $import->getUnmatchedLrs();
+            $failures = $import->getFailures();
+            $headings = $import->getHeadings();
+
+            $parts = [];
+            if ($imported > 0) $parts[] = "{$imported} trip(s) created";
+            if ($updated > 0) $parts[] = "{$updated} trip(s) updated";
+            if ($skipped > 0) $parts[] = "{$skipped} row(s) skipped";
+
+            $message = !empty($parts) ? implode(', ', $parts) . ' successfully.' : 'No rows processed.';
+
+            if (!empty($unmatched)) {
+                $uniqueUnmatched = array_unique($unmatched);
+                $preview = implode(', ', array_slice($uniqueUnmatched, 0, 5));
+                if (count($uniqueUnmatched) > 5) {
+                    $preview .= ' ... and ' . (count($uniqueUnmatched) - 5) . ' more';
+                }
+                $message .= " Unmatched LR(s): {$preview}.";
+            }
+
+            if (!empty($failures)) {
+                $errs = [];
+                foreach ($failures as $f) {
+                    $errs[] = "Row {$f->row()}: " . implode(', ', $f->errors());
+                }
+                $message .= ' Validation errors: ' . implode(' | ', array_slice($errs, 0, 5));
+            }
+
+            if ($imported === 0 && $updated === 0 && $skipped === 0 && empty($failures)) {
+                $message .= ' No data found. Detected headers: ' . (!empty($headings) ? implode(', ', $headings) : 'none');
+            }
+
+            ActivityLog::log('trips_imported', "Imported trips from Excel: {$imported} created, {$updated} updated, {$skipped} skipped");
+            return redirect()->route('admin.transport.trips.index')->with('success', $message);
+        } catch (\Exception $e) {
+            return redirect()->route('admin.transport.trips.index')->with('error', 'Import failed: ' . $e->getMessage());
+        }
     }
 
     public function downloadFastTagTemplate()

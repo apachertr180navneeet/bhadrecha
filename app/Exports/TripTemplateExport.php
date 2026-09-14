@@ -1,0 +1,356 @@
+<?php
+
+namespace App\Exports;
+
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\FromArray;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+
+class TripTemplateExport implements FromArray, WithHeadings, ShouldAutoSize
+{
+    public function array(): array
+    {
+        return [
+            // Row 1: LR-2026-0001 - Item 1, Toll 1, Fuel 1, AdBlue 1, Other 1, Advance 1
+            [
+                'LR-2026-0001',
+                '2026-05-20',
+                'topay',
+                'Mumbai',
+                'Delhi',
+                'ORD-101',
+                'DEL-201',
+                'INV-9901',
+                '2026-05-20',
+                'EWAY-88881',
+                'MATDOC-5501',
+                'PO-7701',
+                'CH-3301',
+                '2026-05-20',
+                'GRN-4401',
+                '2026-05-20',
+                'ABC Logistics Pvt Ltd',
+                '9876543210',
+                '27AAACA1234A1Z5',
+                'Plot 12, MIDC, Andheri, Mumbai',
+                'XYZ Enterprises Ltd',
+                '9876543211',
+                '07AAACX5678B1Z2',
+                'Sector 18, Okhla, New Delhi',
+                'MH04AB1234',
+                'Truck',
+                'Ramesh Singh',
+                '9876543212',
+                'in_transit',
+                // Item 1
+                'Steel Coils',
+                'Bundles',
+                10,
+                15.50,
+                'MT',
+                2000.00,
+                31000.00,
+                5000.00,
+                51000.00,
+                // Toll 1
+                '2026-05-20 10:30',
+                'Ghoti Toll Plaza',
+                450.00,
+                450.00,
+                0.00,
+                'FastTag Toll Deduction',
+                'TXN1001',
+                // Fuel 1
+                '2026-05-20',
+                'Indian Oil Corporation',
+                'IOCL Pump Nashik',
+                60.00,
+                95.00,
+                5700.00,
+                12500,
+                'credit',
+                'Full tank refill',
+                // AdBlue 1
+                '2026-05-20',
+                'GoBlue',
+                15.00,
+                50.00,
+                750.00,
+                12500,
+                'cash',
+                // Other Expense 1
+                'Loading & Unloading Charges',
+                300.00,
+                '2026-05-20',
+                'Labor tip at warehouse',
+                // Advance 1
+                '2026-05-20',
+                'Indian Oil Corporation',
+                'IOCL Pump Nashik',
+                1500.00,
+                'cash',
+                'Trip advance for driver meals',
+                'pending'
+            ],
+            // Row 2: LR-2026-0001 (Same LR - Item 2, Toll 2, Fuel 2, AdBlue 2)
+            [
+                'LR-2026-0001',
+                '2026-05-20',
+                'topay',
+                'Mumbai',
+                'Delhi',
+                'ORD-101',
+                'DEL-201',
+                'INV-9901',
+                '2026-05-20',
+                'EWAY-88881',
+                'MATDOC-5501',
+                'PO-7701',
+                'CH-3301',
+                '2026-05-20',
+                'GRN-4401',
+                '2026-05-20',
+                'ABC Logistics Pvt Ltd',
+                '9876543210',
+                '27AAACA1234A1Z5',
+                'Plot 12, MIDC, Andheri, Mumbai',
+                'XYZ Enterprises Ltd',
+                '9876543211',
+                '07AAACX5678B1Z2',
+                'Sector 18, Okhla, New Delhi',
+                'MH04AB1234',
+                'Truck',
+                'Ramesh Singh',
+                '9876543212',
+                'in_transit',
+                // Item 2
+                'Iron Rods',
+                'Bundles',
+                20,
+                10.00,
+                'MT',
+                2000.00,
+                20000.00,
+                0.00,
+                0.00,
+                // Toll 2
+                '2026-05-20 16:45',
+                'Pimpalgaon Toll Plaza',
+                380.00,
+                380.00,
+                0.00,
+                'FastTag Toll Deduction',
+                'TXN1002',
+                // Fuel 2
+                '2026-05-21',
+                'Bharat Petroleum',
+                'BPCL Highway Pump Dhule',
+                40.00,
+                95.00,
+                3800.00,
+                12800,
+                'credit',
+                'Top-up fuel',
+                // AdBlue 2
+                '2026-05-21',
+                'GoBlue',
+                10.00,
+                50.00,
+                500.00,
+                12800,
+                'credit',
+                // Other Expense 2 (empty or optional)
+                null,
+                0.00,
+                null,
+                null,
+                // Advance 2 (empty or optional)
+                null,
+                null,
+                null,
+                0.00,
+                null,
+                null,
+                'pending'
+            ],
+            // Row 3: LR-2026-0002
+            [
+                'LR-2026-0002',
+                '2026-05-21',
+                'paid',
+                'Surat',
+                'Jaipur',
+                'ORD-102',
+                'DEL-202',
+                'INV-9902',
+                '2026-05-21',
+                'EWAY-88882',
+                'MATDOC-5502',
+                'PO-7702',
+                'CH-3302',
+                '2026-05-21',
+                'GRN-4402',
+                '2026-05-21',
+                'Prime Textiles Inc',
+                '9876543213',
+                '24AAACT9999C1Z8',
+                'Ring Road, Surat, Gujarat',
+                'Apex Garments Trading',
+                '9876543214',
+                '08AAACG8888D1Z4',
+                'MI Road, Jaipur, Rajasthan',
+                'GJ01CD5678',
+                'Trailer',
+                'Suresh Patel',
+                '9876543215',
+                'delivered',
+                // Item
+                'Cotton Yarn Bundles',
+                'Bags',
+                50,
+                18.00,
+                'MT',
+                1777.77,
+                32000.00,
+                4000.00,
+                32000.00,
+                // Toll
+                '2026-05-21 11:20',
+                'Ahmedabad Ring Toll',
+                250.00,
+                250.00,
+                0.00,
+                'Toll pass',
+                'TXN2001',
+                // Fuel
+                '2026-05-21',
+                'Hindustan Petroleum',
+                'HPCL Pump Himmatnagar',
+                70.00,
+                94.50,
+                6615.00,
+                8400,
+                'credit',
+                'Regular fuel',
+                // AdBlue
+                '2026-05-21',
+                'BlueMax',
+                20.00,
+                48.00,
+                960.00,
+                8400,
+                'cash',
+                // Other Expense
+                'Weighbridge Charges',
+                150.00,
+                '2026-05-21',
+                'Dharam kanta slip',
+                // Advance
+                '2026-05-21',
+                'Hindustan Petroleum',
+                'HPCL Pump Himmatnagar',
+                1000.00,
+                'cash',
+                'Driver pocket advance',
+                'complete'
+            ]
+        ];
+    }
+
+    public function headings(): array
+    {
+        return [
+            // Builty - Basic & Route Info
+            'lr_no',
+            'lr_date',
+            'payment_type',
+            'from_city',
+            'to_city',
+            'order_number',
+            'delivery_number',
+            'invoice_number',
+            'invoice_date',
+            'eway_bill_no',
+            'mat_doc',
+            'po_no',
+            'challan_no',
+            'challan_date',
+            'grn_no',
+            'grn_date',
+
+            // Builty - Parties Details
+            'consignor_name',
+            'consignor_phone',
+            'consignor_gstin',
+            'consignor_address',
+            'consignee_name',
+            'consignee_phone',
+            'consignee_gstin',
+            'consignee_address',
+
+            // Builty - Vehicle & Driver Info
+            'vehicle_number',
+            'vehicle_type',
+            'driver_name',
+            'driver_phone',
+            'bilty_status',
+
+            // Builty - Items / Goods (Supports Multi-Items per LR)
+            'item_name',
+            'packaging_type',
+            'articles',
+            'weight',
+            'unit',
+            'freight_per_mt',
+            'item_amount',
+            'bilty_advance_amount',
+            'bilty_total_amount',
+
+            // Trip - FastTag / Toll Details (Supports Multi-Tolls per LR)
+            'toll_time',
+            'toll_location',
+            'toll_amount',
+            'toll_oneway',
+            'toll_return',
+            'toll_description',
+            'toll_txn_id',
+
+            // Trip - Fuel Details (Supports Multi-Fuel entries per LR)
+            'fuel_date',
+            'fuel_company_name',
+            'fuel_pump_name',
+            'fuel_quantity',
+            'fuel_rate',
+            'fuel_amount',
+            'fuel_km',
+            'fuel_payment_type',
+            'fuel_remark',
+
+            // Trip - AdBlue Details (Supports Multi-AdBlue entries per LR)
+            'adblue_date',
+            'adblue_company_name',
+            'adblue_quantity',
+            'adblue_rate',
+            'adblue_amount',
+            'adblue_km',
+            'adblue_payment_type',
+
+            // Trip - Other Expense Details (Supports Multi-Expenses per LR)
+            'other_expense_title',
+            'other_expense_amount',
+            'other_expense_date',
+            'other_expense_remark',
+
+            // Trip - Advance Details (Supports Multi-Advances per LR)
+            'advance_date',
+            'advance_fuel_company_name',
+            'advance_fuel_pump_name',
+            'advance_amount',
+            'advance_payment_type',
+            'advance_remark',
+
+            // Trip Status
+            'trip_status'
+        ];
+    }
+}
