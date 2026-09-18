@@ -133,17 +133,15 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
                 if (!empty($driverPhone) && $driverPhone !== '9999999999') {
                     $driverQuery->where('phone', $driverPhone);
                 } elseif (!empty($driverName)) {
-                    $driverQuery->where('company_id', $resolvedCompanyId)->whereRaw('LOWER(TRIM(name)) = ?', [strtolower($driverName)]);
+                    $driverQuery->whereRaw('LOWER(TRIM(name)) = ?', [strtolower($driverName)]);
                 }
                 $driver = $driverQuery->first();
 
                 if (!$driver && !empty($driverName)) {
                     $driver = Driver::create([
-                        'company_id' => $resolvedCompanyId,
-                        'branch_id' => $resolvedBranchId,
                         'name' => $driverName,
                         'phone' => $driverPhone ?: '9999999999',
-                        'license_number' => 'DL-' . strtoupper(substr(md5($driverName . time()), 0, 8)),
+                        'license_number' => 'DL-' . strtoupper(substr(md5($driverName . time() . uniqid()), 0, 8)),
                         'status' => 'active',
                     ]);
                 }
@@ -212,16 +210,18 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
             // 8. Origin & Destination Cities Lookup
             $originCity = null;
             $fromCityName = isset($firstRow['from_city']) ? trim((string) $firstRow['from_city']) : (isset($firstRow['from']) ? trim((string) $firstRow['from']) : (isset($firstRow['origin_city']) ? trim((string) $firstRow['origin_city']) : null));
+            $fromState = isset($firstRow['from_state']) ? trim((string) $firstRow['from_state']) : (isset($firstRow['origin_state']) ? trim((string) $firstRow['origin_state']) : (isset($firstRow['state']) ? trim((string) $firstRow['state']) : 'Gujarat'));
             if (!empty($fromCityName)) {
                 $originCity = City::whereRaw('LOWER(TRIM(name)) = ?', [strtolower($fromCityName)])->first()
-                    ?: City::create(['name' => $fromCityName, 'status' => 'active']);
+                    ?: City::create(['name' => $fromCityName, 'state' => $fromState ?: 'Gujarat', 'status' => 'active']);
             }
 
             $destinationCity = null;
             $toCityName = isset($firstRow['to_city']) ? trim((string) $firstRow['to_city']) : (isset($firstRow['to']) ? trim((string) $firstRow['to']) : (isset($firstRow['destination_city']) ? trim((string) $firstRow['destination_city']) : null));
+            $toState = isset($firstRow['to_state']) ? trim((string) $firstRow['to_state']) : (isset($firstRow['destination_state']) ? trim((string) $firstRow['destination_state']) : (isset($firstRow['state']) ? trim((string) $firstRow['state']) : 'Gujarat'));
             if (!empty($toCityName)) {
                 $destinationCity = City::whereRaw('LOWER(TRIM(name)) = ?', [strtolower($toCityName)])->first()
-                    ?: City::create(['name' => $toCityName, 'status' => 'active']);
+                    ?: City::create(['name' => $toCityName, 'state' => $toState ?: 'Gujarat', 'status' => 'active']);
             }
 
             // 9. Builty Header Amounts, Remarks & Commission
