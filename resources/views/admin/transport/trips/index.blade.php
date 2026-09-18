@@ -167,7 +167,7 @@
                         <td>{{ $trip->consignor->name ?? '-' }}</td>
                         <td>{{ $trip->consignee->name ?? '-' }}</td>
                         <td>{{ $trip->originCity->name ?? '-' }} <i class="bx bx-chevron-right mx-1 text-muted"></i> {{ $trip->destinationCity->name ?? '-' }}</td>
-                        <td>{{ number_format($trip->bultyItems->sum('weight'), 2) }} {{ $trip->bultyItems->pluck('unit')->filter()->unique()->values()->first() ?? 'kg' }}</td>
+                        <td>{{ number_format($trip->bultyItems->sum('weight'), 2) }} {{ $trip->bultyItems->pluck('unit')->filter()->unique()->values()->first() ?: 'Ton' }}</td>
                         <td>₹{{ number_format($trip->total_amount, 2) }}</td>
                         <td>
                             @php

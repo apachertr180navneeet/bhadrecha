@@ -10,6 +10,8 @@ class UnitSeeder extends Seeder
     public function run(): void
     {
         $units = [
+            ['name' => 'Ton',   'description' => 'Ton (Metric Ton / Tonne)'],
+            ['name' => 'MT',    'description' => 'Metric Tonne'],
             ['name' => 'Kg',    'description' => 'Kilogram'],
             ['name' => 'Gm',    'description' => 'Gram'],
             ['name' => 'Tonne', 'description' => 'Metric Tonne (1000 Kg)'],

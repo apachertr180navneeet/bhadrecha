@@ -311,6 +311,19 @@
             <div style="font-size: 10px; margin-top: 4px;">{{ $companyAddress }}</div>
         </div>
 
+        <!-- Top Metadata Bar: Bill No, Date, No of LR -->
+        <div class="row g-0 align-items-center" style="border-bottom: 2px solid #000; padding: 5px 8px; font-size: 11px; font-weight: bold; background: #fafafa;">
+            <div class="col-4 text-start">
+                <strong>BILL NO:</strong> - <span>{{ $billNumber }}</span>
+            </div>
+            <div class="col-4 text-center">
+                <strong>DATE:</strong> - <span>{{ $existingInvoice->invoice_date ? $existingInvoice->invoice_date->format('d-m-Y') : now()->format('d-m-Y') }}</span>
+            </div>
+            <div class="col-4 text-end">
+                <strong>NO. OF LR:</strong> - <span>{{ $existingInvoice->no_of_lrs ?? $bulties->count() }}</span>
+            </div>
+        </div>
+
         <!-- Client details / Supply meta -->
         <div class="row g-0" style="border-bottom: 2px solid #000;">
             <div class="col-8 p-2" style="border-right: 2px solid #000; font-size: 10px;">
@@ -318,9 +331,6 @@
             </div>
             <div class="col-4 p-2" style="font-size: 10px;">
                 <div><strong>HSN/SAC CODE:</strong> <span>{{ $companyHsn }}</span></div>
-                <div class="mt-2"><strong>Date:</strong> - <span>{{ $existingInvoice->invoice_date ? $existingInvoice->invoice_date->format('d-m-Y') : now()->format('d-m-Y') }}</span></div>
-                <div><strong>Bill No:</strong> - <span>{{ $billNumber }}</span></div>
-                <div><strong>No. of LR:</strong> - <span>{{ $existingInvoice->no_of_lrs ?? $bulties->count() }}</span></div>
                 <div class="mt-1"><strong>State Vendor Code:</strong> - <span>{{ $existingInvoice->state_vendor_code ?? '-' }}</span></div>
                 <div><strong>Vendor Code:</strong> - <span>{{ $vendorCode ?? '-' }}</span></div>
                 <div><strong>Vendor Name:</strong> - <span>{{ $existingInvoice->vendor_name ?? '-' }}</span></div>

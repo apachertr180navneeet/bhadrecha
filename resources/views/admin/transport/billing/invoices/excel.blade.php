@@ -302,28 +302,22 @@
         </td>
     </tr>
 
+    <!-- Top Metadata Bar: Bill No, Date, No of LR -->
+    <tr>
+        <td colspan="{{ $colCount }}" style="border-left: 2px solid #000; border-right: 2px solid #000; border-bottom: 2px solid #000; padding: 6px 10px; font-weight: bold; background: #fafafa;">
+            <strong>BILL NO:</strong> - {{ $invoice->bill_number ?? $invoice->invoice_no }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <strong>DATE:</strong> - {{ $invoice->invoice_date ? $invoice->invoice_date->format('d-m-Y') : now()->format('d-m-Y') }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <strong>NO. OF LR:</strong> - {{ $invoice->no_of_lrs ?? ($invoice->bulties ? $invoice->bulties->count() : '-') }}
+        </td>
+    </tr>
+
     <!-- Consignor and Details -->
     <tr>
-        <td colspan="{{ ceil($colCount * 2 / 3) }}" rowspan="8" style="border: 2px solid #000; padding: 10px; vertical-align: top;">
+        <td colspan="{{ ceil($colCount * 2 / 3) }}" rowspan="5" style="border: 2px solid #000; padding: 10px; vertical-align: top;">
             {!! $partyAddress !!}
         </td>
         <td colspan="{{ $colCount - ceil($colCount * 2 / 3) }}" style="border-top: 2px solid #000; border-right: 2px solid #000; padding: 4px 10px; vertical-align: top;">
             <strong>HSN/SAC CODE:</strong> {{ $companyHsn }}
-        </td>
-    </tr>
-    <tr>
-        <td colspan="{{ $colCount - ceil($colCount * 2 / 3) }}" style="border-right: 2px solid #000; padding: 4px 10px; vertical-align: top;">
-            <strong>Date:</strong> - {{ $invoice->invoice_date ? $invoice->invoice_date->format('d-m-Y') : now()->format('d-m-Y') }}
-        </td>
-    </tr>
-    <tr>
-        <td colspan="{{ $colCount - ceil($colCount * 2 / 3) }}" style="border-right: 2px solid #000; padding: 4px 10px; vertical-align: top;">
-            <strong>Bill No:</strong> - {{ $invoice->bill_number ?? $invoice->invoice_no }}
-        </td>
-    </tr>
-    <tr>
-        <td colspan="{{ $colCount - ceil($colCount * 2 / 3) }}" style="border-right: 2px solid #000; padding: 4px 10px; vertical-align: top;">
-            <strong>No. of LR:</strong> - {{ $invoice->no_of_lrs ?? ($invoice->bulties ? $invoice->bulties->count() : '-') }}
         </td>
     </tr>
     <tr>

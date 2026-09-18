@@ -127,14 +127,18 @@
         </td>
     </tr>
     <tr>
+        <td colspan="10" style="border: 2px solid #000; padding: 6px 10px; font-weight: bold; background: #fafafa;">
+            <strong>BILL NO:</strong> - {{ $billNo }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <strong>DATE:</strong> - {{ $billDate }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <strong>NO. OF LR:</strong> - {{ $invoice->no_of_lrs ?? $invoice->bulties->count() }}
+        </td>
+    </tr>
+    <tr>
         <td colspan="6" style="border: 2px solid #000; padding: 4px; vertical-align: top; text-transform: uppercase;">
             {!! $partyAddress !!}
         </td>
         <td colspan="4" style="border: 2px solid #000; padding: 4px; vertical-align: top;">
-            <strong>HSN/SAC CODE:</strong> {{ $partyHsn }}<br>
-            <strong>Date:</strong> - {{ $billDate }}<br>
-            <strong>Bill No:</strong> - {{ $billNo }}<br>
-            <strong>No. of LR:</strong> - {{ $invoice->no_of_lrs ?? $invoice->bulties->count() }}
+            <strong>HSN/SAC CODE:</strong> {{ $partyHsn }}
             @if(!empty($invoice->state_vendor_code))
             <br><strong>State Vendor Code:</strong> - {{ $invoice->state_vendor_code }}
             @endif

@@ -311,6 +311,9 @@
                                             @foreach($units as $u)
                                             <option value="{{ $u->name }}" {{ old("items.{$index}.unit", $item['unit']) == $u->name ? 'selected' : '' }}>{{ $u->name }}</option>
                                             @endforeach
+                                            @if(!empty($item['unit']) && !$units->contains('name', $item['unit']))
+                                            <option value="{{ $item['unit'] }}" selected>{{ $item['unit'] }}</option>
+                                            @endif
                                         </select>
                                     </div>
                                     <div class="col-md-4">

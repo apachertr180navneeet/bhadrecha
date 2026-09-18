@@ -175,7 +175,7 @@
                         <td>{{ $bulty->consignor->name ?? '-' }}</td>
                         <td>{{ $bulty->consignee->name ?? '-' }}</td>
                         <td>{{ $bulty->originCity->name ?? '-' }} <i class="bx bx-chevron-right mx-1 text-muted"></i> {{ $bulty->destinationCity->name ?? '-' }}</td>
-                        <td>{{ number_format($bulty->bultyItems->sum('weight'), 2) }} {{ $bulty->bultyItems->first()?->unit ?? 'kg' }}</td>
+                        <td>{{ number_format($bulty->bultyItems->sum('weight'), 2) }} {{ $bulty->bultyItems->first()?->unit ?: 'Ton' }}</td>
                         <td>₹{{ number_format($bulty->total_amount, 2) }}</td>
                         <td>
                             @php

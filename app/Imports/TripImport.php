@@ -4,6 +4,7 @@ namespace App\Imports;
 
 use App\Models\AdBlueCompany;
 use App\Models\Branch;
+use App\Models\BiltyAdvanceDetail;
 use App\Models\Bulty;
 use App\Models\BultyDetail;
 use App\Models\BultyItem;
@@ -21,6 +22,7 @@ use App\Models\TripAdvanceDetail;
 use App\Models\TripFastTagDetail;
 use App\Models\TripFuelDetail;
 use App\Models\TripOtherAmountDetail;
+use App\Models\Unit;
 use App\Models\Vehicle;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -72,7 +74,7 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
         foreach ($grouped as $groupKey => $groupRows) {
             $firstRow = $groupRows->first();
 
-            // 1. Resolve Company & Branch (Yellow fields)
+            // 1. Resolve Company & Branch
             $resolvedCompanyId = $defaultCompanyId;
             $companyInput = isset($firstRow['company']) ? trim((string) $firstRow['company']) : (isset($firstRow['company_name']) ? trim((string) $firstRow['company_name']) : null);
             if (!empty($companyInput)) {
@@ -104,7 +106,7 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
                 $paymentType = 'topay';
             }
 
-            // 3. Form Number, E-Way Bill Dates (Yellow fields) & SAP PO Number
+            // 3. Form Number, E-Way Bill Dates & SAP PO Number
             $formNo = isset($firstRow['form_number']) ? trim((string) $firstRow['form_number']) : (isset($firstRow['form_no']) ? trim((string) $firstRow['form_no']) : (isset($firstRow['from_no']) ? trim((string) $firstRow['from_no']) : null));
             $generateDate = $this->parseDate($firstRow['generate_date'] ?? $firstRow['genrate_date'] ?? $firstRow['generation_date'] ?? null);
             $expiryDate = $this->parseDate($firstRow['expiry_date'] ?? null);
@@ -128,9 +130,9 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
             $driverPhone = isset($firstRow['driver_phone']) ? trim((string) $firstRow['driver_phone']) : null;
             if (!empty($driverPhone) || !empty($driverName)) {
                 $driverQuery = Driver::query();
-                if (!empty($driverPhone)) {
+                if (!empty($driverPhone) && $driverPhone !== '9999999999') {
                     $driverQuery->where('phone', $driverPhone);
-                } else {
+                } elseif (!empty($driverName)) {
                     $driverQuery->where('company_id', $resolvedCompanyId)->whereRaw('LOWER(TRIM(name)) = ?', [strtolower($driverName)]);
                 }
                 $driver = $driverQuery->first();
@@ -147,25 +149,22 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
                 }
             }
 
-            // 6. Consignor Lookup with Duplicate Prevention (Peach field)
+            // 6. Consignor Lookup with Exact Name Priority & Dynamic Creation
             $consignor = null;
-            $consignorName = isset($firstRow['consignor_name']) ? trim((string) $firstRow['consignor_name']) : (isset($firstRow['consignor']) ? trim((string) $firstRow['consignor']) : null);
+            $consignorName = isset($firstRow['consignor_name']) ? trim((string) $firstRow['consignor_name']) : (isset($firstRow['consignor']) ? trim((string) $firstRow['consignor']) : (isset($firstRow['consignor_party']) ? trim((string) $firstRow['consignor_party']) : (isset($firstRow['sender_name']) ? trim((string) $firstRow['sender_name']) : null)));
             $consignorPhone = isset($firstRow['consignor_phone']) ? trim((string) $firstRow['consignor_phone']) : null;
             $consignorGstin = isset($firstRow['consignor_gstin']) ? trim((string) $firstRow['consignor_gstin']) : null;
             $consignorAddress = isset($firstRow['consignor_address']) ? trim((string) $firstRow['consignor_address']) : null;
 
             if (!empty($consignorName) || !empty($consignorGstin)) {
-                if (!empty($consignorGstin)) {
-                    $consignor = Consignor::where('gstin', $consignorGstin)->first();
-                }
-                if (!$consignor && !empty($consignorName)) {
+                if (!empty($consignorName)) {
                     $consignor = Consignor::where('company_id', $resolvedCompanyId)
                         ->whereRaw('LOWER(TRIM(name)) = ?', [strtolower($consignorName)])
                         ->first()
                         ?: Consignor::whereRaw('LOWER(TRIM(name)) = ?', [strtolower($consignorName)])->first();
                 }
-                if (!$consignor && !empty($consignorPhone) && $consignorPhone !== '9999999999') {
-                    $consignor = Consignor::where('phone', $consignorPhone)->first();
+                if (!$consignor && !empty($consignorGstin)) {
+                    $consignor = Consignor::where('gstin', $consignorGstin)->first();
                 }
 
                 if (!$consignor && !empty($consignorName)) {
@@ -180,25 +179,22 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
                 }
             }
 
-            // 7. Consignee Lookup with Duplicate Prevention (Peach field)
+            // 7. Consignee Lookup with Exact Name Priority & Dynamic Creation (Prevents mismatch e.g. Dholka -> Dhandhuka)
             $consignee = null;
-            $consigneeName = isset($firstRow['consignee_name']) ? trim((string) $firstRow['consignee_name']) : (isset($firstRow['consignee']) ? trim((string) $firstRow['consignee']) : null);
+            $consigneeName = isset($firstRow['consignee_name']) ? trim((string) $firstRow['consignee_name']) : (isset($firstRow['consignee']) ? trim((string) $firstRow['consignee']) : (isset($firstRow['consignee_party']) ? trim((string) $firstRow['consignee_party']) : (isset($firstRow['receiver_name']) ? trim((string) $firstRow['receiver_name']) : (isset($firstRow['customer_name']) ? trim((string) $firstRow['customer_name']) : (isset($firstRow['party_name']) ? trim((string) $firstRow['party_name']) : null)))));
             $consigneePhone = isset($firstRow['consignee_phone']) ? trim((string) $firstRow['consignee_phone']) : null;
             $consigneeGstin = isset($firstRow['consignee_gstin']) ? trim((string) $firstRow['consignee_gstin']) : null;
             $consigneeAddress = isset($firstRow['consignee_address']) ? trim((string) $firstRow['consignee_address']) : null;
 
             if (!empty($consigneeName) || !empty($consigneeGstin)) {
-                if (!empty($consigneeGstin)) {
-                    $consignee = Consignee::where('gstin', $consigneeGstin)->first();
-                }
-                if (!$consignee && !empty($consigneeName)) {
+                if (!empty($consigneeName)) {
                     $consignee = Consignee::where('company_id', $resolvedCompanyId)
                         ->whereRaw('LOWER(TRIM(name)) = ?', [strtolower($consigneeName)])
                         ->first()
                         ?: Consignee::whereRaw('LOWER(TRIM(name)) = ?', [strtolower($consigneeName)])->first();
                 }
-                if (!$consignee && !empty($consigneePhone) && $consigneePhone !== '9999999999') {
-                    $consignee = Consignee::where('phone', $consigneePhone)->first();
+                if (!$consignee && !empty($consigneeGstin)) {
+                    $consignee = Consignee::where('gstin', $consigneeGstin)->first();
                 }
 
                 if (!$consignee && !empty($consigneeName)) {
@@ -213,7 +209,7 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
                 }
             }
 
-            // 8. Origin & Destination Cities Lookup with Duplicate Prevention (Peach field)
+            // 8. Origin & Destination Cities Lookup
             $originCity = null;
             $fromCityName = isset($firstRow['from_city']) ? trim((string) $firstRow['from_city']) : (isset($firstRow['from']) ? trim((string) $firstRow['from']) : (isset($firstRow['origin_city']) ? trim((string) $firstRow['origin_city']) : null));
             if (!empty($fromCityName)) {
@@ -228,10 +224,12 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
                     ?: City::create(['name' => $toCityName, 'status' => 'active']);
             }
 
-            // 9. Builty Header Amounts
+            // 9. Builty Header Amounts, Remarks & Commission
             $freightCharges = $this->parseAmount($firstRow['freight_charges'] ?? $firstRow['freight'] ?? 0);
-            $biltyAdvanceAmount = $this->parseAmount($firstRow['bilty_advance_amount'] ?? $firstRow['advance_amount'] ?? $firstRow['bilty_advance'] ?? 0);
+            $biltyAdvanceAmount = $this->parseAmount($firstRow['bilty_advance_amount'] ?? $firstRow['advance_amount'] ?? $firstRow['bilty_advance'] ?? $firstRow['advance'] ?? 0);
             $biltyTotalAmount = $this->parseAmount($firstRow['bilty_total_amount'] ?? $firstRow['total_amount'] ?? $firstRow['total'] ?? 0);
+            $biltyCommission = $this->parseAmount($firstRow['bilty_commission'] ?? $firstRow['commission'] ?? $firstRow['builty_commission'] ?? $firstRow['comm'] ?? 0);
+            $biltyRemark = isset($firstRow['remark']) ? trim((string) $firstRow['remark']) : (isset($firstRow['remarks']) ? trim((string) $firstRow['remarks']) : (isset($firstRow['bilty_remark']) ? trim((string) $firstRow['bilty_remark']) : null));
 
             $bulty = null;
             if (!empty($lrNo)) {
@@ -243,6 +241,9 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
                 if (empty($lrNo)) {
                     $lrNo = Bulty::generateLRNumber($resolvedBranchId);
                 }
+
+                $initialTotal = $biltyTotalAmount ?: $freightCharges;
+                $initialRemaining = max(0, $initialTotal - $biltyAdvanceAmount);
 
                 $bulty = Bulty::create([
                     'company_id' => $resolvedCompanyId,
@@ -266,7 +267,10 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
                     'expiry_date' => $expiryDate,
                     'freight_charges' => $freightCharges,
                     'advance_amount' => $biltyAdvanceAmount,
-                    'total_amount' => $biltyTotalAmount ?: $freightCharges,
+                    'remaining_amount' => $initialRemaining,
+                    'bilty_commission' => $biltyCommission,
+                    'remark' => $biltyRemark,
+                    'total_amount' => $initialTotal,
                     'status' => 'pending',
                 ]);
                 $isNewBulty = true;
@@ -290,10 +294,31 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
                 if (!empty($firstRow['eway_bill_no'])) $updateData['eway_bill_no'] = $firstRow['eway_bill_no'];
                 if ($generateDate) $updateData['generation_date'] = $generateDate;
                 if ($expiryDate) $updateData['expiry_date'] = $expiryDate;
-                if ($biltyAdvanceAmount > 0) $updateData['advance_amount'] = $biltyAdvanceAmount;
+                if ($biltyAdvanceAmount > 0) {
+                    $updateData['advance_amount'] = $biltyAdvanceAmount;
+                    $updateData['remaining_amount'] = max(0, ($bulty->total_amount ?: $freightCharges) - $biltyAdvanceAmount);
+                }
+                if ($biltyCommission > 0) $updateData['bilty_commission'] = $biltyCommission;
+                if (!empty($biltyRemark)) $updateData['remark'] = $biltyRemark;
                 if (!empty($updateData)) {
                     $bulty->update($updateData);
                 }
+            }
+
+            // Sync Bilty Advance Detail if advance amount is provided
+            if ($biltyAdvanceAmount > 0) {
+                BiltyAdvanceDetail::updateOrCreate(
+                    [
+                        'bulty_id' => $bulty->id,
+                        'company_id' => $resolvedCompanyId,
+                    ],
+                    [
+                        'branch_id' => $resolvedBranchId,
+                        'date' => $lrDate ?: now()->format('Y-m-d'),
+                        'advance_amount' => $biltyAdvanceAmount,
+                        'remarks' => $biltyRemark ?: 'Advance from Excel import',
+                    ]
+                );
             }
 
             // 10. Sync Bulty Detail (PO No & Invoice)
@@ -320,22 +345,42 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
             }
 
             // 12. Process Multi-Row Child Records (Items, Toll, Fuel, AdBlue, Other, Advance)
+            // If updating existing Bulty/Trip with Excel rows, clean existing child details to prevent duplication
+            if (!$isNewBulty) {
+                $bulty->bultyItems()->delete();
+                $trip->fastTagDetails()->delete();
+                $trip->fuelDetails()->delete();
+                $trip->adblueDetails()->delete();
+                $trip->otherAmountDetails()->delete();
+                $trip->advanceDetails()->delete();
+            }
+
             $calcItemsTotal = 0;
             $calcItemsWeight = 0;
 
             foreach ($groupRows as $row) {
-                // Item Entry (Blue fields - multi-item per LR)
+                // Item Entry (Supports Multi-Items per LR)
                 $itemName = isset($row['item_name']) ? trim((string) $row['item_name']) : (isset($row['goods_description']) ? trim((string) $row['goods_description']) : null);
                 $weight = $this->parseAmount($row['weight'] ?? 0);
                 $articles = isset($row['articles']) ? (int) $row['articles'] : 0;
                 $packagingType = isset($row['packaging_type']) ? trim((string) $row['packaging_type']) : null;
-                $unit = isset($row['unit']) ? trim((string) $row['unit']) : 'MT';
+                $unit = isset($row['unit']) ? trim((string) $row['unit']) : (isset($row['units']) ? trim((string) $row['units']) : (isset($row['item_unit']) ? trim((string) $row['item_unit']) : (isset($row['uom']) ? trim((string) $row['uom']) : 'Ton')));
+                if (empty($unit)) {
+                    $unit = 'Ton';
+                }
+
+                // Register unit in Unit master if not already present
+                Unit::firstOrCreate(
+                    ['name' => $unit],
+                    ['description' => $unit, 'status' => 'active']
+                );
+
                 $freightPerMt = $this->parseAmount($row['freight_per_mt'] ?? $row['rate'] ?? 0);
                 // Calculate item amount automatically (weight * freight_per_mt) or parse if given
                 $itemAmount = $this->parseAmount($row['item_amount'] ?? ($weight > 0 && $freightPerMt > 0 ? ($weight * $freightPerMt) : 0));
 
                 if (!empty($itemName) || $weight > 0 || $itemAmount > 0) {
-                    $itemMaster = !empty($itemName) ? Item::whereRaw('LOWER(TRIM(name)) = ?', [strtolower($itemName)])->first() ?: Item::create(['name' => $itemName, 'status' => 'active']) : null;
+                    $itemMaster = !empty($itemName) ? (Item::whereRaw('LOWER(TRIM(name)) = ?', [strtolower($itemName)])->first() ?: Item::create(['name' => $itemName, 'status' => 'active'])) : null;
                     $bulty->bultyItems()->create([
                         'item_id' => $itemMaster?->id,
                         'item_name' => $itemName ?: 'General Goods',
@@ -350,16 +395,16 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
                     $calcItemsWeight += $weight;
                 }
 
-                // FastTag / Toll Entry (Green fields - multi-toll per LR)
-                $tollAmount = $this->parseAmount($row['toll_amount'] ?? $row['fasttag_total_amount'] ?? $row['fasttag_amount'] ?? 0);
+                // FastTag / Toll Entry (Auto-calculated: one_way + return)
+                $tollOneWay = $this->parseAmount($row['toll_oneway'] ?? $row['one_way'] ?? 0);
+                $tollReturn = $this->parseAmount($row['toll_return'] ?? $row['return'] ?? 0);
+                $tollAmount = $this->parseAmount($row['toll_amount'] ?? ($tollOneWay + $tollReturn));
                 $tollTime = $this->parseDateTime($row['toll_time'] ?? $row['transaction_time'] ?? null);
                 $tollLocation = isset($row['toll_location']) ? trim((string) $row['toll_location']) : (isset($row['location']) ? trim((string) $row['location']) : null);
                 $tollTxnId = isset($row['toll_txn_id']) ? trim((string) $row['toll_txn_id']) : (isset($row['transaction_id']) ? trim((string) $row['transaction_id']) : null);
-                $tollOneWay = $this->parseAmount($row['toll_oneway'] ?? $row['one_way'] ?? $tollAmount);
-                $tollReturn = $this->parseAmount($row['toll_return'] ?? $row['return'] ?? 0);
                 $tollDesc = isset($row['toll_description']) ? trim((string) $row['toll_description']) : (isset($row['description']) ? trim((string) $row['description']) : null);
 
-                if ($tollAmount > 0 || !empty($tollTxnId) || !empty($tollLocation)) {
+                if ($tollAmount > 0 || $tollOneWay > 0 || !empty($tollTxnId) || !empty($tollLocation)) {
                     $trip->fastTagDetails()->create([
                         'builty_id' => $bulty->id,
                         'transaction_time' => $tollTime,
@@ -367,15 +412,15 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
                         'description' => $tollDesc ?: 'Toll payment',
                         'transaction_id' => $tollTxnId,
                         'location' => $tollLocation,
-                        'one_way' => $tollOneWay,
+                        'one_way' => $tollOneWay ?: $tollAmount,
                         'return' => $tollReturn,
                     ]);
                 }
 
-                // Fuel Entry (Green fields - multi-fuel per LR)
-                $fuelAmount = $this->parseAmount($row['fuel_amount'] ?? 0);
+                // Fuel Entry (Auto-calculated: quantity * rate)
                 $fuelQuantity = $this->parseAmount($row['fuel_quantity'] ?? $row['quantity'] ?? 0);
-                $fuelRate = $this->parseAmount($row['fuel_rate'] ?? ($fuelQuantity > 0 && $fuelAmount > 0 ? ($fuelAmount / $fuelQuantity) : 0));
+                $fuelRate = $this->parseAmount($row['fuel_rate'] ?? 0);
+                $fuelAmount = $this->parseAmount($row['fuel_amount'] ?? ($fuelQuantity * $fuelRate));
                 $fuelCompanyName = isset($row['fuel_company_name']) ? trim((string) $row['fuel_company_name']) : (isset($row['fuel_company']) ? trim((string) $row['fuel_company']) : null);
                 $fuelPumpName = isset($row['fuel_pump_name']) ? trim((string) $row['fuel_pump_name']) : (isset($row['fuel_pump']) ? trim((string) $row['fuel_pump']) : null);
                 $fuelDate = $this->parseDate($row['fuel_date'] ?? null);
@@ -399,7 +444,7 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
                         'fuel_company_id' => $fuelCompany?->id,
                         'fuel_pump_id' => $fuelPump?->id,
                         'quantity' => $fuelQuantity,
-                        'rate' => $fuelRate,
+                        'rate' => $fuelRate ?: ($fuelQuantity > 0 && $fuelAmount > 0 ? ($fuelAmount / $fuelQuantity) : 0),
                         'amount' => $fuelAmount ?: ($fuelQuantity * $fuelRate),
                         'km' => $fuelKm,
                         'payment_type' => in_array($fuelPaymentType, ['credit', 'debit', 'cash']) ? $fuelPaymentType : 'credit',
@@ -407,10 +452,10 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
                     ]);
                 }
 
-                // AdBlue Entry (Green fields - multi-adblue per LR)
-                $adblueAmount = $this->parseAmount($row['adblue_amount'] ?? $row['adblue_total_amount'] ?? 0);
+                // AdBlue Entry (Auto-calculated: quantity * rate)
                 $adblueQuantity = $this->parseAmount($row['adblue_quantity'] ?? 0);
-                $adblueRate = $this->parseAmount($row['adblue_rate'] ?? ($adblueQuantity > 0 && $adblueAmount > 0 ? ($adblueAmount / $adblueQuantity) : 0));
+                $adblueRate = $this->parseAmount($row['adblue_rate'] ?? 0);
+                $adblueAmount = $this->parseAmount($row['adblue_amount'] ?? $row['adblue_total_amount'] ?? ($adblueQuantity * $adblueRate));
                 $adblueCompanyName = isset($row['adblue_company_name']) ? trim((string) $row['adblue_company_name']) : (isset($row['adblue_company']) ? trim((string) $row['adblue_company']) : null);
                 $adblueDate = $this->parseDate($row['adblue_date'] ?? null);
                 $adblueKm = $this->parseAmount($row['adblue_km'] ?? 0);
@@ -424,14 +469,14 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
                         'date' => $adblueDate ?: $lrDate ?: now()->format('Y-m-d'),
                         'adblue_company_id' => $adblueCompany?->id,
                         'quantity' => $adblueQuantity,
-                        'rate' => $adblueRate,
+                        'rate' => $adblueRate ?: ($adblueQuantity > 0 && $adblueAmount > 0 ? ($adblueAmount / $adblueQuantity) : 0),
                         'amount' => $adblueAmount ?: ($adblueQuantity * $adblueRate),
                         'km' => $adblueKm,
                         'payment_type' => in_array($adbluePaymentType, ['credit', 'debit', 'cash']) ? $adbluePaymentType : 'cash',
                     ]);
                 }
 
-                // Other Expense Entry (Green fields - multi-expenses per LR)
+                // Other Expense Entry
                 $otherTitle = isset($row['other_expense_title']) ? trim((string) $row['other_expense_title']) : (isset($row['other_title']) ? trim((string) $row['other_title']) : null);
                 $otherAmount = $this->parseAmount($row['other_expense_amount'] ?? $row['other_amount'] ?? 0);
                 $otherDate = $this->parseDate($row['other_expense_date'] ?? null);
@@ -447,7 +492,7 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
                     ]);
                 }
 
-                // Advance Entry (Green fields - multi-advances per LR)
+                // Advance Entry (Supports Multi-Advances per LR)
                 $advanceAmount = $this->parseAmount($row['advance_amount'] ?? $row['trip_advance_total_amount'] ?? $row['trip_advance_amount'] ?? 0);
                 $advFuelCompanyName = isset($row['advance_fuel_company_name']) ? trim((string) $row['advance_fuel_company_name']) : (isset($row['advance_company']) ? trim((string) $row['advance_company']) : null);
                 $advFuelPumpName = isset($row['advance_fuel_pump_name']) ? trim((string) $row['advance_fuel_pump_name']) : (isset($row['advance_pump']) ? trim((string) $row['advance_pump']) : null);
@@ -485,20 +530,24 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
             $tripAdvanceSum = (float) $trip->advanceDetails()->sum('advance_amount');
 
             $trip->update([
-                'fasttag_total_amount' => $tripFastTagSum ?: $this->parseAmount($firstRow['fasttag_total_amount'] ?? 0),
-                'fuel_amount' => $tripFuelSum ?: $this->parseAmount($firstRow['fuel_amount'] ?? 0),
-                'adblue_total_amount' => $tripAdblueSum ?: $this->parseAmount($firstRow['adblue_total_amount'] ?? 0),
-                'other_amount' => $tripOtherSum ?: $this->parseAmount($firstRow['other_amount'] ?? 0),
-                'advance_total_amount' => $tripAdvanceSum ?: $this->parseAmount($firstRow['trip_advance_total_amount'] ?? $firstRow['advance_total_amount'] ?? 0),
+                'fasttag_total_amount' => $tripFastTagSum,
+                'fuel_amount' => $tripFuelSum,
+                'adblue_total_amount' => $tripAdblueSum,
+                'other_amount' => $tripOtherSum,
+                'advance_total_amount' => $tripAdvanceSum,
             ]);
 
-            // Sync Builty Total Amount if items sum exists
-            if ($calcItemsTotal > 0 && ($bulty->total_amount == 0 || $freightCharges == 0)) {
-                $bulty->update([
-                    'freight_charges' => $calcItemsTotal,
-                    'total_amount' => $calcItemsTotal,
-                ]);
-            }
+            // Sync Builty Total Amount & Remaining Amount from items
+            $finalBuiltyTotal = $calcItemsTotal > 0 ? $calcItemsTotal : ($freightCharges > 0 ? $freightCharges : (float) $bulty->total_amount);
+            $finalAdvance = $biltyAdvanceAmount > 0 ? $biltyAdvanceAmount : (float) $bulty->advance_amount;
+            $finalRemaining = max(0, $finalBuiltyTotal - $finalAdvance);
+
+            $bulty->update([
+                'freight_charges' => $calcItemsTotal > 0 ? $calcItemsTotal : ($bulty->freight_charges ?: $finalBuiltyTotal),
+                'total_amount' => $finalBuiltyTotal,
+                'advance_amount' => $finalAdvance,
+                'remaining_amount' => $finalRemaining,
+            ]);
 
             if ($isNewTrip || $isNewBulty) {
                 $this->imported++;

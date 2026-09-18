@@ -352,7 +352,7 @@
                             </div>
                             <div class="col-md-4">
                                 <div class="info-label">Total Weight</div>
-                                <div class="info-value">{{ number_format($bulty->bultyItems->sum('weight'), 2) }} {{ $bulty->bultyItems->first()?->unit ?? 'kg' }}</div>
+                                <div class="info-value">{{ number_format($bulty->bultyItems->sum('weight'), 2) }} {{ $bulty->bultyItems->first()?->unit ?: 'Ton' }}</div>
                             </div>
                         </div>
 

@@ -161,6 +161,19 @@
             <!-- Company Address -->
             <div class="text-center p-1 fw-bold" style="border-bottom: 2px solid #000; font-size: 11px;">{{ $compAdd }}</div>
 
+            <!-- Top Metadata Bar: Bill No, Date, No of LR -->
+            <div class="row g-0 align-items-center" style="border-bottom: 2px solid #000; padding: 5px 8px; font-size: 11px; font-weight: bold; background: #fafafa;">
+                <div class="col-4 text-start">
+                    <strong>BILL NO:</strong> - <span>{{ $billNo }}</span>
+                </div>
+                <div class="col-4 text-center">
+                    <strong>DATE:</strong> - <span>{{ $billDate }}</span>
+                </div>
+                <div class="col-4 text-end">
+                    <strong>NO. OF LR:</strong> - <span>{{ $invoice->no_of_lrs ?? $invoice->bulties->count() }}</span>
+                </div>
+            </div>
+
             <!-- Client Details -->
             <div class="row g-0" style="border-bottom: 2px solid #000;">
                 <div class="col-8 p-2" style="border-right: 2px solid #000; font-size: 11px; text-transform: uppercase;">
@@ -168,9 +181,6 @@
                 </div>
                 <div class="col-4 p-2" style="font-size: 11px;">
                     <div><strong>HSN/SAC CODE:</strong> <span>{{ $partyHsn }}</span></div>
-                    <div class="mt-2"><strong>Date:</strong> - <span>{{ $billDate }}</span></div>
-                    <div><strong>Bill No:</strong> - <span>{{ $billNo }}</span></div>
-                    <div><strong>No. of LR:</strong> - <span>{{ $invoice->no_of_lrs ?? $invoice->bulties->count() }}</span></div>
                     @if(!empty($invoice->state_vendor_code))
                     <div class="mt-1"><strong>State Vendor Code:</strong> - <span>{{ $invoice->state_vendor_code }}</span></div>
                     @endif

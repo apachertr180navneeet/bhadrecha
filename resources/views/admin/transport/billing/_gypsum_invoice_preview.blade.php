@@ -119,6 +119,19 @@
             {{ $companyAddress }}
         </div>
         
+        <!-- Top Metadata Bar: Bill No, Date, No of LR -->
+        <div class="row g-0 align-items-center" style="border-bottom: 2px solid #000; padding: 5px 8px; font-size: 11px; font-weight: bold; background: #fafafa;">
+            <div class="col-4 text-start">
+                <strong>BILL NO:</strong> - <span>{{ $billNumber }}</span>
+            </div>
+            <div class="col-4 text-center">
+                <strong>DATE:</strong> - <span>{{ $invoiceDate }}</span>
+            </div>
+            <div class="col-4 text-end">
+                <strong>NO. OF LR:</strong> - <span>{{ $existingInvoice->no_of_lrs ?? $bulties->count() }}</span>
+            </div>
+        </div>
+        
         <!-- Client details -->
         <div class="row g-0" style="border-bottom: 2px solid #000;">
             <div class="col-8 p-2" style="border-right: 2px solid #000; font-size: 10px;">
@@ -129,14 +142,9 @@
             </div>
         </div>
         
-        <!-- State & Date -->
-        <div class="row g-0" style="border-bottom: 2px solid #000; font-size: 10px;">
-            <div class="col-8 p-2" style="border-right: 2px solid #000;">
-                <strong>State Name:-</strong> {{ $partyState }}
-            </div>
-            <div class="col-4 p-2">
-                <strong>Date:</strong> - {{ $invoiceDate }}
-            </div>
+        <!-- State -->
+        <div style="border-bottom: 2px solid #000; padding: 4px 8px; font-size: 10px;">
+            <strong>State Name:-</strong> {{ $partyState }}
         </div>
         
         <!-- GSTIN -->
@@ -144,16 +152,14 @@
             GSTIN- {{ $partyGst }}
         </div>
         
-        <!-- Place of supply & Bill no -->
+        <!-- Place of supply & Vendor info -->
         <div class="row g-0" style="border-bottom: 2px solid #000; font-size: 10px; font-weight: bold;">
             <div class="col-8 p-2" style="border-right: 2px solid #000;">
                 PLACE OF SUPPLY - {{ $partyStateStr }}
             </div>
             <div class="col-4 p-2">
-                <div>Bill No: - {{ $billNumber }}</div>
-                <div><strong>No. of LR:</strong> - <span>{{ $existingInvoice->no_of_lrs ?? $bulties->count() }}</span></div>
                 @if(!empty($existingInvoice?->state_vendor_code))
-                <div class="mt-1"><strong>State Vendor Code:</strong> - <span>{{ $existingInvoice->state_vendor_code }}</span></div>
+                <div><strong>State Vendor Code:</strong> - <span>{{ $existingInvoice->state_vendor_code }}</span></div>
                 @endif
                 @if(!empty($existingInvoice?->vendor_code) || !empty($vendorCode))
                 <div><strong>Vendor Code:</strong> - <span>{{ $vendorCode ?? $existingInvoice->vendor_code }}</span></div>
