@@ -34,6 +34,20 @@ class TripTemplateExport implements FromArray, WithHeadings, ShouldAutoSize
                 '2026-05-20',                       // 14. generate_date
                 '2026-05-25',                       // 15. expiry_date
                 'PO-7701',                          // 16. po_no
+                // Builty - GRN / SAP Details
+                '2026-05-20',                       // 17. posting_date
+                'MATDOC-5001',                      // 18. mat_doc
+                'GE-9001',                          // 19. gate_entry_no
+                'JSW Steel Co.',                    // 20. supplier
+                'SUPP-042',                         // 21. supplier_no
+                'CH-4401',                          // 22. challan_no
+                '2026-05-20',                       // 23. gate_out_date
+                '10',                               // 24. po_item
+                'TR-88',                            // 25. transporter_code
+                'Bhadrecha Roadways',               // 26. transporter_name
+                'Steel Plates HR',                  // 27. material_name
+                15.500,                             // 28. challan_qty
+                15.480,                             // 29. final_wgt
                 // Consignor
                 'ABC Logistics Pvt Ltd',            // 17. consignor_name
                 '9876543210',                       // 18. consignor_phone
@@ -114,6 +128,20 @@ class TripTemplateExport implements FromArray, WithHeadings, ShouldAutoSize
                 '2026-05-20',                       // 14. generate_date
                 '2026-05-25',                       // 15. expiry_date
                 'PO-7701',                          // 16. po_no
+                // Builty - GRN / SAP Details (Same LR)
+                '2026-05-20',                       // 17. posting_date
+                'MATDOC-5001',                      // 18. mat_doc
+                'GE-9001',                          // 19. gate_entry_no
+                'JSW Steel Co.',                    // 20. supplier
+                'SUPP-042',                         // 21. supplier_no
+                'CH-4401',                          // 22. challan_no
+                '2026-05-20',                       // 23. gate_out_date
+                '20',                               // 24. po_item
+                'TR-88',                            // 25. transporter_code
+                'Bhadrecha Roadways',               // 26. transporter_name
+                'Iron Rods 12mm',                   // 27. material_name
+                10.000,                             // 28. challan_qty
+                9.980,                              // 29. final_wgt
                 'ABC Logistics Pvt Ltd',            // 17. consignor_name
                 '9876543210',                       // 18. consignor_phone
                 '27AAACA1234A1Z5',                  // 19. consignor_gstin
@@ -191,6 +219,20 @@ class TripTemplateExport implements FromArray, WithHeadings, ShouldAutoSize
                 '2026-05-20',                       // 14. generate_date
                 '2026-05-25',                       // 15. expiry_date
                 'PO-7701',                          // 16. po_no
+                // Builty - GRN / SAP Details (Same LR)
+                '2026-05-20',                       // 17. posting_date
+                'MATDOC-5001',                      // 18. mat_doc
+                'GE-9001',                          // 19. gate_entry_no
+                'JSW Steel Co.',                    // 20. supplier
+                'SUPP-042',                         // 21. supplier_no
+                'CH-4401',                          // 22. challan_no
+                '2026-05-20',                       // 23. gate_out_date
+                '30',                               // 24. po_item
+                'TR-88',                            // 25. transporter_code
+                'Bhadrecha Roadways',               // 26. transporter_name
+                'Steel Binding Wire',               // 27. material_name
+                5.000,                              // 28. challan_qty
+                4.990,                              // 29. final_wgt
                 'ABC Logistics Pvt Ltd',            // 17. consignor_name
                 '9876543210',                       // 18. consignor_phone
                 '27AAACA1234A1Z5',                  // 19. consignor_gstin
@@ -257,6 +299,20 @@ class TripTemplateExport implements FromArray, WithHeadings, ShouldAutoSize
                 '2026-05-21',                       // 14. generate_date
                 '2026-05-26',                       // 15. expiry_date
                 'PO-7702',                          // 16. po_no
+                // Builty - GRN / SAP Details
+                '2026-05-21',                       // 17. posting_date
+                'MATDOC-5002',                      // 18. mat_doc
+                'GE-9002',                          // 19. gate_entry_no
+                'Adani Cement Ltd',                 // 20. supplier
+                'SUPP-088',                         // 21. supplier_no
+                'CH-4402',                          // 22. challan_no
+                '2026-05-21',                       // 23. gate_out_date
+                '10',                               // 24. po_item
+                'TR-99',                            // 25. transporter_code
+                'Bhadrecha Logistics',              // 26. transporter_name
+                'Ceramic Tiles Premium',            // 27. material_name
+                22.000,                             // 28. challan_qty
+                21.950,                             // 29. final_wgt
                 'Gujarat Heavy Industries',         // 17. consignor_name
                 '9123456780',                       // 18. consignor_phone
                 '24AABCG1234M1Z8',                  // 19. consignor_gstin
@@ -334,6 +390,21 @@ class TripTemplateExport implements FromArray, WithHeadings, ShouldAutoSize
             'generate_date',
             'expiry_date',
             'po_no',
+
+            // Builty - GRN / SAP Details
+            'posting_date',
+            'mat_doc',
+            'gate_entry_no',
+            'supplier',
+            'supplier_no',
+            'challan_no',
+            'gate_out_date',
+            'po_item',
+            'transporter_code',
+            'transporter_name',
+            'material_name',
+            'challan_qty',
+            'final_wgt',
 
             // Builty - Parties Details
             'consignor_name',

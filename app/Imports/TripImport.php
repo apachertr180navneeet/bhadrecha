@@ -16,6 +16,7 @@ use App\Models\Driver;
 use App\Models\FuelCompany;
 use App\Models\FuelPump;
 use App\Models\Item;
+use App\Models\Supplier;
 use App\Models\Trip;
 use App\Models\TripAdBlueDetail;
 use App\Models\TripAdvanceDetail;
@@ -321,16 +322,93 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
                 );
             }
 
-            // 10. Sync Bulty Detail (PO No & Invoice)
-            if (!empty($poNo) || !empty($firstRow['invoice_number'])) {
-                $bultyDetailData = array_filter([
-                    'po_no' => $poNo,
-                    'invoice_doc' => $firstRow['invoice_number'] ?? null,
-                    'invoice_date' => $this->parseDate($firstRow['invoice_date'] ?? null),
-                ]);
-                if (!empty($bultyDetailData)) {
-                    $bulty->bultyDetail()->updateOrCreate(['bulty_id' => $bulty->id], $bultyDetailData);
+            // 10. Sync Bulty Detail (PO No, Invoice & GRN / Logistics Details)
+            $supplier = null;
+            $supplierName = $this->getRowValue($firstRow, ['supplier', 'supplier_name', 'supplier_id']);
+            if (empty($supplierName)) {
+                foreach ($groupRows as $gRow) {
+                    $sVal = $this->getRowValue($gRow, ['supplier', 'supplier_name', 'supplier_id']);
+                    if (!empty($sVal)) {
+                        $supplierName = $sVal;
+                        break;
+                    }
                 }
+            }
+
+            if (!empty($supplierName)) {
+                if (is_numeric($supplierName)) {
+                    $supplier = Supplier::find($supplierName);
+                }
+                if (!$supplier) {
+                    $supplier = Supplier::where('company_id', $resolvedCompanyId)
+                        ->whereRaw('LOWER(TRIM(name)) = ?', [strtolower($supplierName)])
+                        ->first()
+                        ?: Supplier::whereRaw('LOWER(TRIM(name)) = ?', [strtolower($supplierName)])->first();
+                }
+                if (!$supplier) {
+                    $supplier = Supplier::create([
+                        'company_id' => $resolvedCompanyId,
+                        'branch_id' => $resolvedBranchId,
+                        'name' => $supplierName,
+                        'status' => 'active',
+                    ]);
+                }
+            }
+
+            $postingDateRaw = $this->getRowValue($firstRow, ['posting_date', 'posting date', 'post_date']);
+            $matDoc = $this->getRowValue($firstRow, ['mat_doc', 'mat doc', 'material_doc', 'material_document']);
+            $gateEntryNo = $this->getRowValue($firstRow, ['gate_entry_no', 'gate entry no', 'gate_entry', 'gateentryno']);
+            $supplierNo = $this->getRowValue($firstRow, ['supplier_no', 'supplier no', 'supplier_code', 'vendor_no']);
+            $challanNo = $this->getRowValue($firstRow, ['challan_no', 'challan no', 'challan_number', 'challan']);
+            $gateOutDateRaw = $this->getRowValue($firstRow, ['gate_out_date', 'gate out date', 'gate_out']);
+            $poItem = $this->getRowValue($firstRow, ['po_item', 'po item', 'po_item_no', 'item_no']);
+            $transporterCode = $this->getRowValue($firstRow, ['transporter_code', 'transporter code', 'trans_code']);
+            $transporterName = $this->getRowValue($firstRow, ['transporter_name', 'transporter name', 'transporter']);
+            $materialName = $this->getRowValue($firstRow, ['material_name', 'material name', 'material']);
+            $challanQtyRaw = $this->getRowValue($firstRow, ['challan_qty', 'challan qty', 'challan_quantity']);
+            $finalWgtRaw = $this->getRowValue($firstRow, ['final_wgt', 'final wgt', 'final_weight']);
+
+            foreach ($groupRows as $gRow) {
+                if ($postingDateRaw === null) $postingDateRaw = $this->getRowValue($gRow, ['posting_date', 'posting date', 'post_date']);
+                if ($matDoc === null) $matDoc = $this->getRowValue($gRow, ['mat_doc', 'mat doc', 'material_doc', 'material_document']);
+                if ($gateEntryNo === null) $gateEntryNo = $this->getRowValue($gRow, ['gate_entry_no', 'gate entry no', 'gate_entry', 'gateentryno']);
+                if ($supplierNo === null) $supplierNo = $this->getRowValue($gRow, ['supplier_no', 'supplier no', 'supplier_code', 'vendor_no']);
+                if ($challanNo === null) $challanNo = $this->getRowValue($gRow, ['challan_no', 'challan no', 'challan_number', 'challan']);
+                if ($gateOutDateRaw === null) $gateOutDateRaw = $this->getRowValue($gRow, ['gate_out_date', 'gate out date', 'gate_out']);
+                if ($poItem === null) $poItem = $this->getRowValue($gRow, ['po_item', 'po item', 'po_item_no', 'item_no']);
+                if ($transporterCode === null) $transporterCode = $this->getRowValue($gRow, ['transporter_code', 'transporter code', 'trans_code']);
+                if ($transporterName === null) $transporterName = $this->getRowValue($gRow, ['transporter_name', 'transporter name', 'transporter']);
+                if ($materialName === null) $materialName = $this->getRowValue($gRow, ['material_name', 'material name', 'material']);
+                if ($challanQtyRaw === null) $challanQtyRaw = $this->getRowValue($gRow, ['challan_qty', 'challan qty', 'challan_quantity']);
+                if ($finalWgtRaw === null) $finalWgtRaw = $this->getRowValue($gRow, ['final_wgt', 'final wgt', 'final_weight']);
+            }
+
+            $postingDate = $this->parseDate($postingDateRaw);
+            $gateOutDate = $this->parseDate($gateOutDateRaw);
+            $challanQty = $challanQtyRaw !== null ? $this->parseAmount($challanQtyRaw) : null;
+            $finalWgt = $finalWgtRaw !== null ? $this->parseAmount($finalWgtRaw) : null;
+
+            $bultyDetailData = array_filter([
+                'po_no' => $poNo,
+                'invoice_doc' => $firstRow['invoice_number'] ?? null,
+                'invoice_date' => $this->parseDate($firstRow['invoice_date'] ?? null),
+                'posting_date' => $postingDate,
+                'mat_doc' => $matDoc,
+                'gate_entry_no' => $gateEntryNo,
+                'supplier_id' => $supplier?->id,
+                'supplier_no' => $supplierNo,
+                'challan_no' => $challanNo,
+                'gate_out_date' => $gateOutDate,
+                'po_item' => $poItem,
+                'transporter_code' => $transporterCode,
+                'transporter_name' => $transporterName,
+                'material_name' => $materialName,
+                'challan_qty' => $challanQty,
+                'final_wgt' => $finalWgt,
+            ], fn ($val) => $val !== null && $val !== '');
+
+            if (!empty($bultyDetailData)) {
+                $bulty->bultyDetail()->updateOrCreate(['bulty_id' => $bulty->id], $bultyDetailData);
             }
 
             // 11. Find or Create Trip
@@ -360,8 +438,8 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
 
             foreach ($groupRows as $row) {
                 // Item Entry (Supports Multi-Items per LR)
-                $itemName = isset($row['item_name']) ? trim((string) $row['item_name']) : (isset($row['goods_description']) ? trim((string) $row['goods_description']) : null);
-                $weight = $this->parseAmount($row['weight'] ?? 0);
+                $itemName = $this->getRowValue($row, ['item_name', 'item', 'goods_description', 'material_name', 'material']);
+                $weight = $this->parseAmount($row['weight'] ?? $row['final_wgt'] ?? $row['final weight'] ?? $row['challan_qty'] ?? $row['challan qty'] ?? 0);
                 $articles = isset($row['articles']) ? (int) $row['articles'] : 0;
                 $packagingType = isset($row['packaging_type']) ? trim((string) $row['packaging_type']) : null;
                 $unit = isset($row['unit']) ? trim((string) $row['unit']) : (isset($row['units']) ? trim((string) $row['units']) : (isset($row['item_unit']) ? trim((string) $row['item_unit']) : (isset($row['uom']) ? trim((string) $row['uom']) : 'Ton')));
@@ -566,7 +644,16 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
             if (is_numeric($value)) {
                 return Date::excelToDateTimeObject($value)->format('Y-m-d');
             }
-            return Carbon::parse($value)->format('Y-m-d');
+            $str = trim((string) $value);
+            if (preg_match('/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}$/', $str)) {
+                $sep = str_contains($str, '/') ? '/' : '-';
+                try {
+                    return Carbon::createFromFormat("d{$sep}m{$sep}Y", $str)->format('Y-m-d');
+                } catch (\Exception $e) {
+                    // fallback to standard parse
+                }
+            }
+            return Carbon::parse($str)->format('Y-m-d');
         } catch (\Exception $e) {
             return null;
         }
@@ -597,6 +684,37 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
             return is_numeric($clean) ? (float) $clean : 0.0;
         }
         return 0.0;
+    }
+
+    protected function getRowValue($row, array $keys, $default = null)
+    {
+        if (empty($row)) {
+            return $default;
+        }
+
+        foreach ($keys as $key) {
+            if (isset($row[$key]) && trim((string) $row[$key]) !== '') {
+                return trim((string) $row[$key]);
+            }
+        }
+
+        // Normalized check (ignoring case, spaces, underscores, dots, hyphens)
+        $normalizedRow = [];
+        foreach ($row as $rKey => $rVal) {
+            if ($rVal !== null && trim((string) $rVal) !== '') {
+                $cleanKey = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', (string) $rKey));
+                $normalizedRow[$cleanKey] = trim((string) $rVal);
+            }
+        }
+
+        foreach ($keys as $key) {
+            $cleanLookup = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', (string) $key));
+            if (isset($normalizedRow[$cleanLookup])) {
+                return $normalizedRow[$cleanLookup];
+            }
+        }
+
+        return $default;
     }
 
     public function rules(): array

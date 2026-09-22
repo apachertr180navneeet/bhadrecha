@@ -210,6 +210,12 @@
                             <a href="{{ route('admin.transport.trips.download-template') }}" class="btn btn-sm btn-link text-primary p-0 text-decoration-none fw-semibold">Download Template</a>
                         </div>
                     </div>
+                    <div class="mt-3 p-2 rounded bg-light border">
+                        <div class="small fw-bold text-secondary mb-1"><i class="bx bx-check-double text-success me-1"></i> Supported Details Include:</div>
+                        <div class="small text-muted" style="font-size: 0.78rem; line-height: 1.4;">
+                            LR Details &bull; Consignor/Consignee &bull; Vehicle & Driver &bull; Items/Freight &bull; GRN Details (Posting Date, Mat Doc, Gate Entry No, Supplier, Supplier No, Challan No, Gate Out Date, PO Item, Transporter Code/Name, Material Name, Challan Qty, Final Wgt) &bull; FastTag &bull; Fuel &bull; AdBlue &bull; Advance
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
