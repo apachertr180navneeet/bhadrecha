@@ -12,6 +12,11 @@
                 </ol>
             </nav>
         </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#enterLrModal">
+                <i class="bx bx-list-plus me-1"></i> Enter / Paste LR Numbers
+            </button>
+        </div>
     </div>
 
     <!-- Filters -->
@@ -133,6 +138,41 @@
             {{ $bulties->links() }}
         </div>
         @endif
+    <!-- Modal to Enter/Paste Multiple LR Numbers -->
+    <div class="modal fade" id="enterLrModal" tabindex="-1" aria-labelledby="enterLrModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold" id="enterLrModalLabel">
+                        <i class="bx bx-receipt me-1 text-primary"></i> Enter / Paste Multiple LR Numbers
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-2">
+                        Enter or paste multiple LR numbers below separated by commas, spaces, or new lines (e.g. paste 44 LR numbers from Excel or WhatsApp).
+                    </p>
+                    <div class="mb-3">
+                        <textarea class="form-control font-monospace" id="pasteLrNumbersInput" rows="6" placeholder="LR-1001, LR-1002, LR-1003&#10;or one LR number per line..."></textarea>
+                    </div>
+                    <div id="matchLrStatus" class="d-none alert mb-0"></div>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <div>
+                        <span id="lrCountPill" class="badge bg-label-secondary">0 LR numbers entered</span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-info" id="validateLrsBtn">
+                            <i class="bx bx-check-double me-1"></i> Check & Match LRs
+                        </button>
+                        <button type="button" class="btn btn-success" id="proceedWithLrsBtn" disabled>
+                            <i class="bx bx-right-arrow-alt me-1"></i> Generate Bill
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 @endsection
@@ -250,6 +290,89 @@
         const ids = getSelectedIds();
         if (ids.length > 0) {
             window.location.href = '{{ route("admin.transport.billing.create") }}?ids=' + ids.join(',');
+        }
+    });
+
+    // Enter / Paste Multiple LR Numbers Logic
+    function getEnteredLrs() {
+        const raw = document.getElementById('pasteLrNumbersInput')?.value || '';
+        return raw.split(/[\s,\r\n\t]+/).map(s => s.trim()).filter(Boolean);
+    }
+
+    document.getElementById('pasteLrNumbersInput')?.addEventListener('input', function() {
+        const lrs = getEnteredLrs();
+        const pill = document.getElementById('lrCountPill');
+        if (pill) {
+            pill.textContent = `${lrs.length} LR number(s) entered`;
+        }
+    });
+
+    document.getElementById('validateLrsBtn')?.addEventListener('click', function() {
+        const lrs = getEnteredLrs();
+        if (lrs.length === 0) {
+            alert('Please enter at least one LR number.');
+            return;
+        }
+
+        const btn = $(this);
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Checking...');
+
+        fetch('{{ route("admin.transport.billing.match-lrs") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ lr_numbers: lrs.join(',') })
+        })
+        .then(r => r.json())
+        .then(data => {
+            btn.prop('disabled', false).html('<i class="bx bx-check-double me-1"></i> Check & Match LRs');
+            const statusDiv = $('#matchLrStatus');
+            statusDiv.removeClass('d-none alert-success alert-warning alert-danger');
+
+            if (data.matched_count > 0) {
+                let msg = `<strong>Found ${data.matched_count} unbilled LR(s) matching in database.</strong>`;
+                if (data.missing_count > 0) {
+                    msg += `<div class="mt-1 small text-danger">${data.missing_count} LR(s) not found or already billed: ${data.missing_lr_nos.join(', ')}</div>`;
+                    statusDiv.addClass('alert-warning');
+                } else {
+                    statusDiv.addClass('alert-success');
+                }
+                statusDiv.html(msg);
+
+                $('#proceedWithLrsBtn').prop('disabled', false).data('matched-ids', data.matched_ids).data('matched-lrs', data.matched_lr_nos);
+
+                // Merge into sessionStorage
+                let currentIds = getSelectedIds();
+                data.matched_ids.forEach(id => {
+                    const sId = String(id);
+                    if (!currentIds.includes(sId)) {
+                        currentIds.push(sId);
+                    }
+                });
+                saveSelectedIds(currentIds);
+                syncUIFromStorage();
+            } else {
+                statusDiv.addClass('alert-danger').html(`<strong>No unbilled LRs found.</strong> All ${lrs.length} entered LR(s) are either not in the system or already billed.`);
+                $('#proceedWithLrsBtn').prop('disabled', true);
+            }
+        })
+        .catch(err => {
+            btn.prop('disabled', false).html('<i class="bx bx-check-double me-1"></i> Check & Match LRs');
+            alert('Error verifying LR numbers. Please try again.');
+        });
+    });
+
+    document.getElementById('proceedWithLrsBtn')?.addEventListener('click', function() {
+        const ids = $(this).data('matched-ids');
+        const lrNos = $(this).data('matched-lrs');
+        if (ids && ids.length > 0) {
+            let url = '{{ route("admin.transport.billing.create") }}?ids=' + ids.join(',');
+            if (lrNos && lrNos.length > 0) {
+                url += '&lr_nos=' + encodeURIComponent(lrNos.join(','));
+            }
+            window.location.href = url;
         }
     });
 

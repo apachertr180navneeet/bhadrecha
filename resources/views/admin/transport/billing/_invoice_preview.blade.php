@@ -1,19 +1,52 @@
 @php
+    $existingInvoice = $existingInvoice ?? ($invoice ?? null);
     $visibleFields = $existingInvoice?->visible_fields ?? [];
     $isMaiharUnloading = ($existingInvoice?->template_type === 'maihar_unloading');
 
     $freightFields = $visibleFields;
+    if (empty($freightFields)) {
+        $freightFields = [
+            'lr_no',
+            'lr_date',
+            'consignor_id',
+            'consignee_id',
+            'from_city',
+            'to_city',
+            'vehicle_id',
+            'freight_charges',
+            'damage_amount',
+            'shortage_amount',
+            'gst_amount',
+            'other_charges',
+            'total_amount'
+        ];
+    } else {
+        if (!in_array('lr_no', $freightFields) && !in_array('lr_number', $freightFields)) {
+            array_unshift($freightFields, 'lr_no');
+        }
+    }
+
     $grnFields = [];
     if ($existingInvoice?->grn_new_page ?? false) {
         $grnFields = $existingInvoice?->grn_fields ?? [];
+        if (!empty($grnFields) && !in_array('lr_no', $grnFields) && !in_array('lr_number', $grnFields)) {
+            array_unshift($grnFields, 'lr_no');
+        }
     }
 
     $fieldLabels = [
         'lr_no' => 'LR NO.',
+        'lr_number' => 'LR NO.',
+        'consignor' => 'CONSIGNOR',
+        'consignee' => 'CONSIGNEE',
+        'vehicle' => 'VEHICLE NO.',
+        'driver' => 'DRIVER',
+        'freight' => 'FREIGHT',
         'lr_date' => 'DISP. DATE',
         'from_city' => 'FROM',
         'to_city' => 'DESTINATION',
         'consignee_id' => 'CONSIGNEE',
+        'consignor_id' => 'CONSIGNOR',
         'vehicle_id' => 'VEHICLE NO.',
         'driver_id' => 'DRIVER',
         'payment_type' => 'PAYMENT TYPE',
@@ -185,9 +218,11 @@
         
         if ($fieldKey === 'from_city') return $bulty->originCity ? $bulty->originCity->name : '-';
         if ($fieldKey === 'to_city') return $bulty->destinationCity ? $bulty->destinationCity->name : '-';
-        if ($fieldKey === 'consignee_id') return $bulty->consignee ? $bulty->consignee->name : '-';
-        if ($fieldKey === 'vehicle_id') return $bulty->vehicle ? $bulty->vehicle->vehicle_number : '-';
-        if ($fieldKey === 'driver_id') return $bulty->driver ? $bulty->driver->name : '-';
+        if ($fieldKey === 'consignee_id' || $fieldKey === 'consignee') return $bulty->consignee ? $bulty->consignee->name : '-';
+        if ($fieldKey === 'consignor_id' || $fieldKey === 'consignor') return $bulty->consignor ? $bulty->consignor->name : '-';
+        if ($fieldKey === 'vehicle_id' || $fieldKey === 'vehicle') return $bulty->vehicle ? $bulty->vehicle->vehicle_number : '-';
+        if ($fieldKey === 'driver_id' || $fieldKey === 'driver') return $bulty->driver ? $bulty->driver->name : '-';
+        if ($fieldKey === 'lr_no' || $fieldKey === 'lr_number') return $bulty->lr_no ?? '-';
         
         if ($fieldKey === 'lr_date') {
             return $bulty->lr_date ? $bulty->lr_date->format('d-m-Y') : '-';
@@ -317,10 +352,10 @@
                 <strong>BILL NO:</strong> - <span>{{ $billNumber }}</span>
             </div>
             <div class="col-4 text-center">
-                <strong>DATE:</strong> - <span>{{ $existingInvoice->invoice_date ? $existingInvoice->invoice_date->format('d-m-Y') : now()->format('d-m-Y') }}</span>
+                <strong>DATE:</strong> - <span>{{ ($existingInvoice?->invoice_date) ? $existingInvoice->invoice_date->format('d-m-Y') : now()->format('d-m-Y') }}</span>
             </div>
             <div class="col-4 text-end">
-                <strong>NO. OF LR:</strong> - <span>{{ $existingInvoice->no_of_lrs ?? $bulties->count() }}</span>
+                <strong>NO. OF LR:</strong> - <span>{{ $existingInvoice?->no_of_lrs ?? (isset($bulties) ? $bulties->count() : 1) }}</span>
             </div>
         </div>
 
@@ -331,10 +366,10 @@
             </div>
             <div class="col-4 p-2" style="font-size: 10px;">
                 <div><strong>HSN/SAC CODE:</strong> <span>{{ $companyHsn }}</span></div>
-                <div class="mt-1"><strong>State Vendor Code:</strong> - <span>{{ $existingInvoice->state_vendor_code ?? '-' }}</span></div>
+                <div class="mt-1"><strong>State Vendor Code:</strong> - <span>{{ $existingInvoice?->state_vendor_code ?? '-' }}</span></div>
                 <div><strong>Vendor Code:</strong> - <span>{{ $vendorCode ?? '-' }}</span></div>
-                <div><strong>Vendor Name:</strong> - <span>{{ $existingInvoice->vendor_name ?? '-' }}</span></div>
-                <div><strong>EPOD Status:</strong> - <span>{{ $existingInvoice->epod_status ?? 'N' }}</span></div>
+                <div><strong>Vendor Name:</strong> - <span>{{ $existingInvoice?->vendor_name ?? '-' }}</span></div>
+                <div><strong>EPOD Status:</strong> - <span>{{ $existingInvoice?->epod_status ?? 'N' }}</span></div>
             </div>
         </div>
 

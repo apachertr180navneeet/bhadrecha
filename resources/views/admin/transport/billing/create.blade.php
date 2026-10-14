@@ -561,6 +561,7 @@
                     <form method="POST" action="{{ route('admin.transport.billing.generate') }}" id="generate-bill-form">
                         @csrf
                         <input type="hidden" name="ids" value="{{ $bulties->pluck('id')->join(',') }}">
+                        <input type="hidden" name="lr_nos" value="{{ $bulties->pluck('lr_no')->join(',') }}">
                         <input type="hidden" name="invoice_type" value="freight">
 
                         <!-- Section: Invoice Header & Amount -->
@@ -713,7 +714,7 @@
                                 <div class="mb-0">
                                     <label class="form-label small fw-semibold mb-1">Bill Format</label>
                                     <select name="bill_format_id" id="bill-format-select" class="form-select form-select-sm">
-                                        <option value="">Select Bill Format</option>
+                                        <option value="">Standard Format (Default)</option>
                                         @foreach($billFormats as $format)
                                             <option value="{{ $format->id }}">{{ $format->format_name }}</option>
                                         @endforeach
@@ -763,39 +764,45 @@
     }
 
     @media print {
-        /* Hide everything by default */
+        @page {
+            size: A4 landscape;
+            margin: 8mm 6mm;
+        }
+        /* Hide everything by default except the active preview card */
+        .hide-on-print, .main-header, .layout-navbar, .content-backdrop, .layout-menu-toggle, .layout-menu, .breadcrumb, .btn {
+            display: none !important;
+        }
         body * {
             visibility: hidden;
         }
-        /* Show only the invoice preview container and its children */
-        /* Show only the active invoice preview container and its children */
-        #invoice-preview-card.print-active, #invoice-preview-card.print-active * {
-            visibility: visible;
-        }
+        #invoice-preview-card.print-active, #invoice-preview-card.print-active *,
         #nathdwara-preview-card.print-active, #nathdwara-preview-card.print-active * {
             visibility: visible;
         }
-        #invoice-preview-card.print-active {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
+        #invoice-preview-card.print-active,
+        #nathdwara-preview-card.print-active {
+            position: static !important;
+            display: block !important;
+            width: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
             border: none !important;
             box-shadow: none !important;
             background: transparent !important;
         }
-        #nathdwara-preview-card.print-active {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            margin: 0 !important;
-            padding: 0 !important;
-            border: none !important;
-            box-shadow: none !important;
+        body, .layout-page, .content-wrapper, .container-xxl, .container-fluid, .card, .card-body, .col-md-8, .col-md-4, .col-12 {
             background: transparent !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            flex: 0 0 100% !important;
+        }
+        .row {
+            width: 100% !important;
+            margin: 0 !important;
         }
         /* Hide UI components inside card header */
         #invoice-preview-card.print-active .card-header, 
@@ -806,7 +813,8 @@
         #invoice-preview-card .badge {
             display: none !important;
         }
-        #invoice-preview-card .card-body {
+        #invoice-preview-card .card-body,
+        #nathdwara-preview-card .card-body {
             padding: 0 !important;
             margin: 0 !important;
             background: transparent !important;
@@ -814,11 +822,35 @@
         #freight-preview-sheet, #grn-preview-sheet, #nathdwara-sheet-1, #nathdwara-sheet-2 {
             width: 100% !important;
             box-sizing: border-box;
-            page-break-inside: avoid;
+            page-break-inside: auto !important;
+            break-inside: auto !important;
+        }
+        table {
+            page-break-inside: auto !important;
+        }
+        tr {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
+        thead {
+            display: table-header-group !important;
+        }
+        tfoot {
+            display: table-footer-group !important;
         }
         /* Hide the manual page break separator on print */
         .hide-on-print {
             display: none !important;
+        }
+        #preview-page-break, #nathdwara-page-break {
+            display: block !important;
+            page-break-before: always !important;
+            break-before: page !important;
+            height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            visibility: hidden !important;
         }
     }
 </style>
@@ -832,6 +864,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const fieldLabels = {
         'lr_no': 'LR NO.',
+        'lr_number': 'LR NO.',
+        'consignor': 'CONSIGNOR',
+        'consignee': 'CONSIGNEE',
+        'vehicle': 'VEHICLE NO.',
+        'driver': 'DRIVER',
+        'freight': 'FREIGHT',
         'lr_date': 'DISP. DATE',
         'from_city': 'FROM',
         'to_city': 'DESTINATION',
@@ -1029,9 +1067,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (fieldKey === 'from_city') return (bulty.origin_city || bulty.originCity) ? (bulty.origin_city || bulty.originCity).name : '-';
         if (fieldKey === 'to_city') return (bulty.destination_city || bulty.destinationCity) ? (bulty.destination_city || bulty.destinationCity).name : '-';
-        if (fieldKey === 'consignee_id') return bulty.consignee ? bulty.consignee.name : '-';
-        if (fieldKey === 'vehicle_id') return bulty.vehicle ? bulty.vehicle.vehicle_number : '-';
-        if (fieldKey === 'driver_id') return bulty.driver ? bulty.driver.name : '-';
+        if (fieldKey === 'consignee_id' || fieldKey === 'consignee') return bulty.consignee ? bulty.consignee.name : '-';
+        if (fieldKey === 'consignor_id' || fieldKey === 'consignor') return bulty.consignor ? bulty.consignor.name : '-';
+        if (fieldKey === 'vehicle_id' || fieldKey === 'vehicle') return bulty.vehicle ? bulty.vehicle.vehicle_number : '-';
+        if (fieldKey === 'driver_id' || fieldKey === 'driver') return bulty.driver ? bulty.driver.name : '-';
+        if (fieldKey === 'lr_no' || fieldKey === 'lr_number') return bulty.lr_no || '-';
         
         if (fieldKey === 'lr_date') {
             try {
@@ -1255,15 +1295,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const formatId = $(this).val();
         const previewCard = document.getElementById('invoice-preview-card');
         
-        if (!formatId) {
-            previewCard.classList.add('d-none');
-            return;
-        }
-        
-        const format = formats.find(f => f.id == formatId);
+        let format = formats.find(f => f.id == formatId);
         if (!format) {
-            previewCard.classList.add('d-none');
-            return;
+            format = {
+                id: '',
+                format_name: 'Standard Format',
+                visible_fields: ['lr_no', 'lr_date', 'from_city', 'to_city', 'vehicle_id', 'freight_charges', 'damage_amount', 'shortage_amount', 'gst_amount', 'other_charges', 'total_amount'],
+                field_order: ['lr_no', 'lr_date', 'from_city', 'to_city', 'vehicle_id', 'freight_charges', 'damage_amount', 'shortage_amount', 'gst_amount', 'other_charges', 'total_amount'],
+                grn_fields: [],
+                grn_field_order: [],
+                grn_new_page: false,
+                gst_master: null
+            };
         }
 
             const isMaiharUnloading = format.format_name && format.format_name.toUpperCase().includes('MAIHAR') && format.format_name.toUpperCase().includes('UNLOADING');
@@ -1370,7 +1413,28 @@ document.addEventListener('DOMContentLoaded', function() {
             const visibleFields = (format.field_order && format.field_order.length > 0) ? format.field_order : (format.visible_fields || []);
             
             let freightFields = [...visibleFields];
+            if (!freightFields || freightFields.length === 0) {
+                freightFields = [
+                    'lr_no',
+                    'lr_date',
+                    'from_city',
+                    'to_city',
+                    'vehicle_id',
+                    'freight_charges',
+                    'damage_amount',
+                    'shortage_amount',
+                    'gst_amount',
+                    'other_charges',
+                    'total_amount'
+                ];
+            } else if (!freightFields.includes('lr_no') && !freightFields.includes('lr_number')) {
+                freightFields.unshift('lr_no');
+            }
+
             let grnFields = (format.grn_field_order && format.grn_field_order.length > 0) ? format.grn_field_order : (format.grn_fields || []);
+            if (grnFields && grnFields.length > 0 && !grnFields.includes('lr_no') && !grnFields.includes('lr_number')) {
+                grnFields.unshift('lr_no');
+            }
             
             const isGrnNewPage = !!format.grn_new_page;
 
@@ -1673,7 +1737,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (val === 'dynamic') {
             $('#dynamic-format-container').removeClass('d-none');
             $('#nathdwara-fields-container').addClass('d-none');
-            $('#bill-format-select').attr('required', true);
+            $('#bill-format-select').attr('required', false);
             
             $('#invoice-preview-card').removeClass('d-none');
             $('#invoice-preview-card').addClass('print-active');

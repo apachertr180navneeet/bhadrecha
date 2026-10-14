@@ -14,13 +14,42 @@
     $isMaiharUnloading = ($existingInvoice?->template_type === 'maihar_unloading');
 
     $freightFields = $visibleFields;
+    if (empty($freightFields)) {
+        $freightFields = [
+            'lr_no',
+            'lr_date',
+            'from_city',
+            'to_city',
+            'vehicle_id',
+            'freight_charges',
+            'damage_amount',
+            'shortage_amount',
+            'gst_amount',
+            'other_charges',
+            'total_amount'
+        ];
+    } else {
+        if (!in_array('lr_no', $freightFields) && !in_array('lr_number', $freightFields)) {
+            array_unshift($freightFields, 'lr_no');
+        }
+    }
+
     $grnFields = [];
     if ($existingInvoice?->grn_new_page ?? false) {
         $grnFields = $existingInvoice?->grn_fields ?? [];
+        if (!empty($grnFields) && !in_array('lr_no', $grnFields) && !in_array('lr_number', $grnFields)) {
+            array_unshift($grnFields, 'lr_no');
+        }
     }
 
     $fieldLabels = [
         'lr_no' => 'LR NO.',
+        'lr_number' => 'LR NO.',
+        'consignor' => 'CONSIGNOR',
+        'consignee' => 'CONSIGNEE',
+        'vehicle' => 'VEHICLE NO.',
+        'driver' => 'DRIVER',
+        'freight' => 'FREIGHT',
         'lr_date' => 'DISP. DATE',
         'from_city' => 'FROM',
         'to_city' => 'DESTINATION',
@@ -196,9 +225,11 @@
         
         if ($fieldKey === 'from_city') return $bulty->originCity ? $bulty->originCity->name : '-';
         if ($fieldKey === 'to_city') return $bulty->destinationCity ? $bulty->destinationCity->name : '-';
-        if ($fieldKey === 'consignee_id') return $bulty->consignee ? $bulty->consignee->name : '-';
-        if ($fieldKey === 'vehicle_id') return $bulty->vehicle ? $bulty->vehicle->vehicle_number : '-';
-        if ($fieldKey === 'driver_id') return $bulty->driver ? $bulty->driver->name : '-';
+        if ($fieldKey === 'consignee_id' || $fieldKey === 'consignee') return $bulty->consignee ? $bulty->consignee->name : '-';
+        if ($fieldKey === 'consignor_id' || $fieldKey === 'consignor') return $bulty->consignor ? $bulty->consignor->name : '-';
+        if ($fieldKey === 'vehicle_id' || $fieldKey === 'vehicle') return $bulty->vehicle ? $bulty->vehicle->vehicle_number : '-';
+        if ($fieldKey === 'driver_id' || $fieldKey === 'driver') return $bulty->driver ? $bulty->driver->name : '-';
+        if ($fieldKey === 'lr_no' || $fieldKey === 'lr_number') return $bulty->lr_no ?? '-';
         
         if ($fieldKey === 'lr_date') {
             return $bulty->lr_date ? $bulty->lr_date->format('d-m-Y') : '-';

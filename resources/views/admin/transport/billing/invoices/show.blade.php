@@ -36,6 +36,7 @@
         <div class="card border-0 shadow-none p-0 m-0" style="background: transparent;">
             <div class="card-body p-4" style="background: #fff; color: #000; font-family: Arial, Helvetica, sans-serif; font-size: 11px; line-height: 1.4;">
                 @php
+                    $existingInvoice = $invoice;
                     $freightTotal = $invoice->total_freight;
                     $gstTotal = $invoice->total_gst;
                     $otherTotal = $invoice->total_other;
@@ -60,7 +61,7 @@
                     $bankHolder = $invoiceCompany && $invoiceCompany->bank_holder_name ? strtoupper($invoiceCompany->bank_holder_name) : '';
                     $grnNewPage = $invoice->grn_new_page ?? false;
                 @endphp
-                @if(($existingInvoice?->template_type ?? 'standard') === 'nathdwara')
+                @if(($invoice->template_type ?? 'standard') === 'nathdwara')
                     @include('admin.transport.billing._nathdwara_invoice_preview', [
                         'invoiceCompany' => $invoiceCompany,
                         'existingInvoice' => $invoice,
@@ -79,7 +80,7 @@
                         'bankHolder' => $bankHolder,
                         'grnNewPage' => $grnNewPage,
                     ])
-                @elseif(($existingInvoice?->template_type ?? 'standard') === 'gypsum')
+                @elseif(($invoice->template_type ?? 'standard') === 'gypsum')
                     @include('admin.transport.billing._gypsum_invoice_preview', [
                         'invoiceCompany' => $invoiceCompany,
                         'existingInvoice' => $invoice,
@@ -143,11 +144,12 @@
     @media print {
         @page {
             size: A4 landscape;
+            margin: 8mm 6mm;
         }
         .hide-on-print, .main-header, .layout-navbar, .content-backdrop, .layout-menu-toggle, .layout-menu {
             display: none !important;
         }
-        body, .layout-page, .content-wrapper, .container-xxl, .card, .card-body, .col-md-9, .col-12 {
+        body, .layout-page, .content-wrapper, .container-xxl, .container-fluid, .card, .card-body, .col-md-9, .col-12 {
             background: transparent !important;
             padding: 0 !important;
             margin: 0 !important;
@@ -161,10 +163,24 @@
             width: 100% !important;
             margin: 0 !important;
         }
-        #freight-preview-sheet, #grn-preview-sheet {
+        #freight-preview-sheet, #grn-preview-sheet, #nathdwara-sheet-1, #nathdwara-sheet-2, #summary-preview-sheet {
             width: 100% !important;
             box-sizing: border-box;
-            page-break-inside: avoid;
+            page-break-inside: auto !important;
+            break-inside: auto !important;
+        }
+        table {
+            page-break-inside: auto !important;
+        }
+        tr {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
+        thead {
+            display: table-header-group !important;
+        }
+        tfoot {
+            display: table-footer-group !important;
         }
         #preview-page-break {
             display: block !important;

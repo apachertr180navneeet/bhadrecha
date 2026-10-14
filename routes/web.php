@@ -318,6 +318,7 @@ Route::name('admin.')->prefix('admin')->group(function () {
             Route::delete('trips/adblue-payments/{id}', [TripController::class, 'destroyAdBluePayment'])->name('trips.adblue-payments.destroy');
 
             Route::get('billing', [\App\Http\Controllers\Admin\Transport\BillingController::class, 'index'])->name('billing');
+            Route::post('billing/match-lrs', [\App\Http\Controllers\Admin\Transport\BillingController::class, 'matchLrs'])->name('billing.match-lrs');
             Route::get('billing/create', [\App\Http\Controllers\Admin\Transport\BillingController::class, 'create'])->name('billing.create');
             Route::post('billing/generate', [\App\Http\Controllers\Admin\Transport\BillingController::class, 'generate'])->name('billing.generate');
             Route::get('invoices', [\App\Http\Controllers\Admin\Transport\BillingController::class, 'invoiceHistory'])->name('invoices.index');

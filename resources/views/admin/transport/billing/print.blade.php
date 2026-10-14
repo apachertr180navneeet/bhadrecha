@@ -86,7 +86,7 @@
         @media print {
             @page {
                 size: A4 landscape;
-                margin: 0;
+                margin: 8mm 6mm;
             }
             html, body {
                 background: #fff !important;
@@ -103,7 +103,21 @@
             #freight-preview-sheet, #grn-preview-sheet {
                 width: 100% !important;
                 box-sizing: border-box;
-                page-break-inside: avoid;
+                page-break-inside: auto !important;
+                break-inside: auto !important;
+            }
+            table {
+                page-break-inside: auto !important;
+            }
+            tr {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            thead {
+                display: table-header-group !important;
+            }
+            tfoot {
+                display: table-footer-group !important;
             }
             #preview-page-break {
                 display: block !important;

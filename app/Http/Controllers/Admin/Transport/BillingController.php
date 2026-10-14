@@ -24,19 +24,38 @@ class BillingController extends Controller
           ->whereNotIn('status', ['pending', 'planned']);
 
         if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('lr_no', 'LIKE', "%{$search}%")
-                  ->orWhereHas('bultyDetail', function ($qd) use ($search) {
-                      $qd->where('po_no', 'LIKE', "%{$search}%");
-                  })
-                  ->orWhereHas('consignor', function ($qc) use ($search) {
-                      $qc->where('name', 'LIKE', "%{$search}%");
-                  })
-                  ->orWhereHas('consignee', function ($qc) use ($search) {
-                      $qc->where('name', 'LIKE', "%{$search}%");
-                  });
-            });
+            $search = trim($request->search);
+            // Check if multiple LR numbers are provided (comma, space, or newline separated)
+            $tokens = array_filter(array_map('trim', preg_split('/[\s,\r\n]+/', $search)));
+            if (count($tokens) > 1) {
+                $query->where(function ($q) use ($tokens) {
+                    $q->whereIn('lr_no', $tokens);
+                    foreach ($tokens as $token) {
+                        $q->orWhere('lr_no', 'LIKE', "%{$token}%");
+                    }
+                });
+            } else {
+                $query->where(function ($q) use ($search) {
+                    $q->where('lr_no', 'LIKE', "%{$search}%")
+                      ->orWhereHas('bultyDetail', function ($qd) use ($search) {
+                          $qd->where('po_no', 'LIKE', "%{$search}%");
+                      })
+                      ->orWhereHas('consignor', function ($qc) use ($search) {
+                          $qc->where('name', 'LIKE', "%{$search}%");
+                      })
+                      ->orWhereHas('consignee', function ($qc) use ($search) {
+                          $qc->where('name', 'LIKE', "%{$search}%");
+                      });
+                });
+            }
+        }
+
+        if ($request->filled('lr_numbers')) {
+            $rawLrs = $request->lr_numbers;
+            $lrList = is_array($rawLrs) ? $rawLrs : array_filter(array_map('trim', preg_split('/[\s,\r\n]+/', $rawLrs)));
+            if (!empty($lrList)) {
+                $query->whereIn('lr_no', $lrList);
+            }
         }
 
         if ($request->filled('consignor_id')) {
@@ -65,18 +84,63 @@ class BillingController extends Controller
         return view('admin.transport.billing.index', compact('bulties', 'consignors', 'dateSort'));
     }
 
+    public function matchLrs(Request $request)
+    {
+        $raw = $request->input('lr_numbers', '');
+        $tokens = array_values(array_unique(array_filter(array_map('trim', preg_split('/[\s,\r\n]+/', $raw)))));
+
+        if (empty($tokens)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please enter at least one LR number.',
+                'total_entered' => 0,
+                'found_count' => 0,
+                'missing_count' => 0,
+                'ids' => [],
+            ]);
+        }
+
+        $bulties = Bulty::where('bill_status', 'unbilled')
+            ->whereNotIn('status', ['pending', 'planned'])
+            ->whereIn('lr_no', $tokens)
+            ->get(['id', 'lr_no', 'freight_charges', 'total_amount']);
+
+        $foundLrs = $bulties->pluck('lr_no')->toArray();
+        $missingLrs = array_values(array_diff($tokens, $foundLrs));
+
+        return response()->json([
+            'success' => true,
+            'total_entered' => count($tokens),
+            'found_count' => $bulties->count(),
+            'missing_count' => count($missingLrs),
+            'missing_lrs' => $missingLrs,
+            'ids' => $bulties->pluck('id')->toArray(),
+        ]);
+    }
+
     public function create(Request $request)
     {
         $ids = $request->query('ids');
-        if (!$ids) {
+        $lrNos = $request->query('lr_nos');
+
+        if (!$ids && !$lrNos) {
             return redirect()->route('admin.transport.billing')->with('error', 'No LRs selected');
         }
 
-        $ids = explode(',', $ids);
-        $bulties = Bulty::with([
+        $query = Bulty::with([
             'consignor', 'consignee', 'originCity', 'destinationCity', 'bultyDetail.supplier', 'branch', 'company',
             'vehicle', 'driver', 'bultyItems.item'
-        ])->whereIn('id', $ids)->where('bill_status', 'unbilled')->get();
+        ])->where('bill_status', 'unbilled');
+
+        if ($ids) {
+            $idArray = is_array($ids) ? $ids : array_filter(array_map('trim', explode(',', $ids)));
+            $query->whereIn('id', $idArray);
+        } elseif ($lrNos) {
+            $lrArray = is_array($lrNos) ? $lrNos : array_filter(array_map('trim', preg_split('/[\s,\r\n]+/', $lrNos)));
+            $query->whereIn('lr_no', $lrArray);
+        }
+
+        $bulties = $query->get();
 
         if ($bulties->isEmpty()) {
             return redirect()->route('admin.transport.billing')->with('error', 'Selected LRs not found or already billed');
@@ -117,23 +181,31 @@ class BillingController extends Controller
     public function generate(Request $request)
     {
         $request->validate([
-            'ids' => 'required|string',
+            'ids' => 'required_without:lr_nos|nullable|string',
+            'lr_nos' => 'required_without:ids|nullable|string',
             'template_type' => 'nullable|string',
             'bill_format_id' => 'required_if:template_type,dynamic|nullable|exists:bill_formats,id',
             'invoice_type' => 'nullable|string|in:freight,toll',
         ]);
 
         $invoiceType = $request->input('invoice_type', 'freight');
-        $ids = explode(',', $request->ids);
 
-        $bulties = Bulty::with([
+        $query = Bulty::with([
             'consignor', 'consignee', 'originCity', 'destinationCity', 'bultyDetail.supplier', 'company', 'trip.fastTagDetails', 'bultyItems'
-        ])->whereIn('id', $ids);
+        ]);
+
+        if ($request->filled('ids')) {
+            $ids = array_filter(array_map('trim', explode(',', $request->ids)));
+            $query->whereIn('id', $ids);
+        } elseif ($request->filled('lr_nos')) {
+            $lrNos = array_filter(array_map('trim', preg_split('/[\s,\r\n]+/', $request->lr_nos)));
+            $query->whereIn('lr_no', $lrNos);
+        }
 
         if ($invoiceType === 'toll') {
-            $bulties = $bulties->whereNull('toll_invoice_id')->get();
+            $bulties = $query->whereNull('toll_invoice_id')->get();
         } else {
-            $bulties = $bulties->where('bill_status', 'unbilled')->get();
+            $bulties = $query->where('bill_status', 'unbilled')->get();
         }
 
         if ($bulties->isEmpty()) {
@@ -302,7 +374,24 @@ class BillingController extends Controller
             }
             $amountInWords = self::convertNumberToWords($totalAmount);
 
-            $invoice = DB::transaction(function () use ($firstBulty, $consignorId, $consignorName, $fromCityName, $toCityName, $netTotalFreight, $totalGst, $totalOther, $invoiceNo, $invoiceType, $totalAmount, $amountInWords, $format, $groupBulties, $request, $isMaiharUnloading, $companyName, $gstType, $cgstAmount, $sgstAmount, $igstAmount, $rcmPayable) {
+            $visFields = null;
+            if ($format) {
+                $visFields = !empty($format->field_order) ? $format->field_order : $format->visible_fields;
+                if (is_array($visFields)) {
+                    if (!in_array('lr_no', $visFields) && !in_array('lr_number', $visFields)) {
+                        array_unshift($visFields, 'lr_no');
+                    }
+                }
+            }
+            if (empty($visFields)) {
+                $visFields = [
+                    'lr_no', 'lr_date', 'consignor_id', 'consignee_id', 'from_city', 'to_city',
+                    'vehicle_id', 'freight_charges', 'damage_amount', 'shortage_amount',
+                    'gst_amount', 'other_charges', 'total_amount'
+                ];
+            }
+
+            $invoice = DB::transaction(function () use ($firstBulty, $consignorId, $consignorName, $fromCityName, $toCityName, $netTotalFreight, $totalGst, $totalOther, $invoiceNo, $invoiceType, $totalAmount, $amountInWords, $format, $groupBulties, $request, $isMaiharUnloading, $companyName, $gstType, $cgstAmount, $sgstAmount, $igstAmount, $rcmPayable, $visFields) {
                 $invoice = Invoice::create([
                     'company_id' => $firstBulty->company_id,
                     'branch_id' => $firstBulty->branch_id,
@@ -319,12 +408,12 @@ class BillingController extends Controller
                     'total_other' => $totalOther,
                     'invoice_no' => $invoiceNo,
                     'bill_number' => $invoiceNo,
-                    'template_type' => in_array($request->template_type, ['nathdwara', 'gypsum']) ? $request->template_type : ($isMaiharUnloading ? 'maihar_unloading' : ($format->template_type ?? 'standard')),
+                    'template_type' => in_array($request->template_type, ['nathdwara', 'gypsum']) ? $request->template_type : ($isMaiharUnloading ? 'maihar_unloading' : ($format->template_type ?? ($request->template_type ?? 'standard'))),
                     'invoice_type' => $invoiceType,
                     'invoice_date' => now(),
                     'total_amount' => $totalAmount,
                     'amount_in_words' => $amountInWords,
-                    'visible_fields' => $format ? (!empty($format->field_order) ? $format->field_order : $format->visible_fields) : null,
+                    'visible_fields' => $visFields,
                     'grn_fields' => $format ? (!empty($format->grn_field_order) ? $format->grn_field_order : $format->grn_fields) : null,
                     'grn_new_page' => $format ? $format->grn_new_page : false,
                     'status' => 'pending',

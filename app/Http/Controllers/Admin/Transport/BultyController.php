@@ -498,7 +498,7 @@ class BultyController extends Controller
         $bankHolder = $invoiceCompany && $invoiceCompany->bank_holder_name ? strtoupper($invoiceCompany->bank_holder_name) : '';
         $grnNewPage = false;
         
-        $existingInvoice = null;
+        $existingInvoice = $bulty->invoice ?? null;
 
         return view('admin.transport.bulties.print_bill', compact(
             'invoiceCompany', 'existingInvoice', 'invoiceConsignor', 'billNumber', 'vendorCode',
