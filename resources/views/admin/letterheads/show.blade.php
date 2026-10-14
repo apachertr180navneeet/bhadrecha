@@ -21,6 +21,9 @@
             <a href="{{ route('admin.letterheads.edit', $letterhead->id) }}" class="btn btn-primary btn-sm shadow-sm me-2">
                 <i class="bx bx-edit-alt me-1"></i> Edit
             </a>
+            <button type="button" onclick="window.print()" class="btn btn-secondary btn-sm shadow-sm me-2">
+                <i class="bx bx-printer me-1"></i> Print
+            </button>
             <a href="{{ route('admin.letterheads.pdf', $letterhead->id) }}" target="_blank" class="btn btn-info btn-sm shadow-sm">
                 <i class="bx bx-file me-1"></i> Open PDF
             </a>
@@ -36,7 +39,7 @@
                 </div>
                 <div class="card-body p-4 bg-light">
                     <!-- A4 Sheet Preview Box -->
-                    <div class="bg-white p-4 shadow-sm border rounded" style="font-family: sans-serif; font-size: 14px;">
+                    <div id="letter-print-area" class="bg-white p-4 shadow-sm border rounded" style="font-family: sans-serif; font-size: 14px;">
                         
                         <!-- Company Header -->
                         <div class="border-bottom pb-3 mb-3 d-flex justify-content-between align-items-start">
@@ -48,7 +51,7 @@
                                     @endphp
                                     <img src="{{ $logoUrl }}" style="max-height: 60px; max-width: 180px;" alt="Company Logo">
                                 @else
-                                    <h3 class="text-primary font-weight-bold mb-0">{{ $letterhead->company->name ?? 'COMPANY NAME' }}</h3>
+                                    <h3 class="font-weight-bold mb-0" style="color: #062E39 !important;">{{ $letterhead->company->name ?? 'COMPANY NAME' }}</h3>
                                 @endif
                             </div>
                             <div class="text-right small text-muted">
@@ -130,4 +133,33 @@
         </div>
     </div>
 </div>
+
+<style>
+@media print {
+    /* Hide all elements on page except letter-print-area */
+    body * {
+        visibility: hidden !important;
+    }
+    #letter-print-area, #letter-print-area * {
+        visibility: visible !important;
+    }
+    #letter-print-area {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+    }
+    .layout-navbar, .layout-menu, .content-footer, .btn, .page-titles, .card-header {
+        display: none !important;
+    }
+    @page {
+        size: A4 portrait;
+        margin: 15mm;
+    }
+}
+</style>
 @endsection

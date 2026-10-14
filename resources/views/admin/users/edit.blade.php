@@ -77,11 +77,18 @@
                         @error('company_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Branch</label>
+                        <label class="form-label">Primary Branch</label>
                         <select name="branch_id" id="branch_id" class="form-select @error('branch_id') is-invalid @enderror">
-                            <option value="">Select Branch</option>
+                            <option value="">Select Primary Branch</option>
                         </select>
                         @error('branch_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Accessible Branches (Multi-Branch Access)</label>
+                        <select name="branch_ids[]" id="branch_ids" class="form-select select2 @error('branch_ids') is-invalid @enderror" multiple data-placeholder="Select Accessible Branches">
+                        </select>
+                        <small class="text-muted">Select all branches this user is authorized to operate across.</small>
+                        @error('branch_ids')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Role</label>
@@ -167,38 +174,46 @@ $(document).ready(function() {
     $('#state').on('change', function() { loadCities(); });
     if (stateSelect.value) { loadCities(); }
 
-    function loadBranches(companyId, selectedBranchId, selectedBranchName) {
+    const currentAssignedBranches = {!! json_encode(old('branch_ids', $assignedBranchIds ?? [])) !!};
+
+    function loadBranches(companyId, selectedBranchId, selectedBranchName, assignedIds) {
         if (companyId) {
             $.ajax({
                 url: '{{ route("admin.users.get-branches") }}',
                 type: 'GET',
                 data: { company_id: companyId },
                 success: function(data) {
-                    $('#branch_id').empty().append('<option value="">Select Branch</option>');
+                    $('#branch_id').empty().append('<option value="">Select Primary Branch</option>');
+                    $('#branch_ids').empty();
                     var found = false;
                     $.each(data, function(key, value) {
-                        var selected = value.id == selectedBranchId ? 'selected' : '';
-                        if (selected) found = true;
-                        $('#branch_id').append('<option value="' + value.id + '" ' + selected + '>' + value.name + '</option>');
+                        var selectedPrimary = value.id == selectedBranchId ? 'selected' : '';
+                        if (selectedPrimary) found = true;
+                        $('#branch_id').append('<option value="' + value.id + '" ' + selectedPrimary + '>' + value.name + '</option>');
+
+                        var selectedAccessible = (assignedIds && assignedIds.includes(value.id)) ? 'selected' : '';
+                        $('#branch_ids').append('<option value="' + value.id + '" ' + selectedAccessible + '>' + value.name + '</option>');
                     });
                     if (selectedBranchId && !found && selectedBranchName) {
                         $('#branch_id').append('<option value="' + selectedBranchId + '" selected>' + selectedBranchName + '</option>');
                     }
                     $('#branch_id').trigger('change');
+                    $('#branch_ids').trigger('change');
                 }
             });
         } else {
-            $('#branch_id').empty().append('<option value="">Select Branch</option>').trigger('change');
+            $('#branch_id').empty().append('<option value="">Select Primary Branch</option>').trigger('change');
+            $('#branch_ids').empty().trigger('change');
         }
     }
 
     var initialCompanyId = $('#company_id').val();
     if (initialCompanyId) {
-        loadBranches(initialCompanyId, "{{ old('branch_id', $user->branch_id) }}", "{{ $user->branch->name ?? '' }}");
+        loadBranches(initialCompanyId, "{{ old('branch_id', $user->branch_id) }}", "{{ $user->branch->name ?? '' }}", currentAssignedBranches);
     }
 
     $('#company_id').change(function() {
-        loadBranches($(this).val(), null, null);
+        loadBranches($(this).val(), null, null, []);
     });
 });
 </script>

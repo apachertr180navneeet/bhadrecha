@@ -21,8 +21,9 @@ class CompanyAccessMiddleware
 
         // Direct company and branch strictly from auth user for non-Super Admin
         session(['current_company_id' => $user->company_id]);
-        if ($user->branch_id) {
-            session(['current_branch_id' => $user->branch_id]);
+        $currentBranchId = session('current_branch_id');
+        if (!$currentBranchId || !$user->canAccessBranch($currentBranchId)) {
+            session(['current_branch_id' => $user->branch_id ?: 'all']);
         }
 
         $companyId = $request->route('company') ?? $request->input('company_id') ?? $user->company_id;

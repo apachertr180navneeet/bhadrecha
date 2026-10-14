@@ -97,6 +97,22 @@
         </div>
     @endif
 
+    @if($errors->any())
+        <div class="alert alert-danger alert-dismissible shadow-sm mb-4" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="bx bx-error-circle fs-4 me-2"></i>
+                <div>
+                    <ul class="mb-0 ps-3">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
     <!-- Summary Metrics Cards -->
     <div class="row g-3 mb-4">
         <div class="col-md-2 col-sm-6 col-12">
@@ -204,7 +220,11 @@
                 </div>
                 <div class="col-md-3 col-sm-6">
                     <label class="form-label small fw-bold">Bill Number</label>
-                    <input type="text" name="bill_number" class="form-control" value="{{ request('bill_number') }}" placeholder="Search by Bill No">
+                    <input type="text" name="bill_number" class="form-control" value="{{ request('bill_number') }}" placeholder="Search by Bill No or Case ID">
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <label class="form-label small fw-bold">Case ID / Case Number</label>
+                    <input type="text" name="case_id" class="form-control" value="{{ request('case_id') }}" placeholder="Search by Case ID">
                 </div>
                 <div class="col-md-3 col-sm-6">
                     <label class="form-label small fw-bold">Bill To</label>
@@ -382,6 +402,7 @@
                                     <th>Company</th>
                                     <th>Branch</th>
                                     <th>Bill No (Edit)</th>
+                                    <th>Case ID</th>
                                     <th>Bill To</th>
                                     <th class="text-end">Total Amt<br><small class="text-muted">(w/o GST)</small></th>
                                     <th class="text-end">GST</th>
@@ -462,11 +483,24 @@
                                                     {{ $displayBillNo }}
                                                 </a>
                                                 @if(auth()->user()->can('edit sales ledger') || auth()->user()->isSuperAdmin())
-                                                <button type="button" class="btn btn-xs btn-outline-primary p-1 btn-edit-bill" data-id="{{ $invoice->id }}" title="Edit Bill Details">
+                                                <button type="button" class="btn btn-xs btn-outline-primary p-1 btn-edit-bill" data-id="{{ $invoice->id }}" title="Edit Bill Details & Case ID">
                                                     <i class="bx bx-edit fs-6"></i>
                                                 </button>
                                                 @endif
                                             </div>
+                                        </td>
+                                        <td>
+                                            @if(!empty($invoice->case_id))
+                                                <span class="badge bg-label-info fw-bold">{{ $invoice->case_id }}</span>
+                                            @else
+                                                @if(auth()->user()->can('edit sales ledger') || auth()->user()->isSuperAdmin())
+                                                    <button type="button" class="btn btn-xs btn-outline-secondary p-1 btn-edit-bill text-nowrap" data-id="{{ $invoice->id }}" title="Add Case ID">
+                                                        <i class="bx bx-plus-circle me-1"></i> Add Case ID
+                                                    </button>
+                                                @else
+                                                    <span class="text-muted small">-</span>
+                                                @endif
+                                            @endif
                                         </td>
                                         <td>{{ $invoice->consignor_name }}</td>
                                         <td class="text-end">₹ {{ number_format($amountWithoutGst, 2) }}</td>
@@ -490,7 +524,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="{{ (auth()->user()->can('edit sales ledger') || auth()->user()->isSuperAdmin()) ? 17 : 16 }}" class="text-center py-4 text-muted">No records found</td>
+                                        <td colspan="{{ (auth()->user()->can('edit sales ledger') || auth()->user()->isSuperAdmin()) ? 18 : 17 }}" class="text-center py-4 text-muted">No records found</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -590,6 +624,10 @@
                         <div class="col-md-6">
                             <label class="form-label">Bill Number <span class="text-danger">*</span></label>
                             <input type="text" name="bill_number" id="eb_bill_number" class="form-control fw-bold text-primary" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Case ID / Case Number</label>
+                            <input type="text" name="case_id" id="eb_case_id" class="form-control fw-bold text-info" placeholder="Enter Case ID / Case Number">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Bill Date <span class="text-danger">*</span></label>
@@ -849,6 +887,7 @@
                         var d = response.data;
                         $('#editBillForm').attr('action', "{{ url('admin/reports/sales-ledger/bill') }}/" + invoiceId);
                         $('#eb_bill_number').val(d.bill_number);
+                        $('#eb_case_id').val(d.case_id || '');
                         $('#eb_invoice_date').val(d.invoice_date);
                         $('#eb_company').val(d.company_name);
                         $('#eb_branch').val(d.branch_name);
@@ -869,6 +908,17 @@
                     alert('Error fetching bill details.');
                 }
             });
+        });
+
+        $('#editBillModal').on('hidden.bs.modal', function () {
+            $('#eb_bill_number').val('');
+            $('#eb_case_id').val('');
+            $('#eb_invoice_date').val('');
+            $('#eb_company').val('');
+            $('#eb_branch').val('');
+            $('#eb_consignor_name').val('');
+            $('#eb_billing_address').val('');
+            $('#eb_status').val('pending');
         });
 
         @if(auth()->user()->can('edit sales ledger') || auth()->user()->isSuperAdmin())

@@ -488,17 +488,29 @@ class BillingController extends Controller
 
     public function invoiceHistory(Request $request)
     {
-        $query = Invoice::with(['consignor', 'company', 'user', 'freightBulties.consignee'])->where('invoice_type', 'freight');
+        $query = Invoice::with(['consignor', 'company', 'user', 'freightBulties.consignee', 'tollBulties.consignee']);
+
+        if ($request->filled('invoice_type') && in_array($request->invoice_type, ['freight', 'toll'])) {
+            $query->where('invoice_type', $request->invoice_type);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
 
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('invoice_no', 'LIKE', "%{$search}%")
+                  ->orWhere('bill_number', 'LIKE', "%{$search}%")
                   ->orWhere('consignor_name', 'LIKE', "%{$search}%")
                   ->orWhereHas('consignor', function ($qc) use ($search) {
                       $qc->where('name', 'LIKE', "%{$search}%");
                   })
                   ->orWhereHas('freightBulties.consignee', function ($qc) use ($search) {
+                      $qc->where('name', 'LIKE', "%{$search}%");
+                  })
+                  ->orWhereHas('tollBulties.consignee', function ($qc) use ($search) {
                       $qc->where('name', 'LIKE', "%{$search}%");
                   });
             });
@@ -509,8 +521,12 @@ class BillingController extends Controller
         }
 
         if ($request->filled('consignee_id')) {
-            $query->whereHas('freightBulties', function ($qb) use ($request) {
-                $qb->where('consignee_id', $request->consignee_id);
+            $query->where(function ($q) use ($request) {
+                $q->whereHas('freightBulties', function ($qb) use ($request) {
+                    $qb->where('consignee_id', $request->consignee_id);
+                })->orWhereHas('tollBulties', function ($qb) use ($request) {
+                    $qb->where('consignee_id', $request->consignee_id);
+                });
             });
         }
 
@@ -521,6 +537,13 @@ class BillingController extends Controller
         if ($request->filled('to_date')) {
             $query->whereDate('invoice_date', '<=', $request->to_date);
         }
+
+        // Summary calculations for full matching dataset
+        $statsQuery = clone $query;
+        $totalFreight = (float) $statsQuery->sum('total_freight');
+        $totalGst = (float) $statsQuery->sum('total_gst');
+        $totalOther = (float) $statsQuery->sum('total_other');
+        $totalAmount = (float) $statsQuery->sum('total_amount');
 
         $dateSort = $request->get('date_sort', 'latest');
         if ($dateSort === 'oldest') {
@@ -533,7 +556,10 @@ class BillingController extends Controller
         $consignors = Consignor::where('status', 'active')->orderBy('name')->get(['id', 'name', 'phone']);
         $consignees = Consignee::where('status', 'active')->orderBy('name')->get(['id', 'name', 'phone']);
 
-        return view('admin.transport.billing.invoices.index', compact('invoices', 'consignors', 'consignees', 'dateSort'));
+        return view('admin.transport.billing.invoices.index', compact(
+            'invoices', 'consignors', 'consignees', 'dateSort',
+            'totalFreight', 'totalGst', 'totalOther', 'totalAmount'
+        ));
     }
 
     public function tollBills(Request $request)
@@ -541,10 +567,15 @@ class BillingController extends Controller
         $query = Invoice::with(['consignor', 'company', 'user', 'tollBulties.consignee'])
             ->where('invoice_type', 'toll');
 
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('invoice_no', 'LIKE', "%{$search}%")
+                  ->orWhere('bill_number', 'LIKE', "%{$search}%")
                   ->orWhere('consignor_name', 'LIKE', "%{$search}%")
                   ->orWhereHas('consignor', function ($qc) use ($search) {
                       $qc->where('name', 'LIKE', "%{$search}%");
@@ -573,6 +604,15 @@ class BillingController extends Controller
             $query->whereDate('invoice_date', '<=', $request->to_date);
         }
 
+        // Calculate accurate dashboard metrics on full dataset before pagination
+        $statsQuery = clone $query;
+        $totalBills = $statsQuery->count();
+        $totalFreight = (float) $statsQuery->sum('total_freight'); // Total Toll Amount
+        $totalGst = (float) $statsQuery->sum('total_gst');
+        $grandTotal = (float) $statsQuery->sum('total_amount');
+        $pendingBills = (clone $query)->where('status', 'pending')->count();
+        $paidBills = (clone $query)->where('status', 'paid')->count();
+
         $dateSort = $request->get('date_sort', 'latest');
         if ($dateSort === 'oldest') {
             $query->orderBy('invoice_date', 'asc')->orderBy('id', 'asc');
@@ -584,7 +624,10 @@ class BillingController extends Controller
         $consignors = Consignor::where('status', 'active')->orderBy('name')->get(['id', 'name', 'phone']);
         $consignees = Consignee::where('status', 'active')->orderBy('name')->get(['id', 'name', 'phone']);
 
-        return view('admin.transport.billing.invoices.toll-bills', compact('invoices', 'consignors', 'consignees', 'dateSort'));
+        return view('admin.transport.billing.invoices.toll-bills', compact(
+            'invoices', 'consignors', 'consignees', 'dateSort',
+            'totalBills', 'totalFreight', 'totalGst', 'grandTotal', 'pendingBills', 'paidBills'
+        ));
     }
 
     public function billGenerate(Invoice $invoice)
@@ -692,8 +735,11 @@ class BillingController extends Controller
         foreach ($invoice->bulties as $bulty) {
             if ($bulty->trip) {
                 foreach ($bulty->trip->fastTagDetails as $ft) {
-                    if ($ft->location) {
-                        $tollLocations->push(strtoupper(trim($ft->location)));
+                    $loc = strtoupper(trim((string)($ft->location ?? '')));
+                    if (!empty($loc)) {
+                        $tollLocations->push($loc);
+                    } elseif (floatval($ft->amount ?? 0) > 0 || floatval($ft->one_way ?? 0) > 0 || floatval($ft->return ?? 0) > 0) {
+                        $tollLocations->push('TOLL PLAZA');
                     }
                 }
             }
@@ -704,17 +750,31 @@ class BillingController extends Controller
             $ftDetails = $bulty->trip ? $bulty->trip->fastTagDetails : collect();
 
             foreach ($tollLocations as $location) {
-                $match = $ftDetails->first(function($ft) use ($location) {
-                    return strtoupper(trim($ft->location)) === $location;
+                $matched = $ftDetails->filter(function($ft) use ($location) {
+                    $loc = strtoupper(trim((string)($ft->location ?? '')));
+                    if ($location === 'TOLL PLAZA') {
+                        return empty($loc) || $loc === 'TOLL PLAZA';
+                    }
+                    return $loc === $location;
                 });
 
-                if ($match && (floatval($match->one_way) > 0 || floatval($match->return) > 0)) {
-                    $invoice->tollDetails()->create([
-                        'builty_id' => $bulty->id,
-                        'location' => $location,
-                        'one_way' => floatval($match->one_way),
-                        'return_amount' => floatval($match->return),
-                    ]);
+                if ($matched->isNotEmpty()) {
+                    $oneWaySum = (float) $matched->sum('one_way');
+                    $returnSum = (float) $matched->sum('return');
+                    $amountSum = (float) $matched->sum('amount');
+
+                    if ($oneWaySum <= 0 && $returnSum <= 0 && $amountSum > 0) {
+                        $oneWaySum = $amountSum;
+                    }
+
+                    if ($oneWaySum > 0 || $returnSum > 0) {
+                        $invoice->tollDetails()->create([
+                            'builty_id' => $bulty->id,
+                            'location' => $location,
+                            'one_way' => $oneWaySum,
+                            'return_amount' => $returnSum,
+                        ]);
+                    }
                 }
             }
         }
@@ -776,27 +836,48 @@ class BillingController extends Controller
         $metaData = $this->resolveTollInvoiceMetaData($invoice, $request);
         
         $firstBulty = $targetInvoice->bulties->first();
-        $originState = $targetInvoice->company && $targetInvoice->company->state ? $targetInvoice->company->state : ($firstBulty && $firstBulty->originCity ? ($firstBulty->originCity->state ?? 'RAJASTHAN') : 'RAJASTHAN');
-        $placeOfSupply = $metaData['custom_place_of_supply'] ?: ($targetInvoice->custom_place_of_supply ?: ($firstBulty && $firstBulty->destinationCity ? ($firstBulty->destinationCity->state ?? 'RAJASTHAN') : 'RAJASTHAN'));
+        $company = $targetInvoice->company ?? Company::find($targetInvoice->company_id);
+        $originState = $company?->state ?: ($company?->gst_number ? substr($company->gst_number, 0, 2) : ($firstBulty?->originCity?->state ?? 'RAJASTHAN'));
+        $placeOfSupply = $metaData['custom_place_of_supply'] ?: ($targetInvoice->custom_place_of_supply ?: ($metaData['custom_state'] ?: ($firstBulty?->destinationCity?->state ?? 'RAJASTHAN')));
         $isSameState = self::isSameGstState($originState, $placeOfSupply);
-        $gstType = $isSameState ? 'CGST_SGST' : 'IGST';
+        $autoGstType = $isSameState ? 'CGST_SGST' : 'IGST';
+
+        // Check if user selected GST type or fallback to saved / auto-detected
+        $gstType = $request->input('gst_type');
+        if (!in_array($gstType, ['CGST_SGST', 'IGST'])) {
+            $gstType = $targetInvoice->gst_type ?: $autoGstType;
+        }
+
+        // Default Payment Status: Pending by default unless explicitly specified
+        $submittedStatus = $request->input('status');
+        $status = in_array($submittedStatus, ['pending', 'paid', 'cancelled']) ? $submittedStatus : ($invoice->invoice_type === 'toll' ? ($invoice->status ?: 'pending') : 'pending');
 
         if ($invoice->invoice_type !== 'toll') {
             $grandTollSum = 0;
             foreach ($invoice->bulties as $bulty) {
                 if ($bulty->trip) {
-                    $grandTollSum += floatval($bulty->trip->fastTagDetails->sum('amount'));
+                    $fastTagSum = floatval($bulty->trip->fastTagDetails->sum('amount'));
+                    if ($fastTagSum <= 0) {
+                        $fastTagSum = floatval($bulty->trip->fastTagDetails->sum(fn($ft) => floatval($ft->one_way ?? 0) + floatval($ft->return ?? 0)));
+                    }
+                    $grandTollSum += $fastTagSum;
                 }
             }
             
             $gstRate = $invoice->gstMaster ? floatval($invoice->gstMaster->percentage) : 18.00;
             $calculatedGst = round($grandTollSum * ($gstRate / 100), 2);
-            $grandTotal = $grandTollSum + $calculatedGst;
+            $grandTotal = round($grandTollSum + $calculatedGst, 2);
             $amountInWords = self::convertNumberToWords($grandTotal);
 
-            $cgstVal = $gstType === 'CGST_SGST' ? round($calculatedGst / 2, 2) : 0.00;
-            $sgstVal = $gstType === 'CGST_SGST' ? round($calculatedGst / 2, 2) : 0.00;
-            $igstVal = $gstType === 'IGST' ? $calculatedGst : 0.00;
+            if ($gstType === 'CGST_SGST') {
+                $cgstVal = round($calculatedGst / 2, 2);
+                $sgstVal = round($calculatedGst - $cgstVal, 2);
+                $igstVal = 0.00;
+            } else {
+                $cgstVal = 0.00;
+                $sgstVal = 0.00;
+                $igstVal = $calculatedGst;
+            }
             
             $customBillNo = $request->bill_number;
             $prefix = 'INV-TOLL';
@@ -841,7 +922,7 @@ class BillingController extends Controller
                 'visible_fields' => $invoice->visible_fields,
                 'grn_fields' => $invoice->grn_fields,
                 'grn_new_page' => $invoice->grn_new_page,
-                'status' => 'pending',
+                'status' => $status,
                 'user_id' => auth()->id(),
                 'gst_master_id' => $invoice->gst_master_id,
                 'mn_number' => $metaData['mn_number'],
@@ -858,7 +939,10 @@ class BillingController extends Controller
                 ]);
             }
         } else {
-            $updateData = ['status' => 'pending'];
+            $updateData = [];
+            if ($request->filled('status') && in_array($request->status, ['pending', 'paid', 'cancelled'])) {
+                $updateData['status'] = $request->status;
+            }
             if ($request->has('bill_number')) {
                 $updateData['bill_number'] = $request->bill_number;
             }
@@ -898,25 +982,29 @@ class BillingController extends Controller
         } else {
             foreach ($targetInvoice->bulties as $bulty) {
                 if ($bulty->trip) {
-                    $grandTollSum += floatval($bulty->trip->fastTagDetails->sum('amount'));
+                    $fastTagSum = floatval($bulty->trip->fastTagDetails->sum('amount'));
+                    if ($fastTagSum <= 0) {
+                        $fastTagSum = floatval($bulty->trip->fastTagDetails->sum(fn($ft) => floatval($ft->one_way ?? 0) + floatval($ft->return ?? 0)));
+                    }
+                    $grandTollSum += $fastTagSum;
                 }
             }
         }
 
         $gstRate = $targetInvoice->gstMaster ? floatval($targetInvoice->gstMaster->percentage) : 18.00;
         $calculatedGst = round($grandTollSum * ($gstRate / 100), 2);
-        $grandTotal = $grandTollSum + $calculatedGst;
+        $grandTotal = round($grandTollSum + $calculatedGst, 2);
         $amountInWords = self::convertNumberToWords($grandTotal);
 
-        $firstBulty = $targetInvoice->bulties->first();
-        $originState = $targetInvoice->company && $targetInvoice->company->state ? $targetInvoice->company->state : ($firstBulty && $firstBulty->originCity ? ($firstBulty->originCity->state ?? 'RAJASTHAN') : 'RAJASTHAN');
-        $placeOfSupply = $targetInvoice->custom_place_of_supply ?: ($firstBulty && $firstBulty->destinationCity ? ($firstBulty->destinationCity->state ?? 'RAJASTHAN') : 'RAJASTHAN');
-        $isSameState = self::isSameGstState($originState, $placeOfSupply);
-        $gstType = $isSameState ? 'CGST_SGST' : 'IGST';
-
-        $cgstVal = $gstType === 'CGST_SGST' ? round($calculatedGst / 2, 2) : 0.00;
-        $sgstVal = $gstType === 'CGST_SGST' ? round($calculatedGst / 2, 2) : 0.00;
-        $igstVal = $gstType === 'IGST' ? $calculatedGst : 0.00;
+        if ($gstType === 'CGST_SGST') {
+            $cgstVal = round($calculatedGst / 2, 2);
+            $sgstVal = round($calculatedGst - $cgstVal, 2);
+            $igstVal = 0.00;
+        } else {
+            $cgstVal = 0.00;
+            $sgstVal = 0.00;
+            $igstVal = $calculatedGst;
+        }
 
         $targetInvoice->update([
             'gst_type' => $gstType,
@@ -934,6 +1022,93 @@ class BillingController extends Controller
     }
 
     /**
+     * Normalize an input state, GSTIN, or code into a 2-digit Indian GST State Code
+     *
+     * @param mixed $state
+     * @return string|null
+     */
+    public static function normalizeGstStateCode($state)
+    {
+        if (empty($state)) {
+            return null;
+        }
+
+        $str = strtoupper(trim((string)$state));
+
+        // If it contains a 15-char GSTIN, take first 2 digits
+        if (preg_match('/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/', $str)) {
+            return substr($str, 0, 2);
+        }
+
+        // If starts with 2 digits e.g. "08-RAJASTHAN" or "24 - GUJARAT"
+        if (preg_match('/^([0-9]{2})\b/', $str, $matches)) {
+            return $matches[1];
+        }
+
+        // Single or 2-digit number e.g. 8 or 24
+        if (is_numeric($str) && intval($str) >= 1 && intval($str) <= 38) {
+            return str_pad(intval($str), 2, '0', STR_PAD_LEFT);
+        }
+
+        // Clean string of symbols and digits
+        $clean = strtoupper(trim(preg_replace('/[^A-Z]/', '', $str)));
+
+        $stateMap = [
+            'JAMMUANDKASHMIR' => '01', 'JAMMUKASHMIR' => '01', 'JK' => '01',
+            'HIMACHALPRADESH' => '02', 'HP' => '02',
+            'PUNJAB' => '03', 'PB' => '03',
+            'CHANDIGARH' => '04', 'CH' => '04',
+            'UTTARAKHAND' => '05', 'UK' => '05',
+            'HARYANA' => '06', 'HR' => '06',
+            'DELHI' => '07', 'DL' => '07',
+            'RAJASTHAN' => '08', 'RJ' => '08',
+            'UTTARPRADESH' => '09', 'UP' => '09',
+            'BIHAR' => '10', 'BR' => '10',
+            'SIKKIM' => '11', 'SK' => '11',
+            'ARUNACHALPRADESH' => '12', 'AR' => '12',
+            'NAGALAND' => '13', 'NL' => '13',
+            'MANIPUR' => '14', 'MN' => '14',
+            'MIZORAM' => '15', 'MZ' => '15',
+            'TRIPURA' => '16', 'TR' => '16',
+            'MEGHALAYA' => '17', 'ML' => '17',
+            'ASSAM' => '18', 'AS' => '18',
+            'WESTBENGAL' => '19', 'WB' => '19',
+            'JHARKHAND' => '20', 'JH' => '20',
+            'ODISHA' => '21', 'ORISSA' => '21', 'OD' => '21',
+            'CHHATTISGARH' => '22', 'CG' => '22',
+            'MADHYAPRADESH' => '23', 'MP' => '23',
+            'GUJARAT' => '24', 'GJ' => '24',
+            'DADRAANDNAGARHAVELI' => '26', 'DAMANANDDIU' => '26', 'DNHDD' => '26',
+            'MAHARASHTRA' => '27', 'MH' => '27',
+            'ANDHRAPRADESH' => '37', 'AP' => '37',
+            'KARNATAKA' => '29', 'KA' => '29',
+            'GOA' => '30', 'GA' => '30',
+            'LAKSHADWEEP' => '31', 'LD' => '31',
+            'KERALA' => '32', 'KL' => '32',
+            'TAMILNADU' => '33', 'TN' => '33',
+            'PUDUCHERRY' => '34', 'PY' => '34',
+            'ANDAMANANDNICOBAR' => '35', 'AN' => '35',
+            'TELANGANA' => '36', 'TS' => '36', 'TG' => '36',
+            'LADAKH' => '38', 'LA' => '38',
+        ];
+
+        if (isset($stateMap[$clean])) {
+            return $stateMap[$clean];
+        }
+
+        // Attempt lookup by city name if supplied
+        $city = City::where('name', trim((string)$state))->first();
+        if ($city && $city->state) {
+            $cityClean = strtoupper(trim(preg_replace('/[^A-Z]/', '', $city->state)));
+            if (isset($stateMap[$cityClean])) {
+                return $stateMap[$cityClean];
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Determine whether origin state and place of supply match (same GST state)
      *
      * @param string|null $originState
@@ -942,6 +1117,13 @@ class BillingController extends Controller
      */
     public static function isSameGstState($originState, $placeOfSupply)
     {
+        $code1 = self::normalizeGstStateCode($originState);
+        $code2 = self::normalizeGstStateCode($placeOfSupply);
+
+        if ($code1 !== null && $code2 !== null) {
+            return $code1 === $code2;
+        }
+
         if (empty($originState) || empty($placeOfSupply)) {
             return true;
         }
@@ -953,12 +1135,8 @@ class BillingController extends Controller
             return true;
         }
 
-        if (is_numeric($originStr) && is_numeric($supplyStr)) {
-            return intval($originStr) === intval($supplyStr);
-        }
-
-        $cleanOrigin = strtoupper(trim(preg_replace('/[^A-Z]/i', '', preg_replace('/^\d+[-_\s]*/', '', $originStr))));
-        $cleanSupply = strtoupper(trim(preg_replace('/[^A-Z]/i', '', preg_replace('/^\d+[-_\s]*/', '', $supplyStr))));
+        $cleanOrigin = strtoupper(trim(preg_replace('/[^A-Z]/', '', $originStr)));
+        $cleanSupply = strtoupper(trim(preg_replace('/[^A-Z]/', '', $supplyStr)));
 
         if (!empty($cleanOrigin) && !empty($cleanSupply)) {
             return $cleanOrigin === $cleanSupply;
@@ -1044,6 +1222,10 @@ class BillingController extends Controller
 
     public function destroy(Invoice $invoice)
     {
+        if (!auth()->user()->isSuperAdmin() && !auth()->user()->can('delete invoices') && !auth()->user()->can('delete billing')) {
+            abort(403, 'Unauthorized action. You do not have permission to delete invoices.');
+        }
+
         DB::transaction(function () use ($invoice) {
             if ($invoice->invoice_type === 'toll') {
                 Bulty::withoutGlobalScopes()->where('toll_invoice_id', $invoice->id)->update([

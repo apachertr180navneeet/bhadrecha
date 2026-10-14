@@ -227,7 +227,16 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
 
             // 9. Builty Header Amounts, Remarks & Commission
             $freightCharges = $this->parseAmount($firstRow['freight_charges'] ?? $firstRow['freight'] ?? 0);
-            $biltyAdvanceAmount = $this->parseAmount($firstRow['bilty_advance_amount'] ?? $firstRow['advance_amount'] ?? $firstRow['bilty_advance'] ?? $firstRow['advance'] ?? 0);
+
+            // Bilty Advance MUST only come from explicit bilty advance fields, never from generic trip advance_amount/advance
+            $hasExplicitBiltyAdvance = isset($firstRow['bilty_advance_amount']) || isset($firstRow['bilty_advance'])
+                || isset($firstRow['builty_advance_amount']) || isset($firstRow['builty_advance'])
+                || isset($firstRow['lr_advance_amount']) || isset($firstRow['lr_advance']);
+
+            $biltyAdvanceAmount = $hasExplicitBiltyAdvance
+                ? $this->parseAmount($firstRow['bilty_advance_amount'] ?? $firstRow['bilty_advance'] ?? $firstRow['builty_advance_amount'] ?? $firstRow['builty_advance'] ?? $firstRow['lr_advance_amount'] ?? $firstRow['lr_advance'] ?? 0)
+                : 0;
+
             $biltyTotalAmount = $this->parseAmount($firstRow['bilty_total_amount'] ?? $firstRow['total_amount'] ?? $firstRow['total'] ?? 0);
             $biltyCommission = $this->parseAmount($firstRow['bilty_commission'] ?? $firstRow['commission'] ?? $firstRow['builty_commission'] ?? $firstRow['comm'] ?? 0);
             $biltyRemark = isset($firstRow['remark']) ? trim((string) $firstRow['remark']) : (isset($firstRow['remarks']) ? trim((string) $firstRow['remarks']) : (isset($firstRow['bilty_remark']) ? trim((string) $firstRow['bilty_remark']) : null));
@@ -295,7 +304,7 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
                 if (!empty($firstRow['eway_bill_no'])) $updateData['eway_bill_no'] = $firstRow['eway_bill_no'];
                 if ($generateDate) $updateData['generation_date'] = $generateDate;
                 if ($expiryDate) $updateData['expiry_date'] = $expiryDate;
-                if ($biltyAdvanceAmount > 0) {
+                if ($hasExplicitBiltyAdvance) {
                     $updateData['advance_amount'] = $biltyAdvanceAmount;
                     $updateData['remaining_amount'] = max(0, ($bulty->total_amount ?: $freightCharges) - $biltyAdvanceAmount);
                 }
@@ -306,8 +315,8 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
                 }
             }
 
-            // Sync Bilty Advance Detail if advance amount is provided
-            if ($biltyAdvanceAmount > 0) {
+            // Sync Bilty Advance Detail only if explicit bilty advance amount is provided
+            if ($hasExplicitBiltyAdvance && $biltyAdvanceAmount > 0) {
                 BiltyAdvanceDetail::updateOrCreate(
                     [
                         'bulty_id' => $bulty->id,
@@ -617,7 +626,7 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
 
             // Sync Builty Total Amount & Remaining Amount from items
             $finalBuiltyTotal = $calcItemsTotal > 0 ? $calcItemsTotal : ($freightCharges > 0 ? $freightCharges : (float) $bulty->total_amount);
-            $finalAdvance = $biltyAdvanceAmount > 0 ? $biltyAdvanceAmount : (float) $bulty->advance_amount;
+            $finalAdvance = $hasExplicitBiltyAdvance ? $biltyAdvanceAmount : (float) $bulty->advance_amount;
             $finalRemaining = max(0, $finalBuiltyTotal - $finalAdvance);
 
             $bulty->update([

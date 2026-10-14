@@ -233,14 +233,14 @@
                     </button>
                     @endif
                     @endcan
-                    @can('print bulties')
+                    @if(auth()->user()?->isSuperAdmin() || auth()->user()?->isCompanyAdmin() || auth()->user()?->canAny(['print bulties', 'print bilties', 'view bulties', 'view bilties', 'print invoices']))
                     <a href="{{ route('admin.transport.bulties.print-bill', $bulty->id) }}" target="_blank" class="btn btn-secondary action-btn">
                         <i class="bx bx-printer me-1"></i> Print Bill
                     </a>
                     <a href="{{ route('admin.transport.bulties.pdf', $bulty->id) }}" class="btn btn-danger action-btn">
                         <i class="bx bxs-file-pdf me-1"></i> PDF
                     </a>
-                    @endcan
+                    @endif
                 </div>
             </div>
         </div>
@@ -556,7 +556,11 @@
                     </div>
 
                     @if(!empty($podList) && !$bulty->pod_document_status)
-                        @canany(['approve bulty pod', 'approve bulty documents', 'edit bulties'])
+                        @if(auth()->user()?->isSuperAdmin() || auth()->user()?->isCompanyAdmin() || auth()->user()?->canAny([
+                            'approve bulty pod', 'approve bilty pod', 'approve pod', 'approve pod document',
+                            'approve bulty documents', 'approve bilty documents', 'approve documents',
+                            'edit bulties', 'edit bilties'
+                        ]) || (auth()->user()?->isBranchManager() && auth()->user()?->canAccessBranch($bulty->branch_id)))
                         <div class="mb-3 d-flex gap-2">
                             <form action="{{ route('admin.transport.bulties.approve-pod', $bulty->id) }}" method="POST" class="flex-grow-1">
                                 @csrf
@@ -567,11 +571,16 @@
                                 <button type="submit" class="btn btn-outline-danger btn-sm w-100" onclick="return confirm('Reject POD? Driver will need to re-upload.')">Reject</button>
                             </form>
                         </div>
-                        @endcanany
+                        @endif
                     @endif
 
                     @if(!empty($matList) && !$bulty->material_document_status)
-                        @canany(['approve bulty material document', 'approve bulty documents', 'edit bulties'])
+                        @if(auth()->user()?->isSuperAdmin() || auth()->user()?->isCompanyAdmin() || auth()->user()?->canAny([
+                            'approve bulty material document', 'approve bilty material document',
+                            'approve material document', 'approve material documents',
+                            'approve bulty documents', 'approve bilty documents', 'approve documents',
+                            'edit bulties', 'edit bilties'
+                        ]) || (auth()->user()?->isBranchManager() && auth()->user()?->canAccessBranch($bulty->branch_id)))
                         <div class="mt-3 d-flex gap-2">
                             <form action="{{ route('admin.transport.bulties.approve-document', $bulty->id) }}" method="POST" class="flex-grow-1">
                                 @csrf
@@ -582,7 +591,7 @@
                                 <button type="submit" class="btn btn-outline-danger btn-sm w-100" onclick="return confirm('Reject?')">Reject</button>
                             </form>
                         </div>
-                        @endcanany
+                        @endif
                     @endif
                 </div>
 

@@ -121,6 +121,17 @@ class NotificationController extends Controller
             return response()->json(['unread_count' => 0, 'notifications' => []]);
         }
 
+        // Periodically sync expiry notifications once an hour across requests
+        $cacheKey = 'last_expiry_check_auto';
+        if (!cache()->has($cacheKey)) {
+            cache()->put($cacheKey, true, 3600);
+            try {
+                ExpiryNotificationService::checkAndGenerateNotifications(7);
+            } catch (\Throwable $e) {
+                \Log::warning('Auto expiry notification sync failed: ' . $e->getMessage());
+            }
+        }
+
         $unreadCount = NotificationUser::where('user_id', $user->id)
             ->whereNull('read_at')
             ->count();

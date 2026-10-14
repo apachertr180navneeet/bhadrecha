@@ -36,7 +36,8 @@ class RolePermissionSeeder extends Seeder
                 'view bulties', 'create bulties', 'edit bulties', 'delete bulties', 'restore bulties', 'force delete bulties', 'cancel bulties', 'print bulties', 'approve bulty documents', 'approve bulty material document', 'approve bulty pod'
             ],
             'trips' => [
-                'view trips', 'create trips', 'edit trips', 'delete trips', 'close trips', 'import trip data'
+                'view trips', 'create trips', 'edit trips', 'delete trips', 'close trips', 'import trip data',
+                'view trip details', 'create trip details', 'edit trip details', 'delete trip details'
             ],
             'billing' => [
                 'view billing', 'create billing', 'edit billing', 'delete billing', 'view invoices', 'create invoices', 'edit invoices', 'delete invoices', 'print invoices', 'export invoices'

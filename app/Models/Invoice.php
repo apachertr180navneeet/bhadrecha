@@ -26,6 +26,7 @@ class Invoice extends Model
         'invoice_no',
         'invoice_type',
         'bill_number',
+        'case_id',
         'template_type',
         'invoice_date',
         'total_amount',

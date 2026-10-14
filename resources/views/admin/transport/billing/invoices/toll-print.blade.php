@@ -35,7 +35,7 @@
     // State & GST Type calculation
     $originState = $invoice->company && $invoice->company->state ? $invoice->company->state : ($firstBulty && $firstBulty->originCity ? ($firstBulty->originCity->state ?? 'RAJASTHAN') : 'RAJASTHAN');
     $isSameState = \App\Http\Controllers\Admin\Transport\BillingController::isSameGstState($originState, $placeOfSupply);
-    $gstType = $isSameState ? 'CGST_SGST' : 'IGST';
+    $gstType = !empty($invoice->gst_type) ? $invoice->gst_type : ($isSameState ? 'CGST_SGST' : 'IGST');
 
     $gstRate = $invoice->gstMaster ? floatval($invoice->gstMaster->percentage) : 18.00;
 
@@ -54,8 +54,11 @@
         foreach ($invoice->bulties as $bulty) {
             if ($bulty->trip) {
                 foreach ($bulty->trip->fastTagDetails as $ft) {
-                    if ($ft->location) {
-                        $tollLocations->push(strtoupper(trim($ft->location)));
+                    $loc = strtoupper(trim((string)($ft->location ?? '')));
+                    if (!empty($loc)) {
+                        $tollLocations->push($loc);
+                    } elseif (floatval($ft->amount ?? 0) > 0 || floatval($ft->one_way ?? 0) > 0 || floatval($ft->return ?? 0) > 0) {
+                        $tollLocations->push('TOLL PLAZA');
                     }
                 }
             }
@@ -65,17 +68,21 @@
         $grandTollSum = 0;
         foreach ($invoice->bulties as $bulty) {
             if ($bulty->trip) {
-                $grandTollSum += floatval($bulty->trip->fastTagDetails->sum('amount'));
+                $ftSum = floatval($bulty->trip->fastTagDetails->sum('amount'));
+                if ($ftSum <= 0) {
+                    $ftSum = floatval($bulty->trip->fastTagDetails->sum(fn($ft) => floatval($ft->one_way ?? 0) + floatval($ft->return ?? 0)));
+                }
+                $grandTollSum += $ftSum;
             }
         }
     }
 
     $calculatedGst = round($grandTollSum * ($gstRate / 100), 2);
-    $cgstVal = $gstType === 'CGST_SGST' ? round($calculatedGst / 2, 2) : 0.00;
-    $sgstVal = $gstType === 'CGST_SGST' ? round($calculatedGst / 2, 2) : 0.00;
-    $igstVal = $gstType === 'IGST' ? $calculatedGst : 0.00;
+    $cgstVal = round($calculatedGst / 2, 2);
+    $sgstVal = round($calculatedGst - $cgstVal, 2);
+    $igstVal = $calculatedGst;
 
-    $grandTotal = $grandTollSum + $calculatedGst;
+    $grandTotal = round($grandTollSum + $calculatedGst, 2);
     $amountInWords = \App\Http\Controllers\Admin\Transport\BillingController::convertNumberToWords($grandTotal);
 @endphp
 
@@ -92,10 +99,30 @@
                 </ol>
             </nav>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
             <a href="{{ route('admin.transport.invoices.bill-generate', $invoice->id) }}" class="btn btn-outline-secondary">
                 <i class="bx bx-arrow-back me-1"></i> Back to Bill Generate
             </a>
+
+            <!-- GST Type Selector -->
+            <div class="d-inline-flex align-items-center gap-1 bg-white border rounded px-2 py-1 shadow-sm">
+                <label for="toll_gst_type_select" class="form-label small fw-bold mb-0 text-muted">GST Type:</label>
+                <select id="toll_gst_type_select" class="form-select form-select-sm fw-semibold" style="width: auto;">
+                    <option value="CGST_SGST" {{ $gstType === 'CGST_SGST' ? 'selected' : '' }}>CGST + SGST</option>
+                    <option value="IGST" {{ $gstType === 'IGST' ? 'selected' : '' }}>IGST</option>
+                </select>
+            </div>
+
+            <!-- Payment Status Selector -->
+            <div class="d-inline-flex align-items-center gap-1 bg-white border rounded px-2 py-1 shadow-sm">
+                <label for="toll_status_select" class="form-label small fw-bold mb-0 text-muted">Payment Status:</label>
+                <select id="toll_status_select" class="form-select form-select-sm fw-semibold" style="width: auto;">
+                    <option value="pending" {{ ($invoice->status ?? 'pending') === 'pending' ? 'selected' : '' }}>Pending</option>
+                    <option value="paid" {{ ($invoice->status ?? 'pending') === 'paid' ? 'selected' : '' }}>Paid</option>
+                    <option value="cancelled" {{ ($invoice->status ?? 'pending') === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                </select>
+            </div>
+
             <form id="save-toll-form" method="POST" action="{{ route('admin.transport.invoices.save-toll', $invoice->id) }}" class="d-inline">
                 @csrf
                 <input type="hidden" name="bill_number" id="hidden_bill_number" value="">
@@ -110,6 +137,8 @@
                 <input type="hidden" name="custom_pan_no" id="hidden_custom_pan_no" value="">
                 <input type="hidden" name="consignor_name" id="hidden_consignor_name" value="">
                 <input type="hidden" name="no_of_lrs" id="hidden_no_of_lrs" value="">
+                <input type="hidden" name="gst_type" id="hidden_gst_type" value="{{ $gstType }}">
+                <input type="hidden" name="status" id="hidden_status" value="{{ $invoice->status ?? 'pending' }}">
                 @foreach($invoice->bulties as $bulty)
                     <input type="hidden" name="bulty_modes[{{ $bulty->id }}]" id="hidden_bulty_mode_{{ $bulty->id }}" value="">
                 @endforeach
@@ -128,6 +157,8 @@
                     document.getElementById('hidden_custom_gstn').value = gv('custom_gstn_cell');
                     document.getElementById('hidden_custom_pan_no').value = gv('custom_pan_no_cell');
                     document.getElementById('hidden_consignor_name').value = gv('consignor_name_cell');
+                    document.getElementById('hidden_gst_type').value = document.getElementById('toll_gst_type_select').value;
+                    document.getElementById('hidden_status').value = document.getElementById('toll_status_select').value;
                     document.querySelectorAll('.bulty-mode-select').forEach(function(sel) {
                         var bultyId = sel.getAttribute('data-bulty-id');
                         var hidden = document.getElementById('hidden_bulty_mode_' + bultyId);
@@ -327,28 +358,25 @@
                                     <td colspan="2" style="border-left: 1px solid #000; border-bottom: none;"></td>
                                 </tr>
                                 
-                                @if($gstType === 'CGST_SGST')
-                                    @php $halfRate = $gstRate / 2; @endphp
-                                    <tr>
-                                        <td colspan="{{ $colSpanBeforeToll - 1 }}" style="border-right: 1px solid #000; border-top: none; border-bottom: none;"></td>
-                                        <td style="font-weight: bold; border: 1px solid #000; font-size: 11px;">C GST {{ str_replace('.0', '', number_format($halfRate, 1)) }}%</td>
-                                        <td style="font-weight: bold; border: 1px solid #000; text-align: right; padding-right: 5px; font-size: 11px;">{{ number_format($cgstVal, 2) }}</td>
-                                        <td colspan="2" style="border-left: 1px solid #000; border-top: none; border-bottom: none;"></td>
-                                    </tr>
-                                    <tr>
-                                        <td colspan="{{ $colSpanBeforeToll - 1 }}" style="border-right: 1px solid #000; border-top: none; border-bottom: none;"></td>
-                                        <td style="font-weight: bold; border: 1px solid #000; font-size: 11px;">S GST {{ str_replace('.0', '', number_format($halfRate, 1)) }}%</td>
-                                        <td style="font-weight: bold; border: 1px solid #000; text-align: right; padding-right: 5px; font-size: 11px;">{{ number_format($sgstVal, 2) }}</td>
-                                        <td colspan="2" style="border-left: 1px solid #000; border-top: none; border-bottom: none;"></td>
-                                    </tr>
-                                @else
-                                    <tr>
-                                        <td colspan="{{ $colSpanBeforeToll - 1 }}" style="border-right: 1px solid #000; border-top: none; border-bottom: none;"></td>
-                                        <td style="font-weight: bold; border: 1px solid #000; font-size: 11px;">I GST {{ str_replace('.0', '', number_format($gstRate, 1)) }}%</td>
-                                        <td style="font-weight: bold; border: 1px solid #000; text-align: right; padding-right: 5px; font-size: 11px;">{{ number_format($igstVal, 2) }}</td>
-                                        <td colspan="2" style="border-left: 1px solid #000; border-top: none; border-bottom: none;"></td>
-                                    </tr>
-                                @endif
+                                @php $halfRate = $gstRate / 2; @endphp
+                                <tr class="row-cgst-sgst {{ $gstType === 'CGST_SGST' ? '' : 'd-none' }}">
+                                    <td colspan="{{ $colSpanBeforeToll - 1 }}" style="border-right: 1px solid #000; border-top: none; border-bottom: none;"></td>
+                                    <td style="font-weight: bold; border: 1px solid #000; font-size: 11px;">C GST {{ str_replace('.0', '', number_format($halfRate, 1)) }}%</td>
+                                    <td style="font-weight: bold; border: 1px solid #000; text-align: right; padding-right: 5px; font-size: 11px;">{{ number_format($cgstVal, 2) }}</td>
+                                    <td colspan="2" style="border-left: 1px solid #000; border-top: none; border-bottom: none;"></td>
+                                </tr>
+                                <tr class="row-cgst-sgst {{ $gstType === 'CGST_SGST' ? '' : 'd-none' }}">
+                                    <td colspan="{{ $colSpanBeforeToll - 1 }}" style="border-right: 1px solid #000; border-top: none; border-bottom: none;"></td>
+                                    <td style="font-weight: bold; border: 1px solid #000; font-size: 11px;">S GST {{ str_replace('.0', '', number_format($halfRate, 1)) }}%</td>
+                                    <td style="font-weight: bold; border: 1px solid #000; text-align: right; padding-right: 5px; font-size: 11px;">{{ number_format($sgstVal, 2) }}</td>
+                                    <td colspan="2" style="border-left: 1px solid #000; border-top: none; border-bottom: none;"></td>
+                                </tr>
+                                <tr class="row-igst {{ $gstType === 'IGST' ? '' : 'd-none' }}">
+                                    <td colspan="{{ $colSpanBeforeToll - 1 }}" style="border-right: 1px solid #000; border-top: none; border-bottom: none;"></td>
+                                    <td style="font-weight: bold; border: 1px solid #000; font-size: 11px;">I GST {{ str_replace('.0', '', number_format($gstRate, 1)) }}%</td>
+                                    <td style="font-weight: bold; border: 1px solid #000; text-align: right; padding-right: 5px; font-size: 11px;">{{ number_format($igstVal, 2) }}</td>
+                                    <td colspan="2" style="border-left: 1px solid #000; border-top: none; border-bottom: none;"></td>
+                                </tr>
                                 <tr>
                                     <td colspan="{{ $colSpanBeforeToll - 1 }}" style="border-right: 1px solid #000; border-top: none; border-bottom: none;"></td>
                                     <td style="font-weight: bold; border: 1px solid #000; font-size: 11px;">TOTAL GST</td>
@@ -638,6 +666,30 @@ document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('.utcl-billing-location').forEach(function(td) {
                 td.textContent = val;
             });
+        });
+    }
+
+    var gstSelect = document.getElementById('toll_gst_type_select');
+    if (gstSelect) {
+        gstSelect.addEventListener('change', function() {
+            var val = this.value;
+            var hidden = document.getElementById('hidden_gst_type');
+            if (hidden) hidden.value = val;
+            if (val === 'CGST_SGST') {
+                document.querySelectorAll('.row-cgst-sgst').forEach(function(el) { el.classList.remove('d-none'); });
+                document.querySelectorAll('.row-igst').forEach(function(el) { el.classList.add('d-none'); });
+            } else {
+                document.querySelectorAll('.row-cgst-sgst').forEach(function(el) { el.classList.add('d-none'); });
+                document.querySelectorAll('.row-igst').forEach(function(el) { el.classList.remove('d-none'); });
+            }
+        });
+    }
+
+    var statusSelect = document.getElementById('toll_status_select');
+    if (statusSelect) {
+        statusSelect.addEventListener('change', function() {
+            var hidden = document.getElementById('hidden_status');
+            if (hidden) hidden.value = this.value;
         });
     }
 });

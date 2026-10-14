@@ -122,7 +122,7 @@ class ReportController extends Controller
             $query->whereDate('bulties.lr_date', '<=', $request->date_to);
         }
 
-        $vehicles = $query->orderBy('vehicles.vehicle_number')->paginate(20);
+        $vehicles = $query->orderBy('vehicles.vehicle_number')->paginate(20)->withQueryString();
 
         $companies = $user->isSuperAdmin()
             ? Company::where('status', 'active')->orderBy('name')->get()
@@ -174,7 +174,7 @@ class ReportController extends Controller
             $query->whereHas('trip', fn($q) => $q->where('status', $request->trip_status));
         }
 
-        $trips = $query->orderBy('lr_date', 'desc')->paginate(20);
+        $trips = $query->orderBy('lr_date', 'desc')->paginate(20)->withQueryString();
 
         return view('admin.reports.trip', compact('trips'));
     }
@@ -214,7 +214,7 @@ class ReportController extends Controller
         }
 
         $trips = $request->filled('driver_id')
-            ? $query->orderBy('driver_id')->paginate(50)
+            ? $query->orderBy('driver_id')->paginate(50)->withQueryString()
             : collect([]);
 
         $drivers = Driver::where('status', 'active')
@@ -464,6 +464,18 @@ class ReportController extends Controller
             )
             ->groupBy('trip_id');
 
+        $fasttagSubquery = DB::table('trip_fast_tag_details')
+            ->select('trip_id', DB::raw('SUM(COALESCE(NULLIF(amount, 0), one_way + return, 0)) as total_fasttag'))
+            ->groupBy('trip_id');
+
+        $adblueSubquery = DB::table('trip_adblue_details')
+            ->select('trip_id', DB::raw('SUM(amount) as total_adblue'))
+            ->groupBy('trip_id');
+
+        $otherSubquery = DB::table('trip_other_amount_details')
+            ->select('trip_id', DB::raw('SUM(amount) as total_other'))
+            ->groupBy('trip_id');
+
         $advanceSubquery = DB::table('trip_advance_details')
             ->select('trip_id', DB::raw('SUM(advance_amount) as total_advance'))
             ->groupBy('trip_id');
@@ -493,13 +505,13 @@ class ReportController extends Controller
             ->select('vehicles.*',
                 DB::raw('COUNT(bulties.id) as total_trips'),
                 DB::raw('COALESCE(SUM(fuel_summary.total_qty), 0) as total_fuel_qty'),
-                DB::raw('COALESCE(SUM(fuel_summary.total_amt), 0) as total_fuel_amount'),
+                DB::raw('COALESCE(SUM(CASE WHEN fuel_summary.total_amt IS NOT NULL AND fuel_summary.total_amt > 0 THEN fuel_summary.total_amt ELSE COALESCE(trips.fuel_amount, 0) END), 0) as total_fuel_amount'),
                 DB::raw('COALESCE(MAX(km_summary.total_km), 0) as total_km'),
                 DB::raw('COALESCE(SUM(bulties.total_amount), 0) as total_revenue'),
-                DB::raw('COALESCE(SUM(trips.fasttag_total_amount), 0) as total_fasttag'),
-                DB::raw('COALESCE(SUM(trips.adblue_total_amount), 0) as total_adblue'),
-                DB::raw('COALESCE(SUM(trips.other_amount), 0) as total_other_expense'),
-                DB::raw('COALESCE(SUM(advance_summary.total_advance), 0) as total_advance')
+                DB::raw('COALESCE(SUM(CASE WHEN fasttag_summary.total_fasttag IS NOT NULL AND fasttag_summary.total_fasttag > 0 THEN fasttag_summary.total_fasttag ELSE COALESCE(trips.fasttag_total_amount, 0) END), 0) as total_fasttag'),
+                DB::raw('COALESCE(SUM(CASE WHEN adblue_summary.total_adblue IS NOT NULL AND adblue_summary.total_adblue > 0 THEN adblue_summary.total_adblue ELSE COALESCE(trips.adblue_total_amount, 0) END), 0) as total_adblue'),
+                DB::raw('COALESCE(SUM(CASE WHEN other_summary.total_other IS NOT NULL AND other_summary.total_other > 0 THEN other_summary.total_other ELSE COALESCE(trips.other_amount, 0) END), 0) as total_other_expense'),
+                DB::raw('COALESCE(SUM(CASE WHEN advance_summary.total_advance IS NOT NULL AND advance_summary.total_advance > 0 THEN advance_summary.total_advance ELSE COALESCE(trips.advance_total_amount, 0) END), 0) as total_advance')
             )
             ->leftJoin('bulties', function ($join) {
                 $join->on('bulties.vehicle_id', '=', 'vehicles.id')
@@ -509,6 +521,15 @@ class ReportController extends Controller
             ->leftJoin('trips', 'trips.builty_id', '=', 'bulties.id')
             ->leftJoinSub($fuelSubquery, 'fuel_summary', function ($join) {
                 $join->on('fuel_summary.trip_id', '=', 'trips.id');
+            })
+            ->leftJoinSub($fasttagSubquery, 'fasttag_summary', function ($join) {
+                $join->on('fasttag_summary.trip_id', '=', 'trips.id');
+            })
+            ->leftJoinSub($adblueSubquery, 'adblue_summary', function ($join) {
+                $join->on('adblue_summary.trip_id', '=', 'trips.id');
+            })
+            ->leftJoinSub($otherSubquery, 'other_summary', function ($join) {
+                $join->on('other_summary.trip_id', '=', 'trips.id');
             })
             ->leftJoinSub($advanceSubquery, 'advance_summary', function ($join) {
                 $join->on('advance_summary.trip_id', '=', 'trips.id');
@@ -534,7 +555,7 @@ class ReportController extends Controller
             $query->whereDate('bulties.lr_date', '<=', $request->date_to);
         }
 
-        $vehicles = $query->orderBy('vehicles.vehicle_number')->paginate(20);
+        $vehicles = $query->orderBy('vehicles.vehicle_number')->paginate(20)->withQueryString();
 
         $companies = $user->isSuperAdmin()
             ? Company::where('status', 'active')->orderBy('name')->get()
@@ -610,36 +631,56 @@ class ReportController extends Controller
             ->when($toDate, fn($q, $d) => $q->whereDate('lr_date', '<=', $d))
             ->pluck('id');
 
-        // Combined fuel query
-        $fuelAgg = TripFuelDetail::select(
-                DB::raw('COALESCE(SUM(quantity),0) as total_qty'),
-                DB::raw('COALESCE(SUM(amount),0) as total_amt')
+        // Comprehensive trip expense aggregation matching actual source records
+        $tripExp = DB::table('trips')
+            ->join('bulties', 'bulties.id', '=', 'trips.builty_id')
+            ->leftJoinSub(
+                DB::table('trip_fuel_details')
+                    ->select('trip_id', DB::raw('SUM(quantity) as qty'), DB::raw('SUM(amount) as amt'))
+                    ->groupBy('trip_id'),
+                'fuel_sub', 'fuel_sub.trip_id', '=', 'trips.id'
             )
-            ->whereIn('builty_id', $bultyIds)
-            ->when($fromDate, fn($q) => $q->whereDate('date', '>=', $fromDate))
-            ->when($toDate, fn($q) => $q->whereDate('date', '<=', $toDate))
-            ->first();
+            ->leftJoinSub(
+                DB::table('trip_fast_tag_details')
+                    ->select('trip_id', DB::raw('SUM(COALESCE(NULLIF(amount, 0), one_way + return, 0)) as amt'))
+                    ->groupBy('trip_id'),
+                'ft_sub', 'ft_sub.trip_id', '=', 'trips.id'
+            )
+            ->leftJoinSub(
+                DB::table('trip_adblue_details')
+                    ->select('trip_id', DB::raw('SUM(amount) as amt'))
+                    ->groupBy('trip_id'),
+                'ab_sub', 'ab_sub.trip_id', '=', 'trips.id'
+            )
+            ->leftJoinSub(
+                DB::table('trip_other_amount_details')
+                    ->select('trip_id', DB::raw('SUM(amount) as amt'))
+                    ->groupBy('trip_id'),
+                'ot_sub', 'ot_sub.trip_id', '=', 'trips.id'
+            )
+            ->leftJoinSub(
+                DB::table('trip_advance_details')
+                    ->select('trip_id', DB::raw('SUM(advance_amount) as amt'))
+                    ->groupBy('trip_id'),
+                'adv_sub', 'adv_sub.trip_id', '=', 'trips.id'
+            )
+            ->whereIn('bulties.id', $bultyIds)
+            ->whereNull('bulties.deleted_at')
+            ->select(
+                DB::raw('COALESCE(SUM(fuel_sub.qty), 0) as fuel_qty'),
+                DB::raw('COALESCE(SUM(CASE WHEN fuel_sub.amt IS NOT NULL AND fuel_sub.amt > 0 THEN fuel_sub.amt ELSE COALESCE(trips.fuel_amount, 0) END), 0) as fuel_expense'),
+                DB::raw('COALESCE(SUM(CASE WHEN ft_sub.amt IS NOT NULL AND ft_sub.amt > 0 THEN ft_sub.amt ELSE COALESCE(trips.fasttag_total_amount, 0) END), 0) as fasttag_expense'),
+                DB::raw('COALESCE(SUM(CASE WHEN ab_sub.amt IS NOT NULL AND ab_sub.amt > 0 THEN ab_sub.amt ELSE COALESCE(trips.adblue_total_amount, 0) END), 0) as adblue_expense'),
+                DB::raw('COALESCE(SUM(CASE WHEN ot_sub.amt IS NOT NULL AND ot_sub.amt > 0 THEN ot_sub.amt ELSE COALESCE(trips.other_amount, 0) END), 0) as other_expense'),
+                DB::raw('COALESCE(SUM(CASE WHEN adv_sub.amt IS NOT NULL AND adv_sub.amt > 0 THEN adv_sub.amt ELSE COALESCE(trips.advance_total_amount, 0) END), 0) as advance_expense')
+            )->first();
 
-        $totalFuelQty = (float)($fuelAgg->total_qty ?? 0);
-        $totalFuelAmt = (float)($fuelAgg->total_amt ?? 0);
-
-        $totalFastTag = (float)TripFastTagDetail::whereIn('builty_id', $bultyIds)
-            ->when($fromDate, fn($q) => $q->whereDate('transaction_time', '>=', $fromDate))
-            ->when($toDate, fn($q) => $q->whereDate('transaction_time', '<=', $toDate))
-            ->sum('amount');
-        $totalAdBlue = (float)TripAdBlueDetail::whereIn('builty_id', $bultyIds)
-            ->when($fromDate, fn($q) => $q->whereDate('date', '>=', $fromDate))
-            ->when($toDate, fn($q) => $q->whereDate('date', '<=', $toDate))
-            ->sum('amount');
-        $totalOtherExp = (float)TripOtherAmountDetail::whereIn('builty_id', $bultyIds)
-            ->when($fromDate, fn($q) => $q->whereDate('date', '>=', $fromDate))
-            ->when($toDate, fn($q) => $q->whereDate('date', '<=', $toDate))
-            ->sum('amount');
-        
-        $totalTripAdvance = max(
-            (float)TripAdvanceDetail::whereIn('builty_id', $bultyIds)->sum('advance_amount'),
-            (float)Trip::whereIn('builty_id', $bultyIds)->sum('advance_total_amount')
-        );
+        $totalFuelQty = (float)($tripExp->fuel_qty ?? 0);
+        $totalFuelAmt = (float)($tripExp->fuel_expense ?? 0);
+        $totalFastTag = (float)($tripExp->fasttag_expense ?? 0);
+        $totalAdBlue = (float)($tripExp->adblue_expense ?? 0);
+        $totalOtherExp = (float)($tripExp->other_expense ?? 0);
+        $totalTripAdvance = (float)($tripExp->advance_expense ?? 0);
 
         $topVehicles = Bulty::select('vehicle_id',
             DB::raw('COUNT(*) as trip_count'),
@@ -713,12 +754,49 @@ class ReportController extends Controller
             $tripAdvanceQuery->whereHas('trip.builty', fn($q) => $q->where('vehicle_id', $vehicleId));
         }
 
-        $totalFuelAmt = (clone $tripFuelQuery)->sum('amount');
-        $totalFuelQty = (clone $tripFuelQuery)->sum('quantity');
-        $totalFastTag = (clone $tripFastTagQuery)->sum('amount');
-        $totalAdBlue = (clone $tripAdBlueQuery)->sum('amount');
-        $totalOtherExp = (clone $tripOtherQuery)->sum('amount');
-        $totalTripAdvance = (clone $tripAdvanceQuery)->sum('advance_amount');
+        // Reconcile trip expense totals with trip report
+        $tripExpenseTotals = DB::table('trips')
+            ->join('bulties', 'bulties.id', '=', 'trips.builty_id')
+            ->leftJoinSub(
+                DB::table('trip_fuel_details')->select('trip_id', DB::raw('SUM(quantity) as qty'), DB::raw('SUM(amount) as amt'))->groupBy('trip_id'),
+                'fuel_sub', 'fuel_sub.trip_id', '=', 'trips.id'
+            )
+            ->leftJoinSub(
+                DB::table('trip_fast_tag_details')->select('trip_id', DB::raw('SUM(COALESCE(NULLIF(amount, 0), one_way + return, 0)) as amt'))->groupBy('trip_id'),
+                'fasttag_sub', 'fasttag_sub.trip_id', '=', 'trips.id'
+            )
+            ->leftJoinSub(
+                DB::table('trip_adblue_details')->select('trip_id', DB::raw('SUM(amount) as amt'))->groupBy('trip_id'),
+                'adblue_sub', 'adblue_sub.trip_id', '=', 'trips.id'
+            )
+            ->leftJoinSub(
+                DB::table('trip_other_amount_details')->select('trip_id', DB::raw('SUM(amount) as amt'))->groupBy('trip_id'),
+                'other_sub', 'other_sub.trip_id', '=', 'trips.id'
+            )
+            ->leftJoinSub(
+                DB::table('trip_advance_details')->select('trip_id', DB::raw('SUM(advance_amount) as amt'))->groupBy('trip_id'),
+                'adv_sub', 'adv_sub.trip_id', '=', 'trips.id'
+            )
+            ->whereNull('bulties.deleted_at')
+            ->whereNotIn('bulties.status', ['pending', 'planned'])
+            ->whereBetween('bulties.lr_date', [$fromDate, $toDate])
+            ->when($companyId && $companyId !== 'all', fn($q) => $q->where('bulties.company_id', $companyId))
+            ->when($vehicleId, fn($q) => $q->where('bulties.vehicle_id', $vehicleId))
+            ->select(
+                DB::raw('COALESCE(SUM(fuel_sub.qty), 0) as fuel_qty'),
+                DB::raw('COALESCE(SUM(CASE WHEN fuel_sub.amt IS NOT NULL AND fuel_sub.amt > 0 THEN fuel_sub.amt ELSE COALESCE(trips.fuel_amount, 0) END), 0) as fuel_amt'),
+                DB::raw('COALESCE(SUM(CASE WHEN fasttag_sub.amt IS NOT NULL AND fasttag_sub.amt > 0 THEN fasttag_sub.amt ELSE COALESCE(trips.fasttag_total_amount, 0) END), 0) as fasttag_amt'),
+                DB::raw('COALESCE(SUM(CASE WHEN adblue_sub.amt IS NOT NULL AND adblue_sub.amt > 0 THEN adblue_sub.amt ELSE COALESCE(trips.adblue_total_amount, 0) END), 0) as adblue_amt'),
+                DB::raw('COALESCE(SUM(CASE WHEN other_sub.amt IS NOT NULL AND other_sub.amt > 0 THEN other_sub.amt ELSE COALESCE(trips.other_amount, 0) END), 0) as other_amt'),
+                DB::raw('COALESCE(SUM(CASE WHEN adv_sub.amt IS NOT NULL AND adv_sub.amt > 0 THEN adv_sub.amt ELSE COALESCE(trips.advance_total_amount, 0) END), 0) as adv_amt')
+            )->first();
+
+        $totalFuelAmt = (float)($tripExpenseTotals->fuel_amt ?? 0);
+        $totalFuelQty = (float)($tripExpenseTotals->fuel_qty ?? 0);
+        $totalFastTag = (float)($tripExpenseTotals->fasttag_amt ?? 0);
+        $totalAdBlue = (float)($tripExpenseTotals->adblue_amt ?? 0);
+        $totalOtherExp = (float)($tripExpenseTotals->other_amt ?? 0);
+        $totalTripAdvance = (float)($tripExpenseTotals->adv_amt ?? 0);
 
         // Maintenance Expenses
         $maintenanceQuery = MaintenanceHistory::whereBetween('service_date', [$fromDate, $toDate]);
@@ -739,60 +817,93 @@ class ReportController extends Controller
         $totalBreakdown = (clone $breakdownQuery)->sum('repair_cost');
         $totalSparePart = (clone $sparePartQuery)->sum('amount');
 
-        // Vehicle-wise summary (single query instead of N+1)
+        // Vehicle-wise summary (single query matching trip report data mapping)
         $vehicleSubQuery = Vehicle::where('status', 'active')
             ->when($request->filled('vehicle_id'), fn($q) => $q->where('id', $vehicleId))
             ->select('vehicles.*');
 
+        $tripExpenseByVehicle = DB::table('trips')
+            ->join('bulties', 'bulties.id', '=', 'trips.builty_id')
+            ->leftJoinSub(
+                DB::table('trip_fuel_details')->select('trip_id', DB::raw('SUM(amount) as amt'))->groupBy('trip_id'),
+                'fuel_sub', 'fuel_sub.trip_id', '=', 'trips.id'
+            )
+            ->leftJoinSub(
+                DB::table('trip_fast_tag_details')->select('trip_id', DB::raw('SUM(COALESCE(NULLIF(amount, 0), one_way + return, 0)) as amt'))->groupBy('trip_id'),
+                'fasttag_sub', 'fasttag_sub.trip_id', '=', 'trips.id'
+            )
+            ->leftJoinSub(
+                DB::table('trip_adblue_details')->select('trip_id', DB::raw('SUM(amount) as amt'))->groupBy('trip_id'),
+                'adblue_sub', 'adblue_sub.trip_id', '=', 'trips.id'
+            )
+            ->leftJoinSub(
+                DB::table('trip_other_amount_details')->select('trip_id', DB::raw('SUM(amount) as amt'))->groupBy('trip_id'),
+                'other_sub', 'other_sub.trip_id', '=', 'trips.id'
+            )
+            ->leftJoinSub(
+                DB::table('trip_advance_details')->select('trip_id', DB::raw('SUM(advance_amount) as amt'))->groupBy('trip_id'),
+                'adv_sub', 'adv_sub.trip_id', '=', 'trips.id'
+            )
+            ->whereNull('bulties.deleted_at')
+            ->whereNotIn('bulties.status', ['pending', 'planned'])
+            ->whereBetween('bulties.lr_date', [$fromDate, $toDate])
+            ->when($companyId && $companyId !== 'all', fn($q) => $q->where('bulties.company_id', $companyId))
+            ->when($vehicleId, fn($q) => $q->where('bulties.vehicle_id', $vehicleId))
+            ->select(
+                'bulties.vehicle_id',
+                DB::raw('COALESCE(SUM(CASE WHEN fuel_sub.amt IS NOT NULL AND fuel_sub.amt > 0 THEN fuel_sub.amt ELSE COALESCE(trips.fuel_amount, 0) END), 0) as fuel_expense'),
+                DB::raw('COALESCE(SUM(CASE WHEN fasttag_sub.amt IS NOT NULL AND fasttag_sub.amt > 0 THEN fasttag_sub.amt ELSE COALESCE(trips.fasttag_total_amount, 0) END), 0) as fasttag_expense'),
+                DB::raw('COALESCE(SUM(CASE WHEN adblue_sub.amt IS NOT NULL AND adblue_sub.amt > 0 THEN adblue_sub.amt ELSE COALESCE(trips.adblue_total_amount, 0) END), 0) as adblue_expense'),
+                DB::raw('COALESCE(SUM(CASE WHEN other_sub.amt IS NOT NULL AND other_sub.amt > 0 THEN other_sub.amt ELSE COALESCE(trips.other_amount, 0) END), 0) as other_expense'),
+                DB::raw('COALESCE(SUM(CASE WHEN adv_sub.amt IS NOT NULL AND adv_sub.amt > 0 THEN adv_sub.amt ELSE COALESCE(trips.advance_total_amount, 0) END), 0) as advance_expense')
+            )
+            ->groupBy('bulties.vehicle_id');
+
         $fuelSub = DB::table('trip_fuel_details')
             ->join('trips', 'trips.id', '=', 'trip_fuel_details.trip_id')
             ->join('bulties', 'bulties.id', '=', 'trips.builty_id')
-            ->whereBetween('trip_fuel_details.date', [$fromDate, $toDate])
             ->whereNull('bulties.deleted_at')
+            ->whereNotIn('bulties.status', ['pending', 'planned'])
+            ->whereBetween('bulties.lr_date', [$fromDate, $toDate])
             ->when($companyId && $companyId !== 'all', fn($q) => $q->where('bulties.company_id', $companyId))
-            ->select('bulties.vehicle_id', DB::raw('COALESCE(SUM(trip_fuel_details.amount),0) as fuel_expense'))
+            ->leftJoinSub($tripExpenseByVehicle, 'tev', 'tev.vehicle_id', '=', 'bulties.vehicle_id')
+            ->select('bulties.vehicle_id', DB::raw('COALESCE(MAX(tev.fuel_expense), 0) as fuel_expense'))
             ->groupBy('bulties.vehicle_id');
 
-        $fasttagSub = DB::table('trip_fast_tag_details')
-            ->join('trips', 'trips.id', '=', 'trip_fast_tag_details.trip_id')
-            ->join('bulties', 'bulties.id', '=', 'trips.builty_id')
-            ->where(function($q) use ($fromDate, $toDate) {
-                $q->whereBetween('trip_fast_tag_details.transaction_time', [$fromDate, $toDate . ' 23:59:59'])
-                  ->orWhere(function($q2) use ($fromDate, $toDate) {
-                      $q2->whereNull('trip_fast_tag_details.transaction_time')
-                         ->whereBetween('trip_fast_tag_details.created_at', [$fromDate, $toDate . ' 23:59:59']);
-                  });
-            })
+        $fasttagSub = DB::table('bulties')
             ->whereNull('bulties.deleted_at')
+            ->whereNotIn('bulties.status', ['pending', 'planned'])
+            ->whereBetween('bulties.lr_date', [$fromDate, $toDate])
             ->when($companyId && $companyId !== 'all', fn($q) => $q->where('bulties.company_id', $companyId))
-            ->select('bulties.vehicle_id', DB::raw('COALESCE(SUM(trip_fast_tag_details.amount),0) as fasttag_expense'))
+            ->leftJoinSub($tripExpenseByVehicle, 'tev', 'tev.vehicle_id', '=', 'bulties.vehicle_id')
+            ->select('bulties.vehicle_id', DB::raw('COALESCE(MAX(tev.fasttag_expense), 0) as fasttag_expense'))
             ->groupBy('bulties.vehicle_id');
 
-        $adblueSub = DB::table('trip_adblue_details')
-            ->join('trips', 'trips.id', '=', 'trip_adblue_details.trip_id')
-            ->join('bulties', 'bulties.id', '=', 'trips.builty_id')
-            ->whereBetween('trip_adblue_details.date', [$fromDate, $toDate])
+        $adblueSub = DB::table('bulties')
             ->whereNull('bulties.deleted_at')
+            ->whereNotIn('bulties.status', ['pending', 'planned'])
+            ->whereBetween('bulties.lr_date', [$fromDate, $toDate])
             ->when($companyId && $companyId !== 'all', fn($q) => $q->where('bulties.company_id', $companyId))
-            ->select('bulties.vehicle_id', DB::raw('COALESCE(SUM(trip_adblue_details.amount),0) as adblue_expense'))
+            ->leftJoinSub($tripExpenseByVehicle, 'tev', 'tev.vehicle_id', '=', 'bulties.vehicle_id')
+            ->select('bulties.vehicle_id', DB::raw('COALESCE(MAX(tev.adblue_expense), 0) as adblue_expense'))
             ->groupBy('bulties.vehicle_id');
 
-        $otherSub = DB::table('trip_other_amount_details')
-            ->join('trips', 'trips.id', '=', 'trip_other_amount_details.trip_id')
-            ->join('bulties', 'bulties.id', '=', 'trips.builty_id')
-            ->whereBetween('trip_other_amount_details.date', [$fromDate, $toDate])
+        $otherSub = DB::table('bulties')
             ->whereNull('bulties.deleted_at')
+            ->whereNotIn('bulties.status', ['pending', 'planned'])
+            ->whereBetween('bulties.lr_date', [$fromDate, $toDate])
             ->when($companyId && $companyId !== 'all', fn($q) => $q->where('bulties.company_id', $companyId))
-            ->select('bulties.vehicle_id', DB::raw('COALESCE(SUM(trip_other_amount_details.amount),0) as other_expense'))
+            ->leftJoinSub($tripExpenseByVehicle, 'tev', 'tev.vehicle_id', '=', 'bulties.vehicle_id')
+            ->select('bulties.vehicle_id', DB::raw('COALESCE(MAX(tev.other_expense), 0) as other_expense'))
             ->groupBy('bulties.vehicle_id');
 
-        $advanceSub = DB::table('trip_advance_details')
-            ->join('trips', 'trips.id', '=', 'trip_advance_details.trip_id')
-            ->join('bulties', 'bulties.id', '=', 'trips.builty_id')
-            ->whereBetween('trip_advance_details.date', [$fromDate, $toDate])
+        $advanceSub = DB::table('bulties')
             ->whereNull('bulties.deleted_at')
+            ->whereNotIn('bulties.status', ['pending', 'planned'])
+            ->whereBetween('bulties.lr_date', [$fromDate, $toDate])
             ->when($companyId && $companyId !== 'all', fn($q) => $q->where('bulties.company_id', $companyId))
-            ->select('bulties.vehicle_id', DB::raw('COALESCE(SUM(trip_advance_details.advance_amount),0) as advance_expense'))
+            ->leftJoinSub($tripExpenseByVehicle, 'tev', 'tev.vehicle_id', '=', 'bulties.vehicle_id')
+            ->select('bulties.vehicle_id', DB::raw('COALESCE(MAX(tev.advance_expense), 0) as advance_expense'))
             ->groupBy('bulties.vehicle_id');
 
         $maintenanceSub = DB::table('maintenance_history')
@@ -1025,7 +1136,7 @@ class ReportController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
-        $users = $query->orderBy('created_at', 'desc')->paginate(20);
+        $users = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
 
         $roleStats = DB::table('model_has_roles')
             ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
@@ -1050,7 +1161,7 @@ class ReportController extends Controller
             $query->where('status', $request->status);
         }
 
-        $companies = $query->orderBy('created_at', 'desc')->paginate(20);
+        $companies = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
 
         $statusStats = Company::select('status', DB::raw('COUNT(*) as count'))
             ->groupBy('status')
@@ -1086,7 +1197,7 @@ class ReportController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
-        $logs = $query->orderBy('created_at', 'desc')->paginate(20);
+        $logs = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
 
         $actions = ActivityLog::distinct()->pluck('action');
         $users = User::active()->get();
@@ -1100,7 +1211,7 @@ class ReportController extends Controller
 
     private function getRoleReport(Request $request)
     {
-        $roles = Role::with(['permissions', 'users'])->paginate(20);
+        $roles = Role::with(['permissions', 'users'])->paginate(20)->withQueryString();
 
         $permissionUsage = DB::table('role_has_permissions')
             ->join('permissions', 'role_has_permissions.permission_id', '=', 'permissions.id')
@@ -1922,6 +2033,18 @@ class ReportController extends Controller
             )
             ->groupBy('trip_id');
 
+        $fasttagSubquery = DB::table('trip_fast_tag_details')
+            ->select('trip_id', DB::raw('SUM(COALESCE(NULLIF(amount, 0), one_way + return, 0)) as total_fasttag'))
+            ->groupBy('trip_id');
+
+        $adblueSubquery = DB::table('trip_adblue_details')
+            ->select('trip_id', DB::raw('SUM(amount) as total_adblue'))
+            ->groupBy('trip_id');
+
+        $otherSubquery = DB::table('trip_other_amount_details')
+            ->select('trip_id', DB::raw('SUM(amount) as total_other'))
+            ->groupBy('trip_id');
+
         $advanceSubquery = DB::table('trip_advance_details')
             ->select('trip_id', DB::raw('SUM(advance_amount) as total_advance'))
             ->groupBy('trip_id');
@@ -1951,13 +2074,13 @@ class ReportController extends Controller
             ->select('vehicles.*',
                 DB::raw('COUNT(bulties.id) as total_trips'),
                 DB::raw('COALESCE(SUM(fuel_summary.total_qty), 0) as total_fuel_qty'),
-                DB::raw('COALESCE(SUM(fuel_summary.total_amt), 0) as total_fuel_amount'),
+                DB::raw('COALESCE(SUM(CASE WHEN fuel_summary.total_amt IS NOT NULL AND fuel_summary.total_amt > 0 THEN fuel_summary.total_amt ELSE COALESCE(trips.fuel_amount, 0) END), 0) as total_fuel_amount'),
                 DB::raw('COALESCE(MAX(km_summary.total_km), 0) as total_km'),
                 DB::raw('COALESCE(SUM(bulties.total_amount), 0) as total_revenue'),
-                DB::raw('COALESCE(SUM(trips.fasttag_total_amount), 0) as total_fasttag'),
-                DB::raw('COALESCE(SUM(trips.adblue_total_amount), 0) as total_adblue'),
-                DB::raw('COALESCE(SUM(trips.other_amount), 0) as total_other_expense'),
-                DB::raw('COALESCE(SUM(advance_summary.total_advance), 0) as total_advance')
+                DB::raw('COALESCE(SUM(CASE WHEN fasttag_summary.total_fasttag IS NOT NULL AND fasttag_summary.total_fasttag > 0 THEN fasttag_summary.total_fasttag ELSE COALESCE(trips.fasttag_total_amount, 0) END), 0) as total_fasttag'),
+                DB::raw('COALESCE(SUM(CASE WHEN adblue_summary.total_adblue IS NOT NULL AND adblue_summary.total_adblue > 0 THEN adblue_summary.total_adblue ELSE COALESCE(trips.adblue_total_amount, 0) END), 0) as total_adblue'),
+                DB::raw('COALESCE(SUM(CASE WHEN other_summary.total_other IS NOT NULL AND other_summary.total_other > 0 THEN other_summary.total_other ELSE COALESCE(trips.other_amount, 0) END), 0) as total_other_expense'),
+                DB::raw('COALESCE(SUM(CASE WHEN advance_summary.total_advance IS NOT NULL AND advance_summary.total_advance > 0 THEN advance_summary.total_advance ELSE COALESCE(trips.advance_total_amount, 0) END), 0) as total_advance')
             )
             ->leftJoin('bulties', function ($join) {
                 $join->on('bulties.vehicle_id', '=', 'vehicles.id')
@@ -1967,6 +2090,15 @@ class ReportController extends Controller
             ->leftJoin('trips', 'trips.builty_id', '=', 'bulties.id')
             ->leftJoinSub($fuelSubquery, 'fuel_summary', function ($join) {
                 $join->on('fuel_summary.trip_id', '=', 'trips.id');
+            })
+            ->leftJoinSub($fasttagSubquery, 'fasttag_summary', function ($join) {
+                $join->on('fasttag_summary.trip_id', '=', 'trips.id');
+            })
+            ->leftJoinSub($adblueSubquery, 'adblue_summary', function ($join) {
+                $join->on('adblue_summary.trip_id', '=', 'trips.id');
+            })
+            ->leftJoinSub($otherSubquery, 'other_summary', function ($join) {
+                $join->on('other_summary.trip_id', '=', 'trips.id');
             })
             ->leftJoinSub($advanceSubquery, 'advance_summary', function ($join) {
                 $join->on('advance_summary.trip_id', '=', 'trips.id');
@@ -2040,34 +2172,56 @@ class ReportController extends Controller
 
         $bultyIds = (clone $baseQuery)->pluck('id');
 
-        $fuelAgg = TripFuelDetail::select(
-                DB::raw('COALESCE(SUM(quantity),0) as total_qty'),
-                DB::raw('COALESCE(SUM(amount),0) as total_amt')
+        // Comprehensive trip expense aggregation matching actual source records
+        $tripExp = DB::table('trips')
+            ->join('bulties', 'bulties.id', '=', 'trips.builty_id')
+            ->leftJoinSub(
+                DB::table('trip_fuel_details')
+                    ->select('trip_id', DB::raw('SUM(quantity) as qty'), DB::raw('SUM(amount) as amt'))
+                    ->groupBy('trip_id'),
+                'fuel_sub', 'fuel_sub.trip_id', '=', 'trips.id'
             )
-            ->whereIn('builty_id', $bultyIds)
-            ->when($fromDate, fn($q) => $q->whereDate('date', '>=', $fromDate))
-            ->when($toDate, fn($q) => $q->whereDate('date', '<=', $toDate))
-            ->first();
+            ->leftJoinSub(
+                DB::table('trip_fast_tag_details')
+                    ->select('trip_id', DB::raw('SUM(COALESCE(NULLIF(amount, 0), one_way + return, 0)) as amt'))
+                    ->groupBy('trip_id'),
+                'ft_sub', 'ft_sub.trip_id', '=', 'trips.id'
+            )
+            ->leftJoinSub(
+                DB::table('trip_adblue_details')
+                    ->select('trip_id', DB::raw('SUM(amount) as amt'))
+                    ->groupBy('trip_id'),
+                'ab_sub', 'ab_sub.trip_id', '=', 'trips.id'
+            )
+            ->leftJoinSub(
+                DB::table('trip_other_amount_details')
+                    ->select('trip_id', DB::raw('SUM(amount) as amt'))
+                    ->groupBy('trip_id'),
+                'ot_sub', 'ot_sub.trip_id', '=', 'trips.id'
+            )
+            ->leftJoinSub(
+                DB::table('trip_advance_details')
+                    ->select('trip_id', DB::raw('SUM(advance_amount) as amt'))
+                    ->groupBy('trip_id'),
+                'adv_sub', 'adv_sub.trip_id', '=', 'trips.id'
+            )
+            ->whereIn('bulties.id', $bultyIds)
+            ->whereNull('bulties.deleted_at')
+            ->select(
+                DB::raw('COALESCE(SUM(fuel_sub.qty), 0) as fuel_qty'),
+                DB::raw('COALESCE(SUM(CASE WHEN fuel_sub.amt IS NOT NULL AND fuel_sub.amt > 0 THEN fuel_sub.amt ELSE COALESCE(trips.fuel_amount, 0) END), 0) as fuel_expense'),
+                DB::raw('COALESCE(SUM(CASE WHEN ft_sub.amt IS NOT NULL AND ft_sub.amt > 0 THEN ft_sub.amt ELSE COALESCE(trips.fasttag_total_amount, 0) END), 0) as fasttag_expense'),
+                DB::raw('COALESCE(SUM(CASE WHEN ab_sub.amt IS NOT NULL AND ab_sub.amt > 0 THEN ab_sub.amt ELSE COALESCE(trips.adblue_total_amount, 0) END), 0) as adblue_expense'),
+                DB::raw('COALESCE(SUM(CASE WHEN ot_sub.amt IS NOT NULL AND ot_sub.amt > 0 THEN ot_sub.amt ELSE COALESCE(trips.other_amount, 0) END), 0) as other_expense'),
+                DB::raw('COALESCE(SUM(CASE WHEN adv_sub.amt IS NOT NULL AND adv_sub.amt > 0 THEN adv_sub.amt ELSE COALESCE(trips.advance_total_amount, 0) END), 0) as advance_expense')
+            )->first();
 
-        $totalFuelQty = (float)($fuelAgg->total_qty ?? 0);
-        $totalFuelAmt = (float)($fuelAgg->total_amt ?? 0);
-
-        $totalFastTag = (float)TripFastTagDetail::whereIn('builty_id', $bultyIds)
-            ->when($fromDate, fn($q) => $q->whereDate('transaction_time', '>=', $fromDate))
-            ->when($toDate, fn($q) => $q->whereDate('transaction_time', '<=', $toDate))
-            ->sum('amount');
-        $totalAdBlue = (float)TripAdBlueDetail::whereIn('builty_id', $bultyIds)
-            ->when($fromDate, fn($q) => $q->whereDate('date', '>=', $fromDate))
-            ->when($toDate, fn($q) => $q->whereDate('date', '<=', $toDate))
-            ->sum('amount');
-        $totalOtherExp = (float)TripOtherAmountDetail::whereIn('builty_id', $bultyIds)
-            ->when($fromDate, fn($q) => $q->whereDate('date', '>=', $fromDate))
-            ->when($toDate, fn($q) => $q->whereDate('date', '<=', $toDate))
-            ->sum('amount');
-        $totalTripAdvance = max(
-            (float)TripAdvanceDetail::whereIn('builty_id', $bultyIds)->sum('advance_amount'),
-            (float)Trip::whereIn('builty_id', $bultyIds)->sum('advance_total_amount')
-        );
+        $totalFuelQty = (float)($tripExp->fuel_qty ?? 0);
+        $totalFuelAmt = (float)($tripExp->fuel_expense ?? 0);
+        $totalFastTag = (float)($tripExp->fasttag_expense ?? 0);
+        $totalAdBlue = (float)($tripExp->adblue_expense ?? 0);
+        $totalOtherExp = (float)($tripExp->other_expense ?? 0);
+        $totalTripAdvance = (float)($tripExp->advance_expense ?? 0);
 
         $topVehicles = Bulty::select('vehicle_id', DB::raw('COUNT(*) as trip_count'), DB::raw('COALESCE(SUM(total_amount),0) as revenue'), DB::raw('COALESCE(SUM(freight_charges),0) as freight'))
             ->whereNotNull('vehicle_id')->whereNotIn('status', ['pending', 'planned'])
@@ -2146,12 +2300,49 @@ class ReportController extends Controller
             $tripAdvanceQuery->whereHas('trip.builty', fn($q) => $q->where('vehicle_id', $vehicleId));
         }
 
-        $totalFuelAmt = (clone $tripFuelQuery)->sum('amount');
-        $totalFuelQty = (clone $tripFuelQuery)->sum('quantity');
-        $totalFastTag = (clone $tripFastTagQuery)->sum('amount');
-        $totalAdBlue = (clone $tripAdBlueQuery)->sum('amount');
-        $totalOtherExp = (clone $tripOtherQuery)->sum('amount');
-        $totalTripAdvance = (clone $tripAdvanceQuery)->sum('advance_amount');
+        // Reconcile trip expense totals with trip report
+        $tripExpenseTotals = DB::table('trips')
+            ->join('bulties', 'bulties.id', '=', 'trips.builty_id')
+            ->leftJoinSub(
+                DB::table('trip_fuel_details')->select('trip_id', DB::raw('SUM(quantity) as qty'), DB::raw('SUM(amount) as amt'))->groupBy('trip_id'),
+                'fuel_sub', 'fuel_sub.trip_id', '=', 'trips.id'
+            )
+            ->leftJoinSub(
+                DB::table('trip_fast_tag_details')->select('trip_id', DB::raw('SUM(COALESCE(NULLIF(amount, 0), one_way + return, 0)) as amt'))->groupBy('trip_id'),
+                'fasttag_sub', 'fasttag_sub.trip_id', '=', 'trips.id'
+            )
+            ->leftJoinSub(
+                DB::table('trip_adblue_details')->select('trip_id', DB::raw('SUM(amount) as amt'))->groupBy('trip_id'),
+                'adblue_sub', 'adblue_sub.trip_id', '=', 'trips.id'
+            )
+            ->leftJoinSub(
+                DB::table('trip_other_amount_details')->select('trip_id', DB::raw('SUM(amount) as amt'))->groupBy('trip_id'),
+                'other_sub', 'other_sub.trip_id', '=', 'trips.id'
+            )
+            ->leftJoinSub(
+                DB::table('trip_advance_details')->select('trip_id', DB::raw('SUM(advance_amount) as amt'))->groupBy('trip_id'),
+                'adv_sub', 'adv_sub.trip_id', '=', 'trips.id'
+            )
+            ->whereNull('bulties.deleted_at')
+            ->whereNotIn('bulties.status', ['pending', 'planned'])
+            ->whereBetween('bulties.lr_date', [$fromDate, $toDate])
+            ->when($companyId && $companyId !== 'all', fn($q) => $q->where('bulties.company_id', $companyId))
+            ->when($vehicleId, fn($q) => $q->where('bulties.vehicle_id', $vehicleId))
+            ->select(
+                DB::raw('COALESCE(SUM(fuel_sub.qty), 0) as fuel_qty'),
+                DB::raw('COALESCE(SUM(CASE WHEN fuel_sub.amt IS NOT NULL AND fuel_sub.amt > 0 THEN fuel_sub.amt ELSE COALESCE(trips.fuel_amount, 0) END), 0) as fuel_amt'),
+                DB::raw('COALESCE(SUM(CASE WHEN fasttag_sub.amt IS NOT NULL AND fasttag_sub.amt > 0 THEN fasttag_sub.amt ELSE COALESCE(trips.fasttag_total_amount, 0) END), 0) as fasttag_amt'),
+                DB::raw('COALESCE(SUM(CASE WHEN adblue_sub.amt IS NOT NULL AND adblue_sub.amt > 0 THEN adblue_sub.amt ELSE COALESCE(trips.adblue_total_amount, 0) END), 0) as adblue_amt'),
+                DB::raw('COALESCE(SUM(CASE WHEN other_sub.amt IS NOT NULL AND other_sub.amt > 0 THEN other_sub.amt ELSE COALESCE(trips.other_amount, 0) END), 0) as other_amt'),
+                DB::raw('COALESCE(SUM(CASE WHEN adv_sub.amt IS NOT NULL AND adv_sub.amt > 0 THEN adv_sub.amt ELSE COALESCE(trips.advance_total_amount, 0) END), 0) as adv_amt')
+            )->first();
+
+        $totalFuelAmt = (float)($tripExpenseTotals->fuel_amt ?? 0);
+        $totalFuelQty = (float)($tripExpenseTotals->fuel_qty ?? 0);
+        $totalFastTag = (float)($tripExpenseTotals->fasttag_amt ?? 0);
+        $totalAdBlue = (float)($tripExpenseTotals->adblue_amt ?? 0);
+        $totalOtherExp = (float)($tripExpenseTotals->other_amt ?? 0);
+        $totalTripAdvance = (float)($tripExpenseTotals->adv_amt ?? 0);
 
         $maintenanceQuery = MaintenanceHistory::whereBetween('service_date', [$fromDate, $toDate]); $companyFilter($maintenanceQuery);
         $breakdownQuery = Breakdown::whereBetween('breakdown_date', [$fromDate, $toDate]); $companyFilter($breakdownQuery);
@@ -2167,55 +2358,88 @@ class ReportController extends Controller
         $totalBreakdown = (clone $breakdownQuery)->sum('repair_cost');
         $totalSparePart = (clone $sparePartQuery)->sum('amount');
 
+        $tripExpenseByVehicle = DB::table('trips')
+            ->join('bulties', 'bulties.id', '=', 'trips.builty_id')
+            ->leftJoinSub(
+                DB::table('trip_fuel_details')->select('trip_id', DB::raw('SUM(amount) as amt'))->groupBy('trip_id'),
+                'fuel_sub', 'fuel_sub.trip_id', '=', 'trips.id'
+            )
+            ->leftJoinSub(
+                DB::table('trip_fast_tag_details')->select('trip_id', DB::raw('SUM(COALESCE(NULLIF(amount, 0), one_way + return, 0)) as amt'))->groupBy('trip_id'),
+                'fasttag_sub', 'fasttag_sub.trip_id', '=', 'trips.id'
+            )
+            ->leftJoinSub(
+                DB::table('trip_adblue_details')->select('trip_id', DB::raw('SUM(amount) as amt'))->groupBy('trip_id'),
+                'adblue_sub', 'adblue_sub.trip_id', '=', 'trips.id'
+            )
+            ->leftJoinSub(
+                DB::table('trip_other_amount_details')->select('trip_id', DB::raw('SUM(amount) as amt'))->groupBy('trip_id'),
+                'other_sub', 'other_sub.trip_id', '=', 'trips.id'
+            )
+            ->leftJoinSub(
+                DB::table('trip_advance_details')->select('trip_id', DB::raw('SUM(advance_amount) as amt'))->groupBy('trip_id'),
+                'adv_sub', 'adv_sub.trip_id', '=', 'trips.id'
+            )
+            ->whereNull('bulties.deleted_at')
+            ->whereNotIn('bulties.status', ['pending', 'planned'])
+            ->whereBetween('bulties.lr_date', [$fromDate, $toDate])
+            ->when($companyId && $companyId !== 'all', fn($q) => $q->where('bulties.company_id', $companyId))
+            ->when($vehicleId, fn($q) => $q->where('bulties.vehicle_id', $vehicleId))
+            ->select(
+                'bulties.vehicle_id',
+                DB::raw('COALESCE(SUM(CASE WHEN fuel_sub.amt IS NOT NULL AND fuel_sub.amt > 0 THEN fuel_sub.amt ELSE COALESCE(trips.fuel_amount, 0) END), 0) as fuel_expense'),
+                DB::raw('COALESCE(SUM(CASE WHEN fasttag_sub.amt IS NOT NULL AND fasttag_sub.amt > 0 THEN fasttag_sub.amt ELSE COALESCE(trips.fasttag_total_amount, 0) END), 0) as fasttag_expense'),
+                DB::raw('COALESCE(SUM(CASE WHEN adblue_sub.amt IS NOT NULL AND adblue_sub.amt > 0 THEN adblue_sub.amt ELSE COALESCE(trips.adblue_total_amount, 0) END), 0) as adblue_expense'),
+                DB::raw('COALESCE(SUM(CASE WHEN other_sub.amt IS NOT NULL AND other_sub.amt > 0 THEN other_sub.amt ELSE COALESCE(trips.other_amount, 0) END), 0) as other_expense'),
+                DB::raw('COALESCE(SUM(CASE WHEN adv_sub.amt IS NOT NULL AND adv_sub.amt > 0 THEN adv_sub.amt ELSE COALESCE(trips.advance_total_amount, 0) END), 0) as advance_expense')
+            )
+            ->groupBy('bulties.vehicle_id');
+
         $fuelSub = DB::table('trip_fuel_details')
             ->join('trips', 'trips.id', '=', 'trip_fuel_details.trip_id')
             ->join('bulties', 'bulties.id', '=', 'trips.builty_id')
-            ->whereBetween('trip_fuel_details.date', [$fromDate, $toDate])
             ->whereNull('bulties.deleted_at')
+            ->whereNotIn('bulties.status', ['pending', 'planned'])
+            ->whereBetween('bulties.lr_date', [$fromDate, $toDate])
             ->when($companyId && $companyId !== 'all', fn($q) => $q->where('bulties.company_id', $companyId))
-            ->select('bulties.vehicle_id', DB::raw('COALESCE(SUM(trip_fuel_details.amount),0) as fuel_expense'))
+            ->leftJoinSub($tripExpenseByVehicle, 'tev', 'tev.vehicle_id', '=', 'bulties.vehicle_id')
+            ->select('bulties.vehicle_id', DB::raw('COALESCE(MAX(tev.fuel_expense), 0) as fuel_expense'))
             ->groupBy('bulties.vehicle_id');
 
-        $fasttagSub = DB::table('trip_fast_tag_details')
-            ->join('trips', 'trips.id', '=', 'trip_fast_tag_details.trip_id')
-            ->join('bulties', 'bulties.id', '=', 'trips.builty_id')
-            ->where(function($q) use ($fromDate, $toDate) {
-                $q->whereBetween('trip_fast_tag_details.transaction_time', [$fromDate, $toDate . ' 23:59:59'])
-                  ->orWhere(function($q2) use ($fromDate, $toDate) {
-                      $q2->whereNull('trip_fast_tag_details.transaction_time')
-                         ->whereBetween('trip_fast_tag_details.created_at', [$fromDate, $toDate . ' 23:59:59']);
-                  });
-            })
+        $fasttagSub = DB::table('bulties')
             ->whereNull('bulties.deleted_at')
+            ->whereNotIn('bulties.status', ['pending', 'planned'])
+            ->whereBetween('bulties.lr_date', [$fromDate, $toDate])
             ->when($companyId && $companyId !== 'all', fn($q) => $q->where('bulties.company_id', $companyId))
-            ->select('bulties.vehicle_id', DB::raw('COALESCE(SUM(trip_fast_tag_details.amount),0) as fasttag_expense'))
+            ->leftJoinSub($tripExpenseByVehicle, 'tev', 'tev.vehicle_id', '=', 'bulties.vehicle_id')
+            ->select('bulties.vehicle_id', DB::raw('COALESCE(MAX(tev.fasttag_expense), 0) as fasttag_expense'))
             ->groupBy('bulties.vehicle_id');
 
-        $adblueSub = DB::table('trip_adblue_details')
-            ->join('trips', 'trips.id', '=', 'trip_adblue_details.trip_id')
-            ->join('bulties', 'bulties.id', '=', 'trips.builty_id')
-            ->whereBetween('trip_adblue_details.date', [$fromDate, $toDate])
+        $adblueSub = DB::table('bulties')
             ->whereNull('bulties.deleted_at')
+            ->whereNotIn('bulties.status', ['pending', 'planned'])
+            ->whereBetween('bulties.lr_date', [$fromDate, $toDate])
             ->when($companyId && $companyId !== 'all', fn($q) => $q->where('bulties.company_id', $companyId))
-            ->select('bulties.vehicle_id', DB::raw('COALESCE(SUM(trip_adblue_details.amount),0) as adblue_expense'))
+            ->leftJoinSub($tripExpenseByVehicle, 'tev', 'tev.vehicle_id', '=', 'bulties.vehicle_id')
+            ->select('bulties.vehicle_id', DB::raw('COALESCE(MAX(tev.adblue_expense), 0) as adblue_expense'))
             ->groupBy('bulties.vehicle_id');
 
-        $otherSub = DB::table('trip_other_amount_details')
-            ->join('trips', 'trips.id', '=', 'trip_other_amount_details.trip_id')
-            ->join('bulties', 'bulties.id', '=', 'trips.builty_id')
-            ->whereBetween('trip_other_amount_details.date', [$fromDate, $toDate])
+        $otherSub = DB::table('bulties')
             ->whereNull('bulties.deleted_at')
+            ->whereNotIn('bulties.status', ['pending', 'planned'])
+            ->whereBetween('bulties.lr_date', [$fromDate, $toDate])
             ->when($companyId && $companyId !== 'all', fn($q) => $q->where('bulties.company_id', $companyId))
-            ->select('bulties.vehicle_id', DB::raw('COALESCE(SUM(trip_other_amount_details.amount),0) as other_expense'))
+            ->leftJoinSub($tripExpenseByVehicle, 'tev', 'tev.vehicle_id', '=', 'bulties.vehicle_id')
+            ->select('bulties.vehicle_id', DB::raw('COALESCE(MAX(tev.other_expense), 0) as other_expense'))
             ->groupBy('bulties.vehicle_id');
 
-        $advanceSub = DB::table('trip_advance_details')
-            ->join('trips', 'trips.id', '=', 'trip_advance_details.trip_id')
-            ->join('bulties', 'bulties.id', '=', 'trips.builty_id')
-            ->whereBetween('trip_advance_details.date', [$fromDate, $toDate])
+        $advanceSub = DB::table('bulties')
             ->whereNull('bulties.deleted_at')
+            ->whereNotIn('bulties.status', ['pending', 'planned'])
+            ->whereBetween('bulties.lr_date', [$fromDate, $toDate])
             ->when($companyId && $companyId !== 'all', fn($q) => $q->where('bulties.company_id', $companyId))
-            ->select('bulties.vehicle_id', DB::raw('COALESCE(SUM(trip_advance_details.advance_amount),0) as advance_expense'))
+            ->leftJoinSub($tripExpenseByVehicle, 'tev', 'tev.vehicle_id', '=', 'bulties.vehicle_id')
+            ->select('bulties.vehicle_id', DB::raw('COALESCE(MAX(tev.advance_expense), 0) as advance_expense'))
             ->groupBy('bulties.vehicle_id');
 
         $maintenanceSub = DB::table('maintenance_history')

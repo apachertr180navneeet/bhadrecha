@@ -54,7 +54,7 @@
                         </div>
                         
                         <div class="row g-4">
-                            @if(auth()->user()->isSuperAdmin() && !empty($companies))
+                            @if(!empty($companies) && count($companies) > 0)
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Company <span class="text-danger">*</span></label>
                                 <select name="company_id" id="company_id" class="form-select @error('company_id') is-invalid @enderror" required>
@@ -75,8 +75,8 @@
                                 </div>
                             </div>
                             @else
-                                <input type="hidden" name="company_id" value="{{ auth()->user()->company_id }}">
-                                <input type="hidden" name="branch_id" value="{{ auth()->user()->branch_id }}">
+                                <input type="hidden" name="company_id" value="{{ $bulty->company_id ?? auth()->user()->company_id }}">
+                                <input type="hidden" name="branch_id" value="{{ $bulty->branch_id ?? auth()->user()->branch_id }}">
                             @endif
 
                             <div class="col-md-4">
@@ -1492,8 +1492,9 @@
             // Quick Add Driver
             $('#quickAddDriverForm').on('submit', function(e) {
                 e.preventDefault();
-                const cbData = getCompanyBranchData();
-                if (!cbData) return;
+                const companyId = $('[name="company_id"]').val() || '';
+                const branchId = $('[name="branch_id"]').val() || '';
+                const cbData = { company_id: companyId, branch_id: branchId };
                 const btn = $(this).find('button[type="submit"]');
                 btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Saving...');
 
@@ -1511,23 +1512,33 @@
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Success!',
-                                text: 'Driver added and selected successfully.',
+                                text: response.message || 'Driver added and selected successfully.',
                                 timer: 2000,
                                 showConfirmButton: false
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error!',
+                                text: response.message || 'Something went wrong.'
                             });
                         }
                     },
                     error: function(xhr) {
                         btn.prop('disabled', false).html('Save Driver');
-                        let errors = xhr.responseJSON.errors;
-                        let errorMsg = '';
-                        for (let key in errors) {
-                            errorMsg += errors[key][0] + '\n';
+                        let errorMsg = xhr.responseJSON?.message || 'Something went wrong.';
+                        if (xhr.responseJSON?.errors) {
+                            let errors = xhr.responseJSON.errors;
+                            let msgs = [];
+                            for (let key in errors) {
+                                msgs.push(errors[key][0]);
+                            }
+                            if (msgs.length) errorMsg = msgs.join('\n');
                         }
                         Swal.fire({
                             icon: 'error',
                             title: 'Error!',
-                            text: errorMsg || 'Something went wrong.'
+                            text: errorMsg
                         });
                     }
                 });

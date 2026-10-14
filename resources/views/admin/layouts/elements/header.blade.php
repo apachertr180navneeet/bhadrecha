@@ -12,6 +12,44 @@
 				<i class="bx bx-calendar"></i>
 				<span>{{ date('D') }} {{ date('d M Y') }}</span>
 			</div>
+			@php
+				$headerUser = auth()->user();
+				$headerBranches = collect();
+				if ($headerUser) {
+					if ($headerUser->isSuperAdmin()) {
+						$headerBranches = \App\Models\Branch::where('status', 'active')->orderBy('name')->get();
+					} elseif ($headerUser->isCompanyAdmin()) {
+						$headerBranches = \App\Models\Branch::where('company_id', $headerUser->company_id)->where('status', 'active')->orderBy('name')->get();
+					} elseif (!empty($headerUser->assigned_branch_ids) && count($headerUser->assigned_branch_ids) > 1) {
+						$headerBranches = \App\Models\Branch::whereIn('id', $headerUser->assigned_branch_ids)->where('status', 'active')->orderBy('name')->get();
+					}
+				}
+				$headerCurrentBranchId = session('current_branch_id');
+			@endphp
+			@if($headerBranches->count() > 1 || ($headerUser && ($headerUser->isSuperAdmin() || $headerUser->isCompanyAdmin())))
+			<div class="nav-item ms-3 d-none d-md-block">
+				<form method="POST" action="{{ route('admin.switch-branch') }}" class="d-flex align-items-center mb-0">
+					@csrf
+					<div class="input-group input-group-sm">
+						<span class="input-group-text bg-white border-end-0 py-1 text-primary" style="font-size: 0.82rem;">
+							<i class="bx bx-git-branch"></i>
+						</span>
+						<select name="branch_id" class="form-select form-select-sm border-start-0 py-1" style="font-size: 0.82rem; min-width: 140px; font-weight: 600;" onchange="this.form.submit()" title="Switch Branch">
+							<option value="all" {{ ($headerCurrentBranchId === 'all' || empty($headerCurrentBranchId)) ? 'selected' : '' }}>All Branches</option>
+							@foreach($headerBranches as $hb)
+								<option value="{{ $hb->id }}" {{ $headerCurrentBranchId == $hb->id ? 'selected' : '' }}>{{ $hb->name }}</option>
+							@endforeach
+						</select>
+					</div>
+				</form>
+			</div>
+			@elseif($headerUser && $headerUser->branch)
+			<div class="nav-item ms-3 d-none d-md-block">
+				<span class="badge bg-light text-dark border px-2 py-1" style="font-size: 0.8rem;">
+					<i class="bx bx-git-branch text-primary me-1"></i>{{ $headerUser->branch->name }}
+				</span>
+			</div>
+			@endif
 		</div>
 
 		<ul class="navbar-nav flex-row align-items-center ms-auto">
@@ -83,6 +121,12 @@
 						<a class="dropdown-item" href="{{route('admin.profile')}}">
 							<i class="bx bx-user me-2"></i>
 							<span class="align-middle">My Profile</span>
+						</a>
+					</li>
+					<li>
+						<a class="dropdown-item" href="{{route('admin.mail-configuration.index')}}">
+							<i class="bx bx-envelope me-2"></i>
+							<span class="align-middle">Email Configuration</span>
 						</a>
 					</li>
 					<li>

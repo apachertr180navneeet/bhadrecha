@@ -92,9 +92,14 @@ Route::name('admin.')->prefix('admin')->group(function () {
         Route::get('settings', [SuperAdminController::class, 'systemSettings'])->name('settings');
         Route::post('settings', [SuperAdminController::class, 'updateSettings'])->name('settings.update');
 
+        Route::get('mail-configuration', [\App\Http\Controllers\Admin\UserMailConfigurationController::class, 'index'])->name('mail-configuration.index');
+        Route::post('mail-configuration', [\App\Http\Controllers\Admin\UserMailConfigurationController::class, 'update'])->name('mail-configuration.update');
+        Route::post('mail-configuration/test', [\App\Http\Controllers\Admin\UserMailConfigurationController::class, 'test'])->name('mail-configuration.test');
+
         Route::get('companies/all', [CompanyController::class, 'getAllCompanies'])->name('companies.all');
         Route::get('companies/{company}/branches', [CompanyController::class, 'getBranches'])->name('companies.branches');
         Route::post('switch-company', [\App\Http\Controllers\Admin\SuperAdminController::class, 'switchCompany'])->name('switch-company');
+        Route::post('switch-branch', [\App\Http\Controllers\Admin\SuperAdminController::class, 'switchBranch'])->name('switch-branch');
         Route::post('switch-year', [\App\Http\Controllers\Admin\SuperAdminController::class, 'switchYear'])->name('switch-year');
         Route::post('companies/{company}/toggle-status', [CompanyController::class, 'toggleStatus'])->name('companies.toggle-status');
         Route::get('companies/trashed', [CompanyController::class, 'trashed'])->name('companies.trashed');
@@ -156,6 +161,7 @@ Route::name('admin.')->prefix('admin')->group(function () {
         Route::get('reports/sales-ledger/invoice-details/{id}', [\App\Http\Controllers\Admin\SalesLedgerController::class, 'getInvoiceDetails'])->name('reports.sales-ledger.invoice-details');
         Route::get('reports/sales-ledger/bill-details/{id}', [\App\Http\Controllers\Admin\SalesLedgerController::class, 'getBillDetails'])->name('reports.sales-ledger.bill-details');
         Route::put('reports/sales-ledger/bill/{id}', [\App\Http\Controllers\Admin\SalesLedgerController::class, 'updateBill'])->name('reports.sales-ledger.update-bill');
+        Route::put('reports/sales-ledger/bill/{id}/case-id', [\App\Http\Controllers\Admin\SalesLedgerController::class, 'updateCaseId'])->name('reports.sales-ledger.update-case-id');
         Route::get('reports/tds-report', [\App\Http\Controllers\Admin\SalesLedgerController::class, 'tdsReport'])->name('reports.tds-report');
         Route::get('reports/bilty-advance-details', [BiltyAdvanceDetailController::class, 'index'])->name('reports.bilty-advance-details.index');
         Route::post('reports/bilty-advance-details', [BiltyAdvanceDetailController::class, 'store'])->name('reports.bilty-advance-details.store');
@@ -271,7 +277,8 @@ Route::name('admin.')->prefix('admin')->group(function () {
         Route::name('transport.')->prefix('transport')->group(function () {
             
             Route::get('bulties/trashed', [BultyController::class, 'trashed'])->name('bulties.trashed');
-            Route::get('bulties/next-lr/{branchId}', [BultyController::class, 'nextLRNumber'])->name('bulties.next-lr');
+            Route::get('bulties/next-lr/{branchId?}', [BultyController::class, 'nextLRNumber'])->name('bulties.next-lr');
+            Route::get('bulties/check-lr', [BultyController::class, 'checkLRNumber'])->name('bulties.check-lr');
             Route::post('bulties/{bulty}/reject', [BultyController::class, 'reject'])->name('bulties.reject');
             Route::put('bulties/{bulty}/restore', [BultyController::class, 'restore'])->name('bulties.restore');
             Route::delete('bulties/{bulty}/force-delete', [BultyController::class, 'forceDelete'])->name('bulties.force-delete');
@@ -289,6 +296,7 @@ Route::name('admin.')->prefix('admin')->group(function () {
             Route::post('trips/import', [TripController::class, 'import'])->name('trips.import');
             Route::get('trips/create/{builty}', [TripController::class, 'create'])->name('trips.create');
             Route::post('trips', [TripController::class, 'store'])->name('trips.store');
+            Route::get('trips/{trip}', [TripController::class, 'show'])->name('trips.show');
             Route::get('trips/{trip}/edit', [TripController::class, 'edit'])->name('trips.edit');
             Route::put('trips/{trip}', [TripController::class, 'update'])->name('trips.update');
             Route::delete('trips/{trip}', [TripController::class, 'destroy'])->name('trips.destroy');
@@ -661,5 +669,15 @@ Route::get('/clear-all', function () {
         return response("<pre style='background:#0f172a;color:#f87171;padding:25px;border-radius:10px;font-family:monospace;font-size:15px;'>❌ Error clearing all caches: " . e($e->getMessage()) . "</pre>", 500);
     }
 })->name('clear.all');
+
+
+Route::get('run-migration', function () {
+    try {
+        Artisan::call('migrate', ['--force' => true]);
+        return response(Artisan::output());
+    } catch (\Throwable $e) {
+        return response('Migration failed: ' . $e->getMessage(), 500);
+    }
+})->name('run.migration');
 
 

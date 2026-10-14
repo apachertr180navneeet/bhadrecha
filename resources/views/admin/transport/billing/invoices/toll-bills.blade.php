@@ -15,6 +15,61 @@
         </div>
     </div>
 
+    <!-- Dashboard Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-6">
+            <div class="card bg-label-primary h-100 border-0 shadow-sm">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <h6 class="mb-0 text-muted small fw-semibold text-uppercase">Total Toll Bills</h6>
+                        <i class="bx bx-receipt text-primary fs-4"></i>
+                    </div>
+                    <h3 class="mb-1 fw-bold text-primary">{{ number_format($totalBills ?? $invoices->total()) }}</h3>
+                    <div class="small">
+                        <span class="badge bg-label-warning me-1">{{ $pendingBills ?? 0 }} Pending</span>
+                        <span class="badge bg-label-success">{{ $paidBills ?? 0 }} Paid</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card bg-label-info h-100 border-0 shadow-sm">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <h6 class="mb-0 text-muted small fw-semibold text-uppercase">Total Amount</h6>
+                        <i class="bx bx-calculator text-info fs-4"></i>
+                    </div>
+                    <h3 class="mb-1 fw-bold text-info">₹ {{ number_format($totalFreight ?? 0, 2) }}</h3>
+                    <div class="small text-muted">Net Toll Amount</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card bg-label-warning h-100 border-0 shadow-sm">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <h6 class="mb-0 text-muted small fw-semibold text-uppercase">Total GST</h6>
+                        <i class="bx bx-coin-stack text-warning fs-4"></i>
+                    </div>
+                    <h3 class="mb-1 fw-bold text-warning">₹ {{ number_format($totalGst ?? 0, 2) }}</h3>
+                    <div class="small text-muted">Applicable Tax</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card bg-label-success h-100 border-0 shadow-sm">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <h6 class="mb-0 text-muted small fw-semibold text-uppercase">Grand Total</h6>
+                        <i class="bx bx-check-shield text-success fs-4"></i>
+                    </div>
+                    <h3 class="mb-1 fw-bold text-success">₹ {{ number_format($grandTotal ?? 0, 2) }}</h3>
+                    <div class="small text-muted">Total + GST</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Filters -->
     <div class="card mb-4">
         <div class="card-body">
@@ -42,6 +97,14 @@
                         @endforeach
                     </select>
                 </div>
+                <div class="col-md-1">
+                    <select name="status" class="form-select">
+                        <option value="">Status</option>
+                        <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
+                        <option value="paid" {{ request('status') === 'paid' ? 'selected' : '' }}>Paid</option>
+                        <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                    </select>
+                </div>
                 <div class="col-md-2">
                     <input type="date" name="from_date" class="form-control" value="{{ request('from_date') }}" placeholder="From Date">
                 </div>
@@ -57,7 +120,7 @@
                 <div class="col-md-1">
                     <button type="submit" class="btn btn-primary w-100">Filter</button>
                 </div>
-                @if(request()->filled('search') || request()->filled('consignor_id') || request()->filled('consignee_id') || request()->filled('from_date') || request()->filled('to_date') || request('date_sort') === 'oldest')
+                @if(request()->filled('search') || request()->filled('consignor_id') || request()->filled('consignee_id') || request()->filled('status') || request()->filled('from_date') || request()->filled('to_date') || request('date_sort') === 'oldest')
                 <div class="col-md-12 text-end">
                     <a href="{{ route('admin.transport.toll-bills.index') }}" class="btn btn-sm btn-outline-secondary">Clear Filters</a>
                 </div>
@@ -97,6 +160,7 @@
                                     <a href="{{ route('admin.transport.invoices.show', $inv->id) }}" class="btn btn-sm btn-outline-info" title="View / Reprint Toll Bill">
                                         <i class="bx bx-printer me-1"></i> Print
                                     </a>
+                                    @if(auth()->user()->isSuperAdmin() || auth()->user()->can('delete invoices') || auth()->user()->can('delete billing'))
                                     <form action="{{ route('admin.transport.invoices.destroy', $inv->id) }}" method="POST" class="d-inline" onsubmit="confirmDelete(event, this);">
                                         @csrf
                                         @method('DELETE')
@@ -104,6 +168,7 @@
                                             <i class="bx bx-trash"></i>
                                         </button>
                                     </form>
+                                    @endif
                                 </div>
                             </td>
                             <td><strong>{{ $inv->invoice_no }}</strong></td>
@@ -160,9 +225,9 @@
                     <tfoot class="table-dark fw-bold">
                         <tr>
                             <td colspan="5" class="text-end">Total:</td>
-                            <td class="text-end">{{ number_format($invoices->sum('total_freight'), 2) }}</td>
-                            <td class="text-end">{{ number_format($invoices->sum('total_gst'), 2) }}</td>
-                            <td class="text-end">{{ number_format($invoices->sum('total_amount'), 2) }}</td>
+                            <td class="text-end">{{ number_format($totalFreight ?? $invoices->sum('total_freight'), 2) }}</td>
+                            <td class="text-end">{{ number_format($totalGst ?? $invoices->sum('total_gst'), 2) }}</td>
+                            <td class="text-end">{{ number_format($grandTotal ?? $invoices->sum('total_amount'), 2) }}</td>
                             <td></td>
                         </tr>
                     </tfoot>

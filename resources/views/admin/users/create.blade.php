@@ -77,11 +77,18 @@
                         @error('company_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Branch</label>
+                        <label class="form-label">Primary Branch</label>
                         <select name="branch_id" id="branch_id" class="form-select @error('branch_id') is-invalid @enderror">
-                            <option value="">Select Branch</option>
+                            <option value="">Select Primary Branch</option>
                         </select>
                         @error('branch_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Accessible Branches (Multi-Branch Access)</label>
+                        <select name="branch_ids[]" id="branch_ids" class="form-select select2 @error('branch_ids') is-invalid @enderror" multiple data-placeholder="Select Accessible Branches">
+                        </select>
+                        <small class="text-muted">Select all branches this user is authorized to operate across.</small>
+                        @error('branch_ids')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Role</label>
@@ -175,15 +182,19 @@ $(document).ready(function() {
                 url: '{{ url("admin/users/get-branches") }}/' + companyId,
                 type: 'GET',
                 success: function(data) {
-                    $('#branch_id').empty().append('<option value="">Select Branch</option>');
+                    $('#branch_id').empty().append('<option value="">Select Primary Branch</option>');
+                    $('#branch_ids').empty();
                     $.each(data, function(key, value) {
                         $('#branch_id').append('<option value="' + value.id + '">' + value.name + '</option>');
+                        $('#branch_ids').append('<option value="' + value.id + '">' + value.name + '</option>');
                     });
                     $('#branch_id').trigger('change');
+                    $('#branch_ids').trigger('change');
                 }
             });
         } else {
-            $('#branch_id').empty().append('<option value="">Select Branch</option>').trigger('change');
+            $('#branch_id').empty().append('<option value="">Select Primary Branch</option>').trigger('change');
+            $('#branch_ids').empty().trigger('change');
         }
     });
 });

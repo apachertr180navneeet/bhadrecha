@@ -16,6 +16,15 @@
             $companies->prepend($ownCompany);
         }
     }
+
+    $currentBranchId = session('current_branch_id');
+    if ($isSuperAdmin) {
+        $branches = \App\Models\Branch::where('status', 'active')->orderBy('name')->get();
+    } elseif ($isCompanyAdmin) {
+        $branches = \App\Models\Branch::where('company_id', $user->company_id)->where('status', 'active')->orderBy('name')->get();
+    } else {
+        $branches = \App\Models\Branch::whereIn('id', $user->assigned_branch_ids)->where('status', 'active')->orderBy('name')->get();
+    }
 @endphp
 
 <div class="container-fluid flex-grow-1 container-p-y">
@@ -121,20 +130,30 @@
             <div class="card h-100">
                 <div class="card-body d-flex align-items-center gap-3" style="padding:0.75rem 1rem;">
                     <div class="avatar flex-shrink-0">
-                        <span class="avatar-initial rounded" style="background:rgba(16,185,129,0.1);color:#10b981;">
-                            <i class="bx bx-check-circle"></i>
+                        <span class="avatar-initial rounded" style="background:rgba(59,130,246,0.1);color:#3b82f6;">
+                            <i class="bx bx-git-branch"></i>
                         </span>
                     </div>
-                    <div>
-                        <small class="text-muted fw-semibold d-block mb-1">Status</small>
-                        <span style="font-size:0.85rem;font-weight:600;color:#10b981;">All Systems Operational</span>
+                    <div class="flex-grow-1">
+                        <small class="text-muted fw-semibold d-block mb-1">Branch</small>
+                        <form method="POST" action="{{ route('admin.switch-branch') }}">
+                            @csrf
+                            <select name="branch_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                                @if($isSuperAdmin || $isCompanyAdmin || count($user->assigned_branch_ids) > 1)
+                                    <option value="all" {{ ($currentBranchId === 'all' || empty($currentBranchId)) ? 'selected' : '' }}>All Authorized Branches</option>
+                                @endif
+                                @foreach($branches as $b)
+                                    <option value="{{ $b->id }}" {{ $currentBranchId == $b->id ? 'selected' : '' }}>{{ $b->name }}</option>
+                                @endforeach
+                            </select>
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    @if($isSuperAdmin && isset($kpi['expiring_documents']) && $kpi['expiring_documents']->count() > 0)
+    @if(isset($kpi['expiring_documents']) && $kpi['expiring_documents']->count() > 0)
     @php
         $expiredCount = $kpi['expiring_documents']->filter(fn($d) => $d['days_left'] <= 0)->count();
         $expiring1Day = $kpi['expiring_documents']->filter(fn($d) => $d['days_left'] == 1)->count();

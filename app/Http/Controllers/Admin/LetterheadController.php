@@ -44,7 +44,7 @@ class LetterheadController extends Controller
             $query->whereDate('letter_date', '<=', $request->date_to);
         }
 
-        $letterheads = $query->orderBy('id', 'desc')->paginate(15);
+        $letterheads = $query->orderBy('id', 'desc')->paginate(15)->withQueryString();
         $companies = Company::where('status', 'active')->orderBy('name')->get();
 
         return view('admin.letterheads.index', compact('letterheads', 'companies'));
@@ -94,7 +94,7 @@ class LetterheadController extends Controller
 
         if ($request->has('send_mail_now') && !empty($letterhead->recipient_email) && auth()->user()->can('send letterheads mail')) {
             try {
-                Mail::to($letterhead->recipient_email)->send(new LetterheadMail($letterhead));
+                \App\Services\UserMailService::send($letterhead->recipient_email, new LetterheadMail($letterhead), auth()->user());
                 return redirect()->route('admin.letterheads.index')
                     ->with('success', 'Letterhead saved and email sent successfully to ' . $letterhead->recipient_email);
             } catch (\Exception $e) {
@@ -196,7 +196,7 @@ class LetterheadController extends Controller
         }
 
         try {
-            Mail::to($targetEmail)->send(new LetterheadMail($letterhead));
+            \App\Services\UserMailService::send($targetEmail, new LetterheadMail($letterhead), auth()->user());
             ActivityLog::log('letterhead_email_sent', "Sent Letterhead #{$letterhead->letter_no} to {$targetEmail}", $letterhead);
 
             return response()->json([

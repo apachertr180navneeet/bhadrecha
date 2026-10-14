@@ -294,10 +294,11 @@
     $bankIfsc = $comp && $comp->bank_ifsc ? $comp->bank_ifsc : '';
     $bankHolder = $comp && $comp->bank_holder_name ? strtoupper($comp->bank_holder_name) : '';
 
-    $partyName = $existingInvoice?->consignor_name ?? ($existingInvoice?->consignor->name ?? '-');
-    $fallbackAddress = '<div class="fw-bold" style="font-size: 11px;">' . $partyName . '</div>' . ($existingInvoice?->consignor ? str_replace("\n", "<br>", $existingInvoice->consignor->address ?? '') : '');
+    $partyName = $existingInvoice?->consignor_name ?? ($existingInvoice?->consignor->name ?? ($invoiceConsignor->name ?? ($firstBulty?->consignor?->name ?? '-')));
+    $consignorAddr = $existingInvoice?->consignor?->address ?? ($invoiceConsignor->address ?? ($firstBulty?->consignor?->address ?? ''));
+    $fallbackAddress = '<div class="fw-bold" style="font-size: 11px;">' . $partyName . '</div>' . (!empty($consignorAddr) ? str_replace("\n", "<br>", $consignorAddr) : '');
     $partyAddress = !empty($existingInvoice?->billing_address) ? str_replace("\n", "<br>", $existingInvoice->billing_address) : $fallbackAddress;
-    $partyGst = $existingInvoice?->consignor ? ($existingInvoice->consignor->gst_no ?? '-') : '-';
+    $partyGst = $existingInvoice?->consignor ? ($existingInvoice->consignor->gst_no ?? '-') : ($invoiceConsignor->gst_no ?? ($firstBulty?->consignor?->gstin ?? ($firstBulty?->consignor?->gst_no ?? '-')));
     $partyState = !empty($existingInvoice?->custom_place_of_supply) ? $existingInvoice->custom_place_of_supply : ($firstBulty && $firstBulty->destinationCity ? ($firstBulty->destinationCity->state ?? 'RAJASTHAN') : 'RAJASTHAN');
 
     // State & GST Type calculation
@@ -352,7 +353,7 @@
                 <strong>BILL NO:</strong> - <span>{{ $billNumber }}</span>
             </div>
             <div class="col-4 text-center">
-                <strong>DATE:</strong> - <span>{{ ($existingInvoice?->invoice_date) ? $existingInvoice->invoice_date->format('d-m-Y') : now()->format('d-m-Y') }}</span>
+                <strong>DATE:</strong> - <span>{{ ($existingInvoice?->invoice_date) ? (\Carbon\Carbon::parse($existingInvoice->invoice_date)->format('d-m-Y')) : ($firstBulty?->lr_date ? \Carbon\Carbon::parse($firstBulty->lr_date)->format('d-m-Y') : now()->format('d-m-Y')) }}</span>
             </div>
             <div class="col-4 text-end">
                 <strong>NO. OF LR:</strong> - <span>{{ $existingInvoice?->no_of_lrs ?? (isset($bulties) ? $bulties->count() : 1) }}</span>

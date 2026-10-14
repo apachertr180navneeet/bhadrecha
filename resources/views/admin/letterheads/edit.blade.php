@@ -189,7 +189,7 @@
                             <div id="preview-header" class="border-bottom pb-3 mb-3">
                                 <div class="d-flex justify-content-between align-items-start">
                                     <div id="preview-logo-container">
-                                        <h3 id="preview-company-name" class="text-primary font-weight-bold mb-0">COMPANY NAME</h3>
+                                        <h3 id="preview-company-name" style="color: #062E39 !important; font-weight: bold;" class="mb-0">COMPANY NAME</h3>
                                     </div>
                                     <div id="preview-company-details" class="text-right small text-muted" style="line-height: 1.3;">
                                         <div id="preview-company-address">Company Address</div>
@@ -266,7 +266,7 @@ $(document).ready(function() {
     function updateCompanyPreview(companyId) {
         if (!companyId) {
             $('#preview-company-name').text('COMPANY NAME');
-            $('#preview-logo-container').html('<h3 id="preview-company-name" class="text-primary font-weight-bold mb-0">COMPANY NAME</h3>');
+            $('#preview-logo-container').html('<h3 id="preview-company-name" style="color: #062E39 !important; font-weight: bold;" class="mb-0">COMPANY NAME</h3>');
             $('#preview-company-address').text('Company Address');
             $('#preview-company-phone').text('Phone: -');
             $('#preview-company-email').text('Email: -');
@@ -291,7 +291,7 @@ $(document).ready(function() {
                     if (comp.logo_url) {
                         $('#preview-logo-container').html('<img src="' + comp.logo_url + '" style="max-height: 55px; max-width: 170px;" alt="Logo">');
                     } else {
-                        $('#preview-logo-container').html('<h3 class="text-primary font-weight-bold mb-0">' + comp.name + '</h3>');
+                        $('#preview-logo-container').html('<h3 class="mb-0" style="color: #062E39 !important; font-weight: bold;">' + comp.name + '</h3>');
                     }
 
                     var addr = comp.address ? comp.address : '';

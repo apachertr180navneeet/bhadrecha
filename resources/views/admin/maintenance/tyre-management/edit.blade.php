@@ -39,7 +39,7 @@
                         <label class="form-label">Tyre Position <span class="text-danger">*</span></label>
                         <select name="tyre_position" class="form-select @error('tyre_position') is-invalid @enderror" required>
                             <option value="">Select Position</option>
-                            <optgroup label="Left Side (8 Slots)">
+                            <optgroup label="Left Side (9 Slots)">
                                 <option value="L1" {{ old('tyre_position', $tyreManagement->tyre_position) == 'L1' ? 'selected' : '' }}>L1 - Front Left (Steering)</option>
                                 <option value="L2" {{ old('tyre_position', $tyreManagement->tyre_position) == 'L2' ? 'selected' : '' }}>L2 - Drive 1 Left Outer</option>
                                 <option value="L3" {{ old('tyre_position', $tyreManagement->tyre_position) == 'L3' ? 'selected' : '' }}>L3 - Drive 1 Left Inner</option>

@@ -150,6 +150,10 @@
                                     @can('view bulties')
                                     <a class="dropdown-item" href="{{ route('admin.transport.bulties.show', $bulty->id) }}"><i class="bx bx-show me-1"></i> View</a>
                                     @endcan
+                                    @if(auth()->user()?->isSuperAdmin() || auth()->user()?->isCompanyAdmin() || auth()->user()?->canAny(['print bulties', 'print bilties', 'view bulties', 'view bilties']))
+                                    <a class="dropdown-item" href="{{ route('admin.transport.bulties.print-bill', $bulty->id) }}" target="_blank"><i class="bx bx-printer me-1"></i> Print Bill</a>
+                                    <a class="dropdown-item" href="{{ route('admin.transport.bulties.pdf', $bulty->id) }}"><i class="bx bxs-file-pdf me-1"></i> Download PDF</a>
+                                    @endif
                                     @can('edit bulties')
                                     <a class="dropdown-item" href="{{ route('admin.transport.bulties.edit', $bulty->id) }}"><i class="bx bx-edit me-1"></i> Edit</a>
                                     @endcan

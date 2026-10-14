@@ -90,21 +90,58 @@ class Bulty extends Model
 
         if ($branchId) {
             $branch = \App\Models\Branch::find($branchId);
-            if ($branch && $branch->name) {
-                $prefix = strtoupper(substr($branch->name, 0, 1));
+            if ($branch && !empty($branch->name)) {
+                $prefix = strtoupper(substr(trim($branch->name), 0, 1));
             }
         }
 
-        $latest = static::withTrashed()->where('lr_no', 'like', "{$prefix}-{$year}-%")->orderBy('id', 'desc')->first();
+        try {
+            // Fetch existing LR numbers matching this prefix and year
+            $pattern = "{$prefix}-{$year}-%";
+            $existingLrs = static::withTrashed()
+                ->where('lr_no', 'like', $pattern)
+                ->pluck('lr_no')
+                ->toArray();
 
-        if ($latest) {
-            $lastNumber = intval(substr($latest->lr_no, -4));
-            $newNumber = $lastNumber + 1;
-        } else {
-            $newNumber = 1;
+            $maxSeq = 0;
+            if (!empty($existingLrs)) {
+                foreach ($existingLrs as $lr) {
+                    if (preg_match('/(\d+)$/', trim($lr), $matches)) {
+                        $num = (int)$matches[1];
+                        if ($num > $maxSeq) {
+                            $maxSeq = $num;
+                        }
+                    }
+                }
+            } else {
+                // Check general pattern for this prefix
+                $fallbackLrs = static::withTrashed()
+                    ->where('lr_no', 'like', "{$prefix}-%")
+                    ->pluck('lr_no')
+                    ->toArray();
+                foreach ($fallbackLrs as $lr) {
+                    if (preg_match('/(\d+)$/', trim($lr), $matches)) {
+                        $num = (int)$matches[1];
+                        if ($num > $maxSeq) {
+                            $maxSeq = $num;
+                        }
+                    }
+                }
+            }
+
+            $nextSeq = $maxSeq + 1;
+            $suggested = $prefix . '-' . $year . '-' . str_pad($nextSeq, 4, '0', STR_PAD_LEFT);
+
+            // Ensure collision-free unique sequence
+            while (static::withTrashed()->where('lr_no', $suggested)->exists()) {
+                $nextSeq++;
+                $suggested = $prefix . '-' . $year . '-' . str_pad($nextSeq, 4, '0', STR_PAD_LEFT);
+            }
+
+            return $suggested;
+        } catch (\Throwable $e) {
+            return $prefix . '-' . $year . '-0001';
         }
-
-        return $prefix . '-' . $year . '-' . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
     }
 
     public function consignor()

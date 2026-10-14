@@ -52,13 +52,13 @@
                         </div>
                         
                         <div class="row g-4">
-                            @if(auth()->user()->isSuperAdmin() && !empty($companies))
+                            @if(!empty($companies) && count($companies) > 0)
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Company <span class="text-danger">*</span></label>
                                 <select name="company_id" id="company_id" class="form-select @error('company_id') is-invalid @enderror" required>
                                     <option value="">Select Company</option>
                                     @foreach($companies as $company)
-                                        <option value="{{ $company->id }}" {{ old('company_id') == $company->id ? 'selected' : '' }}>{{ $company->name }}</option>
+                                        <option value="{{ $company->id }}" {{ old('company_id', auth()->user()->company_id) == $company->id ? 'selected' : '' }}>{{ $company->name }}</option>
                                     @endforeach
                                 </select>
                                 @error('company_id') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
@@ -78,11 +78,17 @@
                             @endif
 
                             <div class="col-md-4">
-                                <label class="form-label fw-bold">Bilty Number</label>
-                                <div class="bilty-number-box">
-                                    <i class="bx bx-hash"></i>
-                                    <input type="text" name="lr_no" class="form-control" value="{{ old('lr_no', $nextBultyNo ?? '') }}">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="form-label fw-bold mb-0">Bilty (LR) Number <span class="text-danger">*</span></label>
+                                    <span class="badge bg-light text-primary border" id="lrAutoBadge"><i class="bx bx-magic-wand me-1"></i>Auto-suggested • Editable</span>
                                 </div>
+                                <div class="bilty-number-box position-relative">
+                                    <i class="bx bx-hash"></i>
+                                    <input type="text" name="lr_no" id="lr_no" class="form-control @error('lr_no') is-invalid @enderror" value="{{ old('lr_no', $nextBultyNo ?? '') }}" placeholder="Enter LR Number" required>
+                                    <input type="hidden" name="suggested_lr_no" id="suggested_lr_no" value="{{ old('suggested_lr_no', old('lr_no', $nextBultyNo ?? '')) }}">
+                                </div>
+                                <div id="lrDuplicateFeedback" class="small mt-1" style="display:none;"></div>
+                                @error('lr_no') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label fw-bold">LR Date <span class="text-danger">*</span></label>
@@ -1628,8 +1634,9 @@
             // Quick Add Driver
             $('#quickAddDriverForm').on('submit', function(e) {
                 e.preventDefault();
-                const cbData = getCompanyBranchData();
-                if (!cbData) return;
+                const companyId = $('[name="company_id"]').val() || '';
+                const branchId = $('[name="branch_id"]').val() || '';
+                const cbData = { company_id: companyId, branch_id: branchId };
                 const btn = $(this).find('button[type="submit"]');
                 btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Saving...');
 
@@ -1647,23 +1654,33 @@
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Success!',
-                                text: 'Driver added and selected successfully.',
+                                text: response.message || 'Driver added and selected successfully.',
                                 timer: 2000,
                                 showConfirmButton: false
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error!',
+                                text: response.message || 'Something went wrong.'
                             });
                         }
                     },
                     error: function(xhr) {
                         btn.prop('disabled', false).html('Save Driver');
-                        let errors = xhr.responseJSON.errors;
-                        let errorMsg = '';
-                        for (let key in errors) {
-                            errorMsg += errors[key][0] + '\n';
+                        let errorMsg = xhr.responseJSON?.message || 'Something went wrong.';
+                        if (xhr.responseJSON?.errors) {
+                            let errors = xhr.responseJSON.errors;
+                            let msgs = [];
+                            for (let key in errors) {
+                                msgs.push(errors[key][0]);
+                            }
+                            if (msgs.length) errorMsg = msgs.join('\n');
                         }
                         Swal.fire({
                             icon: 'error',
                             title: 'Error!',
-                            text: errorMsg || 'Something went wrong.'
+                            text: errorMsg
                         });
                     }
                 });
@@ -1736,7 +1753,10 @@
                         $('#missingLRList').html(html);
                         $('#missingLRModal').modal('show');
                     } else {
-                        $('[name="lr_no"]').val(res.next);
+                        $('#lr_no').val(res.next);
+                        $('#suggested_lr_no').val(res.next);
+                        $('#lrDuplicateFeedback').hide().empty();
+                        $('#lr_no').removeClass('is-invalid');
                     }
                 });
             }
@@ -1744,8 +1764,38 @@
 
         $(document).on('click', '.lr-option', function(e) {
             e.preventDefault();
-            $('[name="lr_no"]').val($(this).data('lr'));
+            const chosenLR = $(this).data('lr');
+            $('#lr_no').val(chosenLR);
+            $('#suggested_lr_no').val(chosenLR);
             $('#missingLRModal').modal('hide');
+            $('#lrDuplicateFeedback').hide().empty();
+            $('#lr_no').removeClass('is-invalid');
+        });
+
+        // Real-time LR duplicate validation on user typing/blur
+        let lrCheckTimer;
+        $(document).on('input blur', '#lr_no', function() {
+            clearTimeout(lrCheckTimer);
+            const lrVal = $(this).val().trim();
+            const branchId = $('#branch_id').val() || $('[name="branch_id"]').val() || '';
+            const $feedback = $('#lrDuplicateFeedback');
+
+            if (!lrVal) {
+                $feedback.hide().empty();
+                return;
+            }
+
+            lrCheckTimer = setTimeout(function() {
+                $.get('{{ route("admin.transport.bulties.check-lr") }}', { lr_no: lrVal, branch_id: branchId }, function(res) {
+                    if (res.exists) {
+                        $feedback.html('<span class="text-danger fw-semibold"><i class="bx bx-error-circle me-1"></i>LR number "' + lrVal + '" is already used. Please choose another or keep auto-suggested.</span>').show();
+                        $('#lr_no').addClass('is-invalid');
+                    } else {
+                        $feedback.html('<span class="text-success"><i class="bx bx-check-circle me-1"></i>LR number "' + lrVal + '" is available.</span>').show();
+                        $('#lr_no').removeClass('is-invalid');
+                    }
+                });
+            }, 350);
         });
 
         // Select2 AJAX City Search Initialization

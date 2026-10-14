@@ -56,7 +56,7 @@ class UserController extends Controller
             });
         }
 
-        $users = $query->orderBy('created_at', 'desc')->paginate(15);
+        $users = $query->orderBy('created_at', 'desc')->paginate(15)->withQueryString();
         $companies = Company::where('status', 'active')->get();
         $roles = Role::all();
         $allRoles = Role::pluck('name')->toArray();
@@ -97,6 +97,8 @@ class UserController extends Controller
             'password' => 'required|min:6|confirmed',
             'company_id' => 'nullable|exists:companies,id',
             'branch_id' => 'nullable|exists:branches,id',
+            'branch_ids' => 'nullable|array',
+            'branch_ids.*' => 'exists:branches,id',
             'role' => 'required|exists:roles,name',
             'address' => 'nullable|string',
             'city' => 'nullable|string|max:100',
@@ -125,6 +127,12 @@ class UserController extends Controller
         $user->save();
         $user->assignRole($validated['role']);
 
+        $assignedIds = $request->input('branch_ids', []);
+        if (!empty($user->branch_id) && !in_array($user->branch_id, $assignedIds)) {
+            $assignedIds[] = $user->branch_id;
+        }
+        $user->accessibleBranches()->sync($assignedIds);
+
         ActivityLog::log('user_created', "Created user: {$user->full_name}", $user);
 
         return redirect()->route('admin.users.index')->with('success', 'User created successfully.');
@@ -132,17 +140,19 @@ class UserController extends Controller
 
     public function show(User $user)
     {
-        $user->load(['company', 'branch', 'roles']);
+        $user->load(['company', 'branch', 'roles', 'accessibleBranches']);
         return view('admin.users.show', compact('user'));
     }
 
     public function edit(User $user)
     {
+        $user->load('accessibleBranches');
         $companies = Company::where('status', 'active')->orderBy('name')->get();
         $branches = Branch::where('company_id', $user->company_id)->get();
         $roles = Role::all();
         $states = City::distinct()->where('status', 'active')->orderBy('state')->pluck('state')->mapWithKeys(fn($s) => [$s => true])->toArray();
-        return view('admin.users.edit', compact('user', 'companies', 'branches', 'roles', 'states'));
+        $assignedBranchIds = $user->accessibleBranches->pluck('id')->toArray();
+        return view('admin.users.edit', compact('user', 'companies', 'branches', 'roles', 'states', 'assignedBranchIds'));
     }
 
     public function update(Request $request, User $user)
@@ -155,6 +165,8 @@ class UserController extends Controller
             'password' => 'nullable|min:6|confirmed',
             'company_id' => 'nullable|exists:companies,id',
             'branch_id' => 'nullable|exists:branches,id',
+            'branch_ids' => 'nullable|array',
+            'branch_ids.*' => 'exists:branches,id',
             'role' => 'required|exists:roles,name',
             'address' => 'nullable|string',
             'city' => 'nullable|string|max:100',
@@ -180,6 +192,12 @@ class UserController extends Controller
         $user->save();
 
         $user->syncRoles([$validated['role']]);
+
+        $assignedIds = $request->input('branch_ids', []);
+        if (!empty($user->branch_id) && !in_array($user->branch_id, $assignedIds)) {
+            $assignedIds[] = $user->branch_id;
+        }
+        $user->accessibleBranches()->sync($assignedIds);
 
         ActivityLog::log('user_updated', "Updated user: {$user->full_name}", $user);
 

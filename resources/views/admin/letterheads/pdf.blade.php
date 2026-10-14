@@ -5,33 +5,34 @@
     <title>Letter - {{ $letterhead->letter_no }}</title>
     <style>
         @page {
-            margin: 110px 40px 100px 40px;
+            size: A4;
+            margin: 80px 35px 55px 35px;
         }
         header {
             position: fixed;
-            top: -95px;
+            top: -68px;
             left: 0px;
             right: 0px;
-            height: 90px;
-            border-bottom: 2px solid #0056b3;
-            padding-bottom: 8px;
+            height: 62px;
+            border-bottom: 2px solid #062E39;
+            padding-bottom: 4px;
         }
         footer {
             position: fixed;
-            bottom: -85px;
+            bottom: -45px;
             left: 0px;
             right: 0px;
-            height: 75px;
+            height: 40px;
             border-top: 1px solid #ddd;
-            padding-top: 5px;
-            font-size: 9pt;
+            padding-top: 3px;
+            font-size: 8pt;
             color: #555;
             text-align: center;
         }
         body {
             font-family: 'Helvetica Neue', 'Helvetica', Arial, sans-serif;
-            font-size: 10.5pt;
-            line-height: 1.6;
+            font-size: 9.5pt;
+            line-height: 1.4;
             color: #222;
         }
         .header-table {
@@ -42,34 +43,34 @@
             vertical-align: top;
         }
         .company-logo {
-            max-height: 65px;
-            max-width: 180px;
+            max-height: 55px;
+            max-width: 160px;
         }
         .company-name {
-            font-size: 16pt;
+            font-size: 14pt;
             font-weight: bold;
-            color: #0056b3;
+            color: #062E39;
             margin: 0;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
         .company-info {
-            font-size: 8.5pt;
+            font-size: 8pt;
             color: #444;
-            line-height: 1.3;
+            line-height: 1.25;
         }
         .ref-table {
             width: 100%;
-            margin-top: 10px;
-            margin-bottom: 20px;
+            margin-top: 5px;
+            margin-bottom: 12px;
             border-collapse: collapse;
         }
         .ref-table td {
-            font-size: 10pt;
+            font-size: 9pt;
         }
         .recipient-box {
-            margin-bottom: 20px;
-            line-height: 1.4;
+            margin-bottom: 12px;
+            line-height: 1.35;
         }
         .recipient-title {
             font-weight: bold;
@@ -77,56 +78,79 @@
         }
         .subject-box {
             font-weight: bold;
-            font-size: 11pt;
-            margin: 20px 0;
-            padding: 6px 10px;
+            font-size: 10pt;
+            margin: 10px 0;
+            padding: 5px 8px;
             background-color: #f4f6f9;
-            border-left: 4px solid #0056b3;
+            border-left: 4px solid #062E39;
         }
         .letter-content {
-            margin-top: 15px;
-            margin-bottom: 30px;
+            margin-top: 10px;
+            margin-bottom: 15px;
             text-align: justify;
             white-space: pre-wrap;
             word-wrap: break-word;
+            line-height: 1.45;
         }
         .signatory-table {
             width: 100%;
-            margin-top: 40px;
+            margin-top: 20px;
             page-break-inside: avoid;
         }
         .signature-img {
-            max-height: 50px;
-            max-width: 150px;
+            max-height: 45px;
+            max-width: 130px;
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
         }
         .footer-disclaimer {
-            font-size: 8pt;
+            font-size: 7.5pt;
             color: #777;
-            margin-top: 3px;
+            margin-top: 2px;
             font-style: italic;
         }
     </style>
 </head>
 @php
-    $logoPath = null;
+    $logoBase64 = null;
     if (!empty($letterhead->company->logo)) {
         $cleanLogo = ltrim($letterhead->company->logo, '/');
+        $resolvedLogo = null;
         if (file_exists(public_path($cleanLogo))) {
-            $logoPath = public_path($cleanLogo);
+            $resolvedLogo = public_path($cleanLogo);
         } elseif (file_exists(public_path('uploads/' . $cleanLogo))) {
-            $logoPath = public_path('uploads/' . $cleanLogo);
+            $resolvedLogo = public_path('uploads/' . $cleanLogo);
+        } elseif (file_exists(storage_path('app/public/' . $cleanLogo))) {
+            $resolvedLogo = storage_path('app/public/' . $cleanLogo);
+        }
+        if ($resolvedLogo && is_file($resolvedLogo)) {
+            $ext = strtolower(pathinfo($resolvedLogo, PATHINFO_EXTENSION));
+            $mime = ($ext === 'png') ? 'image/png' : (($ext === 'svg') ? 'image/svg+xml' : 'image/jpeg');
+            $data = @file_get_contents($resolvedLogo);
+            if ($data !== false) {
+                $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode($data);
+            }
         }
     }
 
-    $sigPath = null;
+    $sigBase64 = null;
     if (!empty($letterhead->company->digital_signature)) {
         $cleanSig = ltrim($letterhead->company->digital_signature, '/');
+        $resolvedSig = null;
         if (file_exists(public_path($cleanSig))) {
-            $sigPath = public_path($cleanSig);
+            $resolvedSig = public_path($cleanSig);
         } elseif (file_exists(public_path('uploads/' . $cleanSig))) {
-            $sigPath = public_path('uploads/' . $cleanSig);
+            $resolvedSig = public_path('uploads/' . $cleanSig);
+        } elseif (file_exists(storage_path('app/public/' . $cleanSig))) {
+            $resolvedSig = storage_path('app/public/' . $cleanSig);
+        }
+        if ($resolvedSig && is_file($resolvedSig)) {
+            $ext = strtolower(pathinfo($resolvedSig, PATHINFO_EXTENSION));
+            $mime = ($ext === 'png') ? 'image/png' : (($ext === 'svg') ? 'image/svg+xml' : 'image/jpeg');
+            $data = @file_get_contents($resolvedSig);
+            if ($data !== false) {
+                $sigBase64 = 'data:' . $mime . ';base64,' . base64_encode($data);
+            }
         }
     }
 @endphp
@@ -135,16 +159,16 @@
     <header>
         <table class="header-table">
             <tr>
-                <td style="width: 60%;">
-                    @if($logoPath)
-                        <img src="{{ $logoPath }}" class="company-logo" alt="Logo">
+                <td style="width: 58%;">
+                    @if($logoBase64)
+                        <img src="{{ $logoBase64 }}" class="company-logo" alt="Logo">
                     @else
                         <h1 class="company-name">{{ $letterhead->company->name ?? 'COMPANY NAME' }}</h1>
                     @endif
                 </td>
-                <td style="width: 40%; text-align: right;" class="company-info">
-                    @if($logoPath)
-                        <h2 class="company-name" style="font-size: 12pt; margin-bottom: 3px;">{{ $letterhead->company->name }}</h2>
+                <td style="width: 42%; text-align: right;" class="company-info">
+                    @if($logoBase64)
+                        <h2 class="company-name" style="font-size: 11pt; margin-bottom: 2px;">{{ $letterhead->company->name }}</h2>
                     @endif
                     @if(!empty($letterhead->company->address))
                         <div>{{ $letterhead->company->address }}@if(!empty($letterhead->company->state)), {{ $letterhead->company->state }}@endif</div>
@@ -219,22 +243,22 @@
             <td style="width: 50%;"></td>
             <td style="width: 50%; text-align: right;">
                 <div>Yours faithfully,</div>
-                <div style="font-weight: bold; margin-top: 5px;">For {{ $letterhead->company->name ?? 'Company' }}</div>
+                <div style="font-weight: bold; margin-top: 4px;">For {{ $letterhead->company->name ?? 'Company' }}</div>
                 
-                <div style="margin-top: 15px; min-height: 45px;">
-                    @if($sigPath)
-                        <img src="{{ $sigPath }}" class="signature-img" style="float: right;" alt="Signature">
+                <div style="margin-top: 10px; min-height: 40px;">
+                    @if($sigBase64)
+                        <img src="{{ $sigBase64 }}" class="signature-img" style="float: right;" alt="Signature">
                         <div style="clear: both;"></div>
                     @endif
                 </div>
 
                 @if(!empty($letterhead->signatory_name))
-                    <div style="font-weight: bold; margin-top: 5px;">{{ $letterhead->signatory_name }}</div>
+                    <div style="font-weight: bold; margin-top: 3px;">{{ $letterhead->signatory_name }}</div>
                 @endif
                 @if(!empty($letterhead->signatory_designation))
-                    <div style="font-size: 9pt; color: #555;">{{ $letterhead->signatory_designation }}</div>
+                    <div style="font-size: 8.5pt; color: #555;">{{ $letterhead->signatory_designation }}</div>
                 @endif
-                <div style="font-size: 8pt; color: #666; font-style: italic; margin-top: 4px;">
+                <div style="font-size: 7.5pt; color: #666; font-style: italic; margin-top: 3px;">
                     Signed Date & Time: {{ \Carbon\Carbon::parse($letterhead->letter_date)->format('d M, Y h:i A') }}
                 </div>
             </td>

@@ -35,8 +35,13 @@ class SalesLedgerController extends Controller
         if ($request->filled('bill_number')) {
             $query->where(function ($q) use ($request) {
                 $q->where('bill_number', 'LIKE', '%' . $request->bill_number . '%')
-                  ->orWhere('invoice_no', 'LIKE', '%' . $request->bill_number . '%');
+                  ->orWhere('invoice_no', 'LIKE', '%' . $request->bill_number . '%')
+                  ->orWhere('case_id', 'LIKE', '%' . $request->bill_number . '%');
             });
+        }
+
+        if ($request->filled('case_id')) {
+            $query->where('case_id', 'LIKE', '%' . $request->case_id . '%');
         }
 
         if ($request->filled('bill_to')) {
@@ -189,8 +194,13 @@ class SalesLedgerController extends Controller
         if ($request->filled('bill_number')) {
             $query->where(function ($q) use ($request) {
                 $q->where('bill_number', 'LIKE', '%' . $request->bill_number . '%')
-                  ->orWhere('invoice_no', 'LIKE', '%' . $request->bill_number . '%');
+                  ->orWhere('invoice_no', 'LIKE', '%' . $request->bill_number . '%')
+                  ->orWhere('case_id', 'LIKE', '%' . $request->bill_number . '%');
             });
+        }
+
+        if ($request->filled('case_id')) {
+            $query->where('case_id', 'LIKE', '%' . $request->case_id . '%');
         }
 
         if ($request->filled('bill_to')) {
@@ -308,6 +318,7 @@ class SalesLedgerController extends Controller
             'Company',
             'Branch',
             'Bill No',
+            'Case ID',
             'Bill To / Consigner',
             'Total Amt (w/o GST)',
             'GST',
@@ -347,6 +358,7 @@ class SalesLedgerController extends Controller
                 $invoice->company?->name ?? 'N/A',
                 $invoice->branch?->name ?? 'N/A',
                 $billNo,
+                $invoice->case_id ?? '-',
                 $invoice->consignor_name,
                 number_format($amountWithoutGst, 2, '.', ''),
                 number_format($invoice->total_gst, 2, '.', ''),
@@ -362,7 +374,7 @@ class SalesLedgerController extends Controller
         }
 
         $data[] = [
-            'TOTAL', '', '', '', '', '',
+            'TOTAL', '', '', '', '', '', '',
             number_format($sumWoGst, 2, '.', ''),
             number_format($sumGst, 2, '.', ''),
             number_format($sumTds, 2, '.', ''),
@@ -426,7 +438,7 @@ class SalesLedgerController extends Controller
             $query->whereDate('date', '<=', $request->date_to);
         }
 
-        $receivings = $query->orderBy('date', 'desc')->paginate(20);
+        $receivings = $query->orderBy('date', 'desc')->paginate(20)->withQueryString();
 
         $companies = $user->isSuperAdmin() ? \App\Models\Company::where('status', 'active')->get() : collect();
         $branches = \App\Models\Branch::where('status', 'active')->when($companyId && $companyId !== 'all', function ($q) use ($companyId) {
@@ -481,7 +493,7 @@ class SalesLedgerController extends Controller
             $query->whereDate('date', '<=', $request->date_to);
         }
 
-        $receivings = $query->orderBy('date', 'desc')->paginate(20);
+        $receivings = $query->orderBy('date', 'desc')->paginate(20)->withQueryString();
 
         $companies = $user->isSuperAdmin() ? \App\Models\Company::where('status', 'active')->get() : collect();
         $branches = \App\Models\Branch::where('status', 'active')->when($companyId && $companyId !== 'all', function ($q) use ($companyId) {
@@ -502,7 +514,7 @@ class SalesLedgerController extends Controller
         
         // Calculate base amount (excluding GST) for auto TDS calculation
         $amountWithoutGst = (float)($invoice->total_freight + $invoice->total_other);
-        $grossBaseAmount = $amountWithoutGst + (float)$invoice->total_gst;
+        $grossBaseAmount = $amountWithoutGst;
         $baseAmount = max(0, $amountWithoutGst - (float)$invoice->deduction);
         $autoTds = round($baseAmount * 1 / 100, 2); // 1% TDS on taxable value (w/o GST)
         
@@ -600,7 +612,7 @@ class SalesLedgerController extends Controller
 
         $invoice = $receiving->invoice;
         $amountWithoutGst = $invoice ? ($invoice->total_freight + $invoice->total_other) : 0;
-        $grossBaseAmount = $amountWithoutGst + ($invoice ? $invoice->total_gst : 0);
+        $grossBaseAmount = $amountWithoutGst;
         $billNo = $invoice ? (!empty($invoice->bill_number) ? $invoice->bill_number : ($invoice->invoice_no ?? ('INV-' . $invoice->id))) : '';
 
         return response()->json([
@@ -722,6 +734,7 @@ class SalesLedgerController extends Controller
             'data' => [
                 'id' => $invoice->id,
                 'bill_number' => $billNo,
+                'case_id' => $invoice->case_id ?? '',
                 'invoice_no' => $invoice->invoice_no,
                 'invoice_date' => $invoice->invoice_date?->format('Y-m-d'),
                 'consignor_id' => $invoice->consignor_id,
@@ -749,16 +762,20 @@ class SalesLedgerController extends Controller
 
         $request->validate([
             'bill_number' => 'required|string|max:255',
+            'case_id' => 'nullable|string|max:255|unique:invoices,case_id,' . $id,
             'invoice_date' => 'required|date',
             'consignor_name' => 'nullable|string|max:255',
             'billing_address' => 'nullable|string|max:1000',
             'status' => 'required|in:pending,paid,cancelled',
+        ], [
+            'case_id.unique' => 'The Case ID is already mapped to another bill. Please enter a unique Case ID.'
         ]);
 
         $invoice = \App\Models\Invoice::findOrFail($id);
 
         $invoice->update([
             'bill_number' => $request->bill_number,
+            'case_id' => $request->case_id,
             'invoice_date' => $request->invoice_date,
             'consignor_name' => $request->consignor_name ?: $invoice->consignor_name,
             'billing_address' => $request->billing_address,
@@ -766,5 +783,33 @@ class SalesLedgerController extends Controller
         ]);
 
         return back()->with('success', 'Bill details updated successfully.');
+    }
+
+    public function updateCaseId(Request $request, $id)
+    {
+        if (!auth()->user()->can('edit sales ledger') && !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $request->validate([
+            'case_id' => 'nullable|string|max:255|unique:invoices,case_id,' . $id,
+        ], [
+            'case_id.unique' => 'This Case ID is already mapped to another bill. Please enter a unique Case ID.'
+        ]);
+
+        $invoice = \App\Models\Invoice::findOrFail($id);
+        $invoice->update([
+            'case_id' => $request->case_id,
+        ]);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Case ID updated successfully.',
+                'case_id' => $invoice->case_id,
+            ]);
+        }
+
+        return back()->with('success', 'Case ID updated successfully.');
     }
 }

@@ -70,7 +70,7 @@
             </a>
         </li>
 
-        @canany(['view bulties', 'view trips', 'view fuel outstanding', 'view adblue outstanding', 'view billing', 'view letterheads'])
+        @canany(['view bulties', 'view trips', 'view trip details', 'view fuel outstanding', 'view adblue outstanding', 'view billing', 'view letterheads'])
             <li class="menu-divider"></li>
             <li class="menu-header small text-uppercase">
                 <span class="menu-header-text">Transport Operations</span>
@@ -86,14 +86,14 @@
             </li>
         @endcan
 
-        @can('view trips')
+        @canany(['view trips', 'view trip details'])
             <li class="menu-item {{ request()->is('admin/transport/trips') || (request()->is('admin/transport/trips/*') && !request()->is('admin/transport/trips/fuel-outstanding*') && !request()->is('admin/transport/trips/adblue-outstanding*')) ? 'active' : '' }}">
                 <a href="{{ route('admin.transport.trips.index') }}" class="menu-link">
                     <i class="menu-icon tf-icons bx bx-carousel"></i>
-                    <div data-i18n="Trips">Trips</div>
+                    <div data-i18n="Trip Details">Trip Details</div>
                 </a>
             </li>
-        @endcan
+        @endcanany
 
         @can('view fuel outstanding')
             <li class="menu-item {{ request()->is('admin/transport/trips/fuel-outstanding*') ? 'active' : '' }}">
@@ -825,6 +825,13 @@
                 </a>
             </li>
         @endcan
+
+        <li class="menu-item {{ request()->is('admin/mail-configuration*') ? 'active' : '' }}">
+            <a href="{{ route('admin.mail-configuration.index') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-envelope"></i>
+                <div data-i18n="Mail Configuration">Mail Configuration</div>
+            </a>
+        </li>
 
     </ul>
 </aside>

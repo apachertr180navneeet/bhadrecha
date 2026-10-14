@@ -81,41 +81,8 @@ class SuperAdminController extends Controller
         $companyId = session('current_company_id');
         $monthlyPnL = $this->getMonthlyPnLTrend($companyId);
 
-        // Expiring documents (single SQL query instead of loading all vehicles)
-        $threshold = now()->addDays(30);
-        $expiringDocuments = collect();
-        $vehicleFields = [
-            'insurance_expiry' => 'Insurance',
-            'fitness_expiry' => 'Fitness Certificate',
-            'permit_expiry' => 'Permit',
-            'pollution_expiry' => 'Pollution Certificate',
-        ];
-        $thresholdDate = $threshold->toDateString();
-        $companyName = 'N/A';
-        if ($companyId && $companyId !== 'all') {
-            $comp = Company::find($companyId);
-            $companyName = $comp ? $comp->name : 'N/A';
-        } else {
-            $companyName = 'All Companies';
-        }
-
-        $unionSql = '';
-        $unionBindings = [];
-        $first = true;
-        foreach ($vehicleFields as $field => $label) {
-            $sql = "(SELECT v.id as vehicle_id, v.vehicle_number, ? as company_name, ? as document, ? as document_field, v.$field as expiry_date, DATEDIFF(?, v.$field) as days_left FROM vehicles v WHERE v.status = 'active' AND v.$field IS NOT NULL AND v.$field <= ?)";
-            $unionBindings = array_merge($unionBindings, [$companyName, $label, $field, $thresholdDate, $thresholdDate]);
-            if ($first) {
-                $unionSql = $sql;
-                $first = false;
-            } else {
-                $unionSql .= " UNION ALL " . $sql;
-            }
-        }
-        $expiringDocuments = collect(DB::select($unionSql, $unionBindings))
-            ->map(fn($d) => (array) $d)
-            ->sortBy('days_left')
-            ->values();
+        // Expiring documents
+        $expiringDocuments = $this->getExpiringDocuments($companyId);
 
         return [
             'total_companies'    => $totalCompanies,
@@ -154,7 +121,7 @@ class SuperAdminController extends Controller
         $months = [];
         $counts = [];
         for ($i = 5; $i >= 0; $i--) {
-            $date = Carbon::now()->subMonths($i);
+            $date = Carbon::now()->startOfMonth()->subMonths($i);
             $months[] = $date->format('M Y');
             $key = $date->year . '-' . $date->month;
             $counts[] = (int)($monthlyCounts[$key]->count ?? 0);
@@ -171,24 +138,24 @@ class SuperAdminController extends Controller
 
         $twelveMonthsAgo = Carbon::now()->subMonths(11)->startOfMonth();
 
-        $bultyWhere = "status NOT IN ('pending','planned')";
+        $bultyWhere = "b.status NOT IN ('pending','planned')";
         $bultyParams = [];
         if ($companyId && $companyId !== 'all') {
-            $bultyWhere .= " AND company_id = ?";
+            $bultyWhere .= " AND b.company_id = ?";
             $bultyParams[] = $companyId;
         }
         if ($branchId) {
-            $bultyWhere .= " AND branch_id = ?";
+            $bultyWhere .= " AND b.branch_id = ?";
             $bultyParams[] = $branchId;
         }
 
         $monthlyBulties = DB::select(
-            "SELECT YEAR(lr_date) as y, MONTH(lr_date) as m,
-                    COALESCE(SUM(total_amount),0) as income,
-                    COALESCE(SUM(bilty_commission),0) as commission
-             FROM bulties
-             WHERE $bultyWhere AND lr_date >= ?
-             GROUP BY YEAR(lr_date), MONTH(lr_date)
+            "SELECT YEAR(b.lr_date) as y, MONTH(b.lr_date) as m,
+                    COALESCE(SUM(b.total_amount),0) as income,
+                    COALESCE(SUM(b.bilty_commission),0) as commission
+             FROM bulties b
+             WHERE $bultyWhere AND b.lr_date >= ?
+             GROUP BY YEAR(b.lr_date), MONTH(b.lr_date)
              ORDER BY y, m",
             array_merge($bultyParams, [$twelveMonthsAgo])
         );
@@ -202,7 +169,7 @@ class SuperAdminController extends Controller
                     COALESCE(SUM(t.advance_total_amount),0) as trip_advance
              FROM bulties b
              JOIN trips t ON t.builty_id = b.id
-             WHERE b.$bultyWhere AND b.lr_date >= ?
+             WHERE $bultyWhere AND b.lr_date >= ?
              GROUP BY YEAR(b.lr_date), MONTH(b.lr_date)
              ORDER BY y, m",
             array_merge($bultyParams, [$twelveMonthsAgo])
@@ -213,7 +180,7 @@ class SuperAdminController extends Controller
              FROM bulties b
              JOIN trips t ON t.builty_id = b.id
              JOIN trip_fuel_details tfd ON tfd.trip_id = t.id
-             WHERE b.$bultyWhere AND b.lr_date >= ?
+             WHERE $bultyWhere AND b.lr_date >= ?
              GROUP BY YEAR(b.lr_date), MONTH(b.lr_date)",
             array_merge($bultyParams, [$twelveMonthsAgo])
         );
@@ -223,7 +190,7 @@ class SuperAdminController extends Controller
              FROM bulties b
              JOIN trips t ON t.builty_id = b.id
              JOIN trip_fast_tag_details tft ON tft.trip_id = t.id
-             WHERE b.$bultyWhere AND b.lr_date >= ?
+             WHERE $bultyWhere AND b.lr_date >= ?
              GROUP BY YEAR(b.lr_date), MONTH(b.lr_date)",
             array_merge($bultyParams, [$twelveMonthsAgo])
         );
@@ -233,7 +200,7 @@ class SuperAdminController extends Controller
              FROM bulties b
              JOIN trips t ON t.builty_id = b.id
              JOIN trip_adblue_details tad ON tad.trip_id = t.id
-             WHERE b.$bultyWhere AND b.lr_date >= ?
+             WHERE $bultyWhere AND b.lr_date >= ?
              GROUP BY YEAR(b.lr_date), MONTH(b.lr_date)",
             array_merge($bultyParams, [$twelveMonthsAgo])
         );
@@ -243,7 +210,7 @@ class SuperAdminController extends Controller
              FROM bulties b
              JOIN trips t ON t.builty_id = b.id
              JOIN trip_other_amount_details toad ON toad.trip_id = t.id
-             WHERE b.$bultyWhere AND b.lr_date >= ?
+             WHERE $bultyWhere AND b.lr_date >= ?
              GROUP BY YEAR(b.lr_date), MONTH(b.lr_date)",
             array_merge($bultyParams, [$twelveMonthsAgo])
         );
@@ -253,7 +220,7 @@ class SuperAdminController extends Controller
              FROM bulties b
              JOIN trips t ON t.builty_id = b.id
              JOIN trip_advance_details tad2 ON tad2.trip_id = t.id
-             WHERE b.$bultyWhere AND b.lr_date >= ?
+             WHERE $bultyWhere AND b.lr_date >= ?
              GROUP BY YEAR(b.lr_date), MONTH(b.lr_date)",
             array_merge($bultyParams, [$twelveMonthsAgo])
         );
@@ -274,7 +241,7 @@ class SuperAdminController extends Controller
         foreach ($monthlyAdv as $r) { $monthlyAdvMap[$r->y . '-' . $r->m] = (float)$r->amt; }
 
         for ($i = 11; $i >= 0; $i--) {
-            $date = Carbon::now()->subMonths($i);
+            $date = Carbon::now()->startOfMonth()->subMonths($i);
             $key = $date->year . '-' . $date->month;
             $months[] = $date->format('M Y');
 
@@ -325,6 +292,7 @@ class SuperAdminController extends Controller
             'total_trips'    => $totalTrips,
             'monthly_lrs'    => $monthlyLRs,
             'monthly_pnl'    => $monthlyPnL,
+            'expiring_documents' => $this->getExpiringDocuments($companyId),
         ];
     }
 
@@ -344,7 +312,7 @@ class SuperAdminController extends Controller
         $months = [];
         $counts = [];
         for ($i = 5; $i >= 0; $i--) {
-            $date = Carbon::now()->subMonths($i);
+            $date = Carbon::now()->startOfMonth()->subMonths($i);
             $months[] = $date->format('M Y');
             $key = $date->year . '-' . $date->month;
             $counts[] = (int)($monthlyCounts[$key]->count ?? 0);
@@ -378,6 +346,7 @@ class SuperAdminController extends Controller
             'total_trips'    => $totalTrips,
             'monthly_lrs'    => $monthlyLRs,
             'monthly_pnl'    => $monthlyPnL,
+            'expiring_documents' => $this->getExpiringDocuments($companyId),
         ];
     }
 
@@ -397,7 +366,7 @@ class SuperAdminController extends Controller
         $months = [];
         $counts = [];
         for ($i = 5; $i >= 0; $i--) {
-            $date = Carbon::now()->subMonths($i);
+            $date = Carbon::now()->startOfMonth()->subMonths($i);
             $months[] = $date->format('M Y');
             $key = $date->year . '-' . $date->month;
             $counts[] = (int)($monthlyCounts[$key]->count ?? 0);
@@ -429,7 +398,7 @@ class SuperAdminController extends Controller
             $query->where('company_id', auth()->user()->company_id);
         }
 
-        $logs = $query->orderBy('created_at', 'desc')->paginate(20);
+        $logs = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
         $actions = cache()->remember('activity_log_actions', 3600, fn() => ActivityLog::distinct()->pluck('action'));
         $users = User::active()->get();
 
@@ -494,6 +463,26 @@ class SuperAdminController extends Controller
         return redirect()->back();
     }
 
+    public function switchBranch(Request $request)
+    {
+        $branchId = $request->input('branch_id');
+        $user = auth()->user();
+
+        if ($branchId === 'all') {
+            if (!$user->canAccessBranch('all')) {
+                return back()->with('error', 'Unauthorized to view all branches.');
+            }
+            session(['current_branch_id' => 'all']);
+        } elseif ($branchId) {
+            if (!$user->canAccessBranch($branchId)) {
+                return back()->with('error', 'Unauthorized branch access.');
+            }
+            session(['current_branch_id' => (int) $branchId]);
+        }
+
+        return redirect()->back()->with('success', 'Branch context updated.');
+    }
+
     public function switchYear(Request $request)
     {
         $year = $request->year;
@@ -501,5 +490,43 @@ class SuperAdminController extends Controller
             session(['current_year' => $year]);
         }
         return redirect()->back();
+    }
+
+    /**
+     * Get expiring documents for dashboard alert counts
+     */
+    private function getExpiringDocuments($companyId = null)
+    {
+        $threshold = now()->addDays(30);
+        $vehicleFields = [
+            'insurance_expiry' => 'Insurance',
+            'fitness_expiry' => 'Fitness Certificate',
+            'permit_expiry' => 'Permit',
+            'pollution_expiry' => 'Pollution Certificate',
+        ];
+        $thresholdDate = $threshold->toDateString();
+        $companyName = 'All Companies';
+        if ($companyId && $companyId !== 'all') {
+            $comp = Company::find($companyId);
+            $companyName = $comp ? $comp->name : 'N/A';
+        }
+
+        $unionSql = '';
+        $unionBindings = [];
+        $first = true;
+        foreach ($vehicleFields as $field => $label) {
+            $sql = "(SELECT v.id as vehicle_id, v.vehicle_number, ? as company_name, ? as document, ? as document_field, v.$field as expiry_date, DATEDIFF(?, v.$field) as days_left FROM vehicles v WHERE v.status = 'active' AND v.$field IS NOT NULL AND v.$field <= ?)";
+            $unionBindings = array_merge($unionBindings, [$companyName, $label, $field, $thresholdDate, $thresholdDate]);
+            if ($first) {
+                $unionSql = $sql;
+                $first = false;
+            } else {
+                $unionSql .= " UNION ALL " . $sql;
+            }
+        }
+        return collect(DB::select($unionSql, $unionBindings))
+            ->map(fn($d) => (array) $d)
+            ->sortBy('days_left')
+            ->values();
     }
 }

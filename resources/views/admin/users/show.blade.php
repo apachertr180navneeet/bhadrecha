@@ -35,7 +35,16 @@
                         <tr><th>Email</th><td>{{ $user->email }}</td></tr>
                         <tr><th>Phone</th><td>{{ $user->phone }}</td></tr>
                         <tr><th>Company</th><td>{{ $user->company->name ?? 'N/A' }}</td></tr>
-                        <tr><th>Branch</th><td>{{ $user->branch->name ?? 'N/A' }}</td></tr>
+                        <tr><th>Primary Branch</th><td>{{ $user->branch->name ?? 'N/A' }}</td></tr>
+                        <tr><th>Accessible Branches</th><td>
+                            @if($user->accessibleBranches->count() > 0)
+                                @foreach($user->accessibleBranches as $b)
+                                    <span class="badge bg-label-info me-1">{{ $b->name }}</span>
+                                @endforeach
+                            @else
+                                <span class="text-muted">None (Primary only)</span>
+                            @endif
+                        </td></tr>
                         <tr><th>Role(s)</th><td>{{ $user->roles->pluck('name')->implode(', ') }}</td></tr>
                         <tr><th>Status</th><td><span class="badge bg-label-{{ $user->status == 'active' ? 'success' : 'danger' }}">{{ ucfirst($user->status) }}</span></td></tr>
                     </table>

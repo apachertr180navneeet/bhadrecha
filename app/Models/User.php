@@ -91,6 +91,37 @@ class User extends Authenticatable implements JWTSubject
         return $this->belongsToMany(Company::class, 'user_companies');
     }
 
+    public function accessibleBranches()
+    {
+        return $this->belongsToMany(Branch::class, 'user_branches');
+    }
+
+    public function mailConfiguration()
+    {
+        return $this->hasOne(UserMailConfiguration::class, 'user_id');
+    }
+
+    public function getAssignedBranchIdsAttribute()
+    {
+        $ids = [];
+        if (!empty($this->branch_id)) {
+            $ids[] = (int) $this->branch_id;
+        }
+        if ($this->relationLoaded('accessibleBranches')) {
+            $pivotIds = $this->accessibleBranches->pluck('id')->all();
+        } else {
+            try {
+                $pivotIds = $this->accessibleBranches()->pluck('branches.id')->all();
+            } catch (\Throwable $e) {
+                $pivotIds = [];
+            }
+        }
+        foreach ($pivotIds as $pid) {
+            $ids[] = (int) $pid;
+        }
+        return array_values(array_unique($ids));
+    }
+
     public function salary()
     {
         return $this->hasOne(EmployeeSalary::class, 'user_id');
@@ -128,17 +159,41 @@ class User extends Authenticatable implements JWTSubject
 
     public function isSuperAdmin()
     {
-        return $this->hasRole('Super Admin') || in_array(strtolower(trim($this->role ?? '')), ['super admin', 'super_admin', 'superadmin']);
+        if (in_array(strtolower(trim($this->role ?? '')), ['super admin', 'super_admin', 'superadmin'])) {
+            return true;
+        }
+
+        try {
+            return $this->hasRole('Super Admin');
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 
     public function isCompanyAdmin()
     {
-        return $this->hasRole('Company Admin') || in_array(strtolower(trim($this->role ?? '')), ['company admin', 'company_admin', 'admin']);
+        if (in_array(strtolower(trim($this->role ?? '')), ['company admin', 'company_admin', 'admin'])) {
+            return true;
+        }
+
+        try {
+            return $this->hasRole('Company Admin');
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 
     public function isBranchManager()
     {
-        return $this->hasRole('Branch Manager') || in_array(strtolower(trim($this->role ?? '')), ['branch manager', 'branch_manager']);
+        if (in_array(strtolower(trim($this->role ?? '')), ['branch manager', 'branch_manager'])) {
+            return true;
+        }
+
+        try {
+            return $this->hasRole('Branch Manager');
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 
     public function isAdmin()
@@ -161,15 +216,27 @@ class User extends Authenticatable implements JWTSubject
 
     public function canAccessBranch($branchId)
     {
-        if ($this->isSuperAdmin() || $this->isCompanyAdmin()) {
+        if (empty($branchId)) {
+            return false;
+        }
+
+        if ($branchId === 'all') {
+            return $this->isSuperAdmin() || $this->isCompanyAdmin() || count($this->assigned_branch_ids) > 1;
+        }
+
+        if ($this->isSuperAdmin()) {
             return true;
         }
 
-        if ($this->isBranchManager() && $this->branch_id == $branchId) {
-            return true;
+        if ($this->isCompanyAdmin()) {
+            if (empty($this->company_id)) {
+                return true;
+            }
+            $targetBranch = Branch::find($branchId);
+            return $targetBranch ? ((int) $targetBranch->company_id === (int) $this->company_id) : true;
         }
 
-        return false;
+        return in_array((int) $branchId, $this->assigned_branch_ids, true);
     }
 
     public function getFullNameAttribute()

@@ -280,39 +280,47 @@ class DriverController extends Controller
     public function quickStore(Request $request)
     {
         $user = auth()->user();
-        if (!$user || (!$user->can('create drivers') && !$user->can('create bulties') && !$user->can('edit bulties') && !$user->isSuperAdmin())) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        if (!$user || (
+            !$user->can('create drivers') &&
+            !$user->can('create bulties') &&
+            !$user->can('create bilties') &&
+            !$user->can('edit bulties') &&
+            !$user->can('edit bilties') &&
+            !$user->isSuperAdmin() &&
+            !$user->isCompanyAdmin()
+        )) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized to create driver.'], 403);
         }
 
         $validated = $request->validate([
-            'company_id' => 'nullable|exists:companies,id',
-            'branch_id' => 'nullable|exists:branches,id',
             'driver_id' => 'nullable|string|max:50',
             'name' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
             'license_number' => 'nullable|string|max:50',
-            'license_expiry' => "nullable|date|before_or_equal:9999-12-31",
+            'license_expiry' => 'nullable|date|before_or_equal:9999-12-31',
             'address' => 'nullable|string',
             'city' => 'nullable|string|max:100',
             'state' => 'nullable|string|max:100',
             'emergency_contact' => 'nullable|string|max:20',
         ]);
 
-        $companyId = $validated['company_id'] 
-            ?? (session('current_company_id') && session('current_company_id') !== 'all' ? session('current_company_id') : null)
-            ?? $user->company_id 
-            ?? \App\Models\Company::first()?->id;
-
-        $validated['company_id'] = $companyId;
-        $validated['branch_id'] = $validated['branch_id'] ?? $user->branch_id ?? session('current_branch_id') ?? null;
+        $validated['driver_id'] = !empty(trim($validated['driver_id'] ?? '')) ? trim($validated['driver_id']) : null;
+        $validated['license_number'] = !empty(trim($validated['license_number'] ?? '')) ? trim($validated['license_number']) : null;
+        $validated['license_expiry'] = !empty($validated['license_expiry']) ? $validated['license_expiry'] : null;
         $validated['status'] = 'active';
 
-        // Ensure unique phone/license or find existing if duplicate phone submitted
+        // Check for existing driver by phone, driver_id, or license_number
         $cleanPhone = preg_replace('/[^0-9]/', '', $validated['phone']);
         $existingDriver = Driver::where(function($q) use ($validated, $cleanPhone) {
             $q->where('phone', $validated['phone']);
             if (!empty($cleanPhone)) {
                 $q->orWhereRaw("REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '+', '') = ?", [$cleanPhone]);
+            }
+            if (!empty($validated['driver_id'])) {
+                $q->orWhere('driver_id', $validated['driver_id']);
+            }
+            if (!empty($validated['license_number'])) {
+                $q->orWhere('license_number', $validated['license_number']);
             }
         })->first();
 
@@ -320,7 +328,7 @@ class DriverController extends Controller
             return response()->json([
                 'success' => true,
                 'driver' => $existingDriver,
-                'message' => 'Existing driver selected.'
+                'message' => 'Existing driver (' . $existingDriver->name . ') selected.'
             ]);
         }
 
@@ -328,12 +336,15 @@ class DriverController extends Controller
             $validated['license_number'] = 'DL-' . strtoupper(substr(uniqid(), -6));
         }
 
+        unset($validated['company_id'], $validated['branch_id']);
+
         $driver = Driver::create($validated);
         ActivityLog::log('driver_created', "Quick created driver: {$driver->name}", $driver);
 
         return response()->json([
             'success' => true,
-            'driver' => $driver
+            'driver' => $driver,
+            'message' => 'Driver created successfully.'
         ]);
     }
 

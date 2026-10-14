@@ -56,6 +56,9 @@ class BultyController extends Controller
         }
 
         if ($request->filled('branch_id')) {
+            if (!auth()->user()->canAccessBranch($request->branch_id)) {
+                abort(403, 'Unauthorized access to this branch records.');
+            }
             $query->where('branch_id', $request->branch_id);
         }
 
@@ -91,23 +94,27 @@ class BultyController extends Controller
 
     public function nextLRNumber($branchId)
     {
+        $nextNumber = Bulty::generateLRNumber($branchId);
+
         $year = date('Y');
         $branch = Branch::find($branchId);
-        $prefix = ($branch && $branch->name) ? strtoupper(substr($branch->name, 0, 1)) : 'LR';
+        $prefix = ($branch && !empty($branch->name)) ? strtoupper(substr(trim($branch->name), 0, 1)) : 'LR';
 
         $existing = Bulty::withTrashed()
             ->where('lr_no', 'like', "{$prefix}-{$year}-%")
             ->pluck('lr_no')
             ->map(function ($lr) {
+                if (preg_match('/(\d+)$/', trim($lr), $m)) {
+                    return (int) $m[1];
+                }
                 return (int) substr($lr, -4);
             })
+            ->filter(fn($n) => $n > 0)
             ->sort()
             ->values()
             ->toArray();
 
         $missing = [];
-        $lastNumber = 0;
-
         if (!empty($existing)) {
             $maxExisting = max($existing);
             for ($i = 1; $i <= $maxExisting; $i++) {
@@ -115,14 +122,31 @@ class BultyController extends Controller
                     $missing[] = $prefix . '-' . $year . '-' . str_pad($i, 4, '0', STR_PAD_LEFT);
                 }
             }
-            $lastNumber = max($existing);
         }
-
-        $nextNumber = $prefix . '-' . $year . '-' . str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
 
         return response()->json([
             'missing' => $missing,
             'next' => $nextNumber,
+        ]);
+    }
+
+    public function checkLRNumber(Request $request)
+    {
+        $lrNo = trim($request->input('lr_no', ''));
+        $excludeId = $request->input('exclude_id');
+
+        if (empty($lrNo)) {
+            return response()->json(['exists' => false, 'message' => '']);
+        }
+
+        $exists = Bulty::withTrashed()
+            ->where('lr_no', $lrNo)
+            ->when($excludeId, fn($q) => $q->where('id', '!=', $excludeId))
+            ->exists();
+
+        return response()->json([
+            'exists' => $exists,
+            'message' => $exists ? "LR Number '{$lrNo}' already exists in the system." : 'LR Number is available.'
         ]);
     }
 
@@ -133,19 +157,35 @@ class BultyController extends Controller
         }
 
         $companies = [];
-        if (auth()->user()->isSuperAdmin()) {
+        if (auth()->user()->isSuperAdmin() || empty(auth()->user()->company_id) || auth()->user()->hasRole(['Admin', 'Super Admin']) || auth()->user()->can('manage companies')) {
             $companies = Company::where('status', 'active')->get();
         }
 
-        $branches = Branch::where('status', 'active')->get();
+        $user = auth()->user();
+        if ($user->isSuperAdmin() || $user->isCompanyAdmin()) {
+            $branches = Branch::where('status', 'active');
+            if ($user->isCompanyAdmin() && $user->company_id) {
+                $branches->where('company_id', $user->company_id);
+            }
+            $branches = $branches->get();
+        } else {
+            $branches = Branch::where('status', 'active')->whereIn('id', $user->assigned_branch_ids)->get();
+        }
+
         $consignors = Consignor::where('status', 'active')->get();
         $consignees = Consignee::where('status', 'active')->get();
         $suppliers = Supplier::where('status', 'active')->orderBy('name')->get();
         $cities = City::where('status', 'active')->orderBy('name')->get();
         $packagings = Packaging::where('status', 'active')->orderBy('name')->get();
         $units = Unit::where('status', 'active')->orderBy('name')->get();
-        $branchId = auth()->user()->branch_id ?: ($branches->first()?->id);
-        $nextBultyNo = $branchId ? Bulty::generateLRNumber($branchId) : '';
+
+        $sessionBranch = session('current_branch_id');
+        if ($sessionBranch && $sessionBranch !== 'all' && $user->canAccessBranch($sessionBranch)) {
+            $branchId = (int) $sessionBranch;
+        } else {
+            $branchId = $user->branch_id ?: ($user->assigned_branch_ids[0] ?? ($branches->first()?->id));
+        }
+        $nextBultyNo = $branchId ? Bulty::generateLRNumber($branchId) : Bulty::generateLRNumber();
 
         return view('admin.transport.bulties.create', compact('branches', 'companies', 'consignors', 'consignees', 'suppliers', 'cities', 'packagings', 'units', 'nextBultyNo'));
     }
@@ -158,13 +198,33 @@ class BultyController extends Controller
         ]);
 
         $validated = $this->validatedData($request, [
-            'company_id' => auth()->user()->isSuperAdmin() ? 'required|exists:companies,id' : 'nullable|exists:companies,id',
-            'lr_no' => 'required|string|unique:bulties,lr_no',
+            'company_id' => 'nullable|exists:companies,id',
+            'lr_no' => 'required|string',
         ]);
 
-        if (!auth()->user()->isSuperAdmin()) {
-            $validated['company_id'] = auth()->user()->company_id;
-            $validated['branch_id'] = auth()->user()->branch_id;
+        $user = auth()->user();
+        $companyId = $request->input('company_id') ?: $user->company_id;
+        $branchId = $request->input('branch_id') ?: ($user->branch_id ?: ($user->assigned_branch_ids[0] ?? null));
+
+        if ($branchId && !$user->canAccessBranch($branchId)) {
+            return back()->withErrors(['branch_id' => 'You are not authorized to create bilties for this branch.'])->withInput();
+        }
+
+        if ($companyId) {
+            $validated['company_id'] = $companyId;
+        }
+        if ($branchId) {
+            $validated['branch_id'] = $branchId;
+        }
+
+        // Concurrency duplicate check: if LR already exists and matches auto-suggested, auto-increment to avoid collision
+        if (Bulty::withTrashed()->where('lr_no', $validated['lr_no'])->exists()) {
+            $autoGen = Bulty::generateLRNumber($validated['branch_id'] ?? null);
+            if ($validated['lr_no'] === $request->input('suggested_lr_no') || empty($request->input('lr_no'))) {
+                $validated['lr_no'] = $autoGen;
+            } else {
+                return back()->withErrors(['lr_no' => "LR Number '{$validated['lr_no']}' already exists. Please choose a unique LR number."])->withInput();
+            }
         }
         $validated['status'] = 'pending';
 
@@ -204,7 +264,8 @@ class BultyController extends Controller
 
     public function show(Bulty $bulty)
     {
-        if (!auth()->user()->can('view bulties')) {
+        $user = auth()->user();
+        if (!$user || (!$user->can('view bulties') && !$user->can('view trips') && !$user->can('view trip details') && !$user->isSuperAdmin())) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -233,12 +294,26 @@ class BultyController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
+        if (!auth()->user()->canAccessBranch($bulty->branch_id)) {
+            abort(403, 'Unauthorized access to this bilty branch.');
+        }
+
         $companies = [];
-        if (auth()->user()->isSuperAdmin()) {
+        if (auth()->user()->isSuperAdmin() || empty(auth()->user()->company_id) || auth()->user()->hasRole(['Admin', 'Super Admin']) || auth()->user()->can('manage companies')) {
             $companies = Company::where('status', 'active')->get();
         }
 
-        $branches = Branch::where('status', 'active')->get();
+        $user = auth()->user();
+        if ($user->isSuperAdmin() || $user->isCompanyAdmin()) {
+            $branches = Branch::where('status', 'active');
+            if ($user->isCompanyAdmin() && $user->company_id) {
+                $branches->where('company_id', $user->company_id);
+            }
+            $branches = $branches->get();
+        } else {
+            $branches = Branch::where('status', 'active')->whereIn('id', $user->assigned_branch_ids)->get();
+        }
+
         $consignors = Consignor::where('status', 'active')->get();
         $consignees = Consignee::where('status', 'active')->get();
         $suppliers = Supplier::where('status', 'active')->orderBy('name')->get();
@@ -257,6 +332,10 @@ class BultyController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
+        if (!auth()->user()->canAccessBranch($bulty->branch_id)) {
+            abort(403, 'Unauthorized access to this bilty branch.');
+        }
+
         $request->validate([
             'material_documents' => 'nullable|array',
             'material_documents.*' => 'file|mimes:jpg,jpeg,png,pdf|max:10240',
@@ -269,13 +348,22 @@ class BultyController extends Controller
         ]);
 
         $validated = $this->validatedData($request, [
-            'company_id' => auth()->user()->isSuperAdmin() ? 'required|exists:companies,id' : 'nullable|exists:companies,id',
+            'company_id' => 'nullable|exists:companies,id',
             'lr_no' => 'required|string|unique:bulties,lr_no,' . $bulty->id,
         ]);
 
-        if (!auth()->user()->isSuperAdmin()) {
-            $validated['company_id'] = auth()->user()->company_id;
-            $validated['branch_id'] = auth()->user()->branch_id;
+        $user = auth()->user();
+        $companyId = $request->input('company_id') ?: ($user->company_id ?: $bulty->company_id);
+        $branchId = $request->input('branch_id') ?: ($user->branch_id ?: $bulty->branch_id);
+
+        if ($branchId && !$user->canAccessBranch($branchId)) {
+            return back()->withErrors(['branch_id' => 'You are not authorized to assign this branch.'])->withInput();
+        }
+        if ($companyId) {
+            $validated['company_id'] = $companyId;
+        }
+        if ($branchId) {
+            $validated['branch_id'] = $branchId;
         }
 
         if (!empty($validated['vehicle_id'])) {
@@ -354,22 +442,71 @@ class BultyController extends Controller
             return;
         }
 
+        // Verify company access for non-superadmin
+        if ($bulty->company_id && method_exists($user, 'canAccessCompany') && !$user->canAccessCompany($bulty->company_id)) {
+            abort(403, 'Unauthorized action. You do not have access to this company.');
+        }
+
         if ($permission) {
-            if ($permission === 'approve bulty material document') {
-                if (!$user->can('approve bulty material document') && !$user->can('approve bulty documents') && !$user->can('edit bulties')) {
+            if ($permission === 'approve bulty material document' || $permission === 'approve bilty material document') {
+                $canApproveMaterial = $user->isCompanyAdmin()
+                    || $user->can('approve bulty material document')
+                    || $user->can('approve bilty material document')
+                    || $user->can('approve material document')
+                    || $user->can('approve material documents')
+                    || $user->can('approve bulty documents')
+                    || $user->can('approve bilty documents')
+                    || $user->can('approve documents')
+                    || $user->can('edit bulties')
+                    || $user->can('edit bilties')
+                    || ($user->isBranchManager() && method_exists($user, 'canAccessBranch') && $user->canAccessBranch($bulty->branch_id));
+
+                if (!$canApproveMaterial) {
                     abort(403, 'Unauthorized action. You do not have permission to approve material documents.');
                 }
                 return;
             }
 
-            if ($permission === 'approve bulty pod') {
-                if (!$user->can('approve bulty pod') && !$user->can('approve bulty documents') && !$user->can('edit bulties')) {
+            if ($permission === 'approve bulty pod' || $permission === 'approve bilty pod') {
+                $canApprovePod = $user->isCompanyAdmin()
+                    || $user->can('approve bulty pod')
+                    || $user->can('approve bilty pod')
+                    || $user->can('approve pod')
+                    || $user->can('approve pod document')
+                    || $user->can('approve bulty documents')
+                    || $user->can('approve bilty documents')
+                    || $user->can('approve documents')
+                    || $user->can('edit bulties')
+                    || $user->can('edit bilties')
+                    || ($user->isBranchManager() && method_exists($user, 'canAccessBranch') && $user->canAccessBranch($bulty->branch_id));
+
+                if (!$canApprovePod) {
                     abort(403, 'Unauthorized action. You do not have permission to approve POD documents.');
                 }
                 return;
             }
 
-            if (!$user->can($permission)) {
+            if ($permission === 'print bulties' || $permission === 'print bilties') {
+                $canPrint = $user->isCompanyAdmin()
+                    || $user->can('print bulties')
+                    || $user->can('print bilties')
+                    || $user->can('view bulties')
+                    || $user->can('view bilties')
+                    || $user->can('edit bulties')
+                    || $user->can('edit bilties')
+                    || $user->can('print invoices');
+
+                if (!$canPrint) {
+                    abort(403, 'Unauthorized action. You do not have permission to print bills.');
+                }
+                return;
+            }
+
+            $altPermission = str_contains($permission, 'bulty')
+                ? str_replace('bulty', 'bilty', $permission)
+                : (str_contains($permission, 'bilty') ? str_replace('bilty', 'bulty', $permission) : null);
+
+            if (!$user->can($permission) && (!$altPermission || !$user->can($altPermission)) && !$user->isCompanyAdmin()) {
                 abort(403, 'Unauthorized action. You do not have the required permission.');
             }
         }
@@ -468,10 +605,25 @@ class BultyController extends Controller
 
     public function printBill(Bulty $bulty)
     {
+        $this->authorizeBultyAction($bulty, 'print bulties');
+
         $bulty->load([
             'branch', 'consignor', 'consignee', 'vehicle', 'driver',
             'originCity', 'destinationCity', 'bultyItems', 'company', 'bultyDetail',
+            'invoice.company', 'invoice.consignor', 'invoice.gstMaster',
         ]);
+
+        $existingInvoice = $bulty->invoice ?? null;
+
+        // If this bulty already has an invoice that uses custom template or toll, redirect or render seamlessly
+        if ($existingInvoice) {
+            if ($existingInvoice->invoice_type === 'toll') {
+                return redirect()->route('admin.transport.invoices.toll-print', $existingInvoice->id);
+            }
+            if (in_array($existingInvoice->template_type, ['nathdwara', 'gypsum'])) {
+                return redirect()->route('admin.transport.invoices.show', $existingInvoice->id);
+            }
+        }
 
         $freightTotal = floatval($bulty->freight_charges) - floatval($bulty->advance_amount);
         $gstTotal = floatval($bulty->gst_amount);
@@ -479,26 +631,28 @@ class BultyController extends Controller
         $grandTotal = $freightTotal + $gstTotal + $otherTotal;
         $amountInWords = \App\Http\Controllers\Admin\Transport\BillingController::convertNumberToWords($grandTotal);
 
-        $invoiceCompany = $bulty->company;
+        $invoiceCompany = $existingInvoice?->company ?? $bulty->company;
+        $consignorModel = $existingInvoice?->consignor ?? $bulty->consignor;
+
         $invoiceConsignor = (object) [
-            'name' => $bulty->consignor->name ?? '-',
-            'address' => $bulty->consignor->address ?? '-',
-            'city' => $bulty->consignor->city ?? '',
-            'state' => $bulty->consignor->state ?? '',
-            'pincode' => $bulty->consignor->pincode ?? '',
-            'vendor_code' => $bulty->consignor->vendor_code ?? ''
+            'name' => $consignorModel->name ?? '-',
+            'address' => $consignorModel->address ?? '-',
+            'city' => $consignorModel->city ?? '',
+            'state' => $consignorModel->state ?? '',
+            'pincode' => $consignorModel->pincode ?? '',
+            'vendor_code' => $consignorModel->vendor_code ?? '',
+            'gst_no' => $consignorModel->gst_no ?? ($consignorModel->gstin ?? '-')
         ];
-        $billNumber = $bulty->invoice_number ?? $bulty->lr_no;
-        $vendorCode = $bulty->consignor->vendor_code ?? '';
+
+        $billNumber = $existingInvoice?->bill_number ?? ($bulty->invoice_number ?? $bulty->lr_no);
+        $vendorCode = $consignorModel->vendor_code ?? ($existingInvoice?->vendor_code ?? '');
         $bulties = collect([$bulty]);
-        $gstPercentage = 0;
+        $gstPercentage = $existingInvoice?->gstMaster ? floatval($existingInvoice->gstMaster->percentage) : 0;
 
         $bankAccountNo = $invoiceCompany && $invoiceCompany->bank_account_no ? $invoiceCompany->bank_account_no : '';
         $bankIfsc = $invoiceCompany && $invoiceCompany->bank_ifsc ? $invoiceCompany->bank_ifsc : '';
         $bankHolder = $invoiceCompany && $invoiceCompany->bank_holder_name ? strtoupper($invoiceCompany->bank_holder_name) : '';
-        $grnNewPage = false;
-        
-        $existingInvoice = $bulty->invoice ?? null;
+        $grnNewPage = $existingInvoice?->grn_new_page ?? false;
 
         return view('admin.transport.bulties.print_bill', compact(
             'invoiceCompany', 'existingInvoice', 'invoiceConsignor', 'billNumber', 'vendorCode',
@@ -519,7 +673,7 @@ class BultyController extends Controller
                 'email' => $request->email
             ]);
             
-            Mail::to($request->email)->send(new BultyMail($bulty));
+            \App\Services\UserMailService::send($request->email, new BultyMail($bulty), auth()->user());
 
             Log::info('Bilty PDF emailed successfully', [
                 'bulty_id' => $bulty->id,

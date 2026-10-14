@@ -13,7 +13,7 @@
             </nav>
         </div>
         <div>
-            @canany(['create trips', 'import trip data'])
+            @canany(['create trips', 'create trip details', 'import trip data'])
             <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#importTripModal"><i class="bx bx-import me-1"></i> Import</button>
             <a href="{{ route('admin.transport.trips.download-template') }}" class="btn btn-outline-secondary"><i class="bx bx-download me-1"></i> Template</a>
             @endcanany
@@ -123,14 +123,19 @@
                     @forelse($trips as $trip)
                     <tr>
                         <td>
-                            <div class="d-inline-flex gap-1">
+                            <div class="d-inline-flex gap-1 align-items-center">
                                 @if($trip->trip)
-                                    @can('edit trips')
+                                    @canany(['view trips', 'view trip details'])
+                                    <a href="{{ route('admin.transport.trips.show', $trip->trip->id) }}" class="btn btn-sm btn-icon btn-outline-info" title="View Trip Details">
+                                        <i class="bx bx-show"></i>
+                                    </a>
+                                    @endcanany
+                                    @canany(['edit trips', 'edit trip details'])
                                     <a href="{{ route('admin.transport.trips.edit', $trip->trip->id) }}" class="btn btn-sm btn-icon btn-outline-warning" title="Edit Trip">
                                         <i class="bx bx-edit"></i>
                                     </a>
-                                    @endcan
-                                    @can('delete trips')
+                                    @endcanany
+                                    @canany(['delete trips', 'delete trip details'])
                                     <form action="{{ route('admin.transport.trips.destroy', $trip->trip->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this trip record?');">
                                         @csrf
                                         @method('DELETE')
@@ -138,24 +143,24 @@
                                             <i class="bx bx-trash"></i>
                                         </button>
                                     </form>
-                                    @endcan
+                                    @endcanany
                                 @else
-                                    @can('create trips')
+                                    @canany(['create trips', 'create trip details'])
                                     <a href="{{ route('admin.transport.trips.create', $trip->id) }}" class="btn btn-sm btn-icon btn-outline-success" title="Add Trip">
                                         <i class="bx bx-plus-circle"></i>
                                     </a>
-                                    @endcan
+                                    @endcanany
                                 @endif
-                                @can('view bulties')
-                                <a href="{{ route('admin.transport.bulties.show', $trip->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="View">
-                                    <i class="bx bx-show"></i>
+                                @canany(['view bulties', 'view trips', 'view trip details'])
+                                <a href="{{ route('admin.transport.bulties.show', $trip->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="View Bilty">
+                                    <i class="bx bx-receipt"></i>
                                 </a>
-                                @endcan
+                                @endcanany
                                 @php
                                     $firstMatDoc = $trip->material_documents_list[0] ?? null;
                                 @endphp
                                 @if($firstMatDoc)
-                                <a href="{{ $firstMatDoc }}" target="_blank" class="btn btn-sm btn-icon btn-outline-info" title="View Document">
+                                <a href="{{ $firstMatDoc }}" target="_blank" class="btn btn-sm btn-icon btn-outline-secondary" title="View Document">
                                     <i class="bx bx-file"></i>
                                 </a>
                                 @endif
@@ -174,7 +179,7 @@
                                 $tripStatus = $trip->trip?->status ?? 'pending';
                             @endphp
                             @if($trip->trip)
-                                @can('edit trips')
+                                @canany(['edit trips', 'edit trip details'])
                                 <select class="form-select form-select-sm status-select" data-id="{{ $trip->trip->id }}" style="min-width:90px" {{ $tripStatus == 'complete' ? 'disabled' : '' }}>
                                     <option value="pending" {{ $tripStatus == 'pending' ? 'selected' : '' }}>Pending</option>
                                     <option value="complete" {{ $tripStatus == 'complete' ? 'selected' : '' }}>Complete</option>
@@ -189,7 +194,7 @@
                                     ];
                                 @endphp
                                 <span class="badge {{ $statusBadges[$tripStatus] ?? 'bg-label-warning' }}">{{ ucfirst($tripStatus) }}</span>
-                                @endcan
+                                @endcanany
                             @else
                             <span class="badge bg-label-warning">Pending</span>
                             @endif

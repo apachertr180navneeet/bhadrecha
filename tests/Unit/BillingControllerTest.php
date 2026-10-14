@@ -77,7 +77,46 @@ class BillingControllerTest extends TestCase
         $this->assertTrue(BillingController::isSameGstState('RAJASTHAN', 'RAJASTHAN'));
         $this->assertTrue(BillingController::isSameGstState('08-RAJASTHAN', 'RAJASTHAN'));
         $this->assertTrue(BillingController::isSameGstState('RAJASTHAN (08)', '08 - RAJASTHAN'));
+        $this->assertTrue(BillingController::isSameGstState('08', 'RAJASTHAN'));
+        $this->assertTrue(BillingController::isSameGstState('RAJASTHAN', '08'));
+        $this->assertTrue(BillingController::isSameGstState('24', 'GUJARAT'));
+        $this->assertTrue(BillingController::isSameGstState('24AAAAA0000A1Z5', 'GUJARAT'));
+        $this->assertFalse(BillingController::isSameGstState('08', '24'));
+        $this->assertFalse(BillingController::isSameGstState('08', 'GUJARAT'));
         $this->assertFalse(BillingController::isSameGstState('RAJASTHAN', 'GUJARAT'));
         $this->assertFalse(BillingController::isSameGstState('MADHYA PRADESH', 'GUJARAT'));
+    }
+
+    public function test_normalize_gst_state_code(): void
+    {
+        // 15-character GSTIN
+        $this->assertSame('08', BillingController::normalizeGstStateCode('08AABCB1234F1Z5'));
+        $this->assertSame('24', BillingController::normalizeGstStateCode('24AAAAA0000A1Z5'));
+
+        // Prefixed strings
+        $this->assertSame('08', BillingController::normalizeGstStateCode('08-RAJASTHAN'));
+        $this->assertSame('24', BillingController::normalizeGstStateCode('24 - GUJARAT'));
+
+        // Numeric string / single-digit
+        $this->assertSame('08', BillingController::normalizeGstStateCode('8'));
+        $this->assertSame('08', BillingController::normalizeGstStateCode('08'));
+        $this->assertSame('27', BillingController::normalizeGstStateCode('27'));
+
+        // State names (case insensitive)
+        $this->assertSame('08', BillingController::normalizeGstStateCode('Rajasthan'));
+        $this->assertSame('24', BillingController::normalizeGstStateCode('GUJARAT'));
+        $this->assertSame('27', BillingController::normalizeGstStateCode('Maharashtra'));
+        $this->assertSame('23', BillingController::normalizeGstStateCode('Madhya Pradesh'));
+
+        // Null / Empty
+        $this->assertNull(BillingController::normalizeGstStateCode(''));
+        $this->assertNull(BillingController::normalizeGstStateCode(null));
+    }
+
+    public function test_convert_number_to_words(): void
+    {
+        $this->assertSame('ONE THOUSAND RUPEES ONLY.', BillingController::convertNumberToWords(1000));
+        $this->assertSame('ONE THOUSAND ONE HUNDRED AND EIGHTY RUPEES ONLY.', BillingController::convertNumberToWords(1180));
+        $this->assertSame('FIVE HUNDRED RUPEES AND FIFTY PAISE ONLY.', BillingController::convertNumberToWords(500.50));
     }
 }

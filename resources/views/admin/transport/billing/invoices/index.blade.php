@@ -23,6 +23,21 @@
                     <input type="text" name="search" class="form-control" placeholder="Search Invoice No, Consignor, Consignee..." value="{{ request('search') }}">
                 </div>
                 <div class="col-md-2">
+                    <select name="invoice_type" class="form-select">
+                        <option value="">All Types</option>
+                        <option value="freight" {{ request('invoice_type') === 'freight' ? 'selected' : '' }}>Freight Bills</option>
+                        <option value="toll" {{ request('invoice_type') === 'toll' ? 'selected' : '' }}>Toll Bills</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="status" class="form-select">
+                        <option value="">All Status</option>
+                        <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
+                        <option value="paid" {{ request('status') === 'paid' ? 'selected' : '' }}>Paid</option>
+                        <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
                     <select name="consignor_id" class="form-select">
                         <option value="">All Consignors</option>
                         @foreach($consignors as $consignor)
@@ -57,7 +72,7 @@
                 <div class="col-md-1">
                     <button type="submit" class="btn btn-primary w-100">Filter</button>
                 </div>
-                @if(request()->filled('search') || request()->filled('consignor_id') || request()->filled('consignee_id') || request()->filled('from_date') || request()->filled('to_date') || request('date_sort') === 'oldest')
+                @if(request()->filled('search') || request()->filled('invoice_type') || request()->filled('status') || request()->filled('consignor_id') || request()->filled('consignee_id') || request()->filled('from_date') || request()->filled('to_date') || request('date_sort') === 'oldest')
                 <div class="col-md-12 text-end">
                     <a href="{{ route('admin.transport.invoices.index') }}" class="btn btn-sm btn-outline-secondary">Clear Filters</a>
                 </div>
@@ -95,12 +110,18 @@
                         <tr>
                             <td>
                                 <div class="d-flex gap-2">
-                                    <a href="{{ route('admin.transport.invoices.show', $inv->id) }}" class="btn btn-sm btn-outline-primary btn-icon" title="View / Print">
-                                        <i class="bx bx-show"></i>
-                                    </a>
-                                    <a href="{{ route('admin.transport.invoices.bill-generate', $inv->id) }}" class="btn btn-sm btn-outline-success btn-icon" title="Bill Generate">
-                                        <i class="bx bx-receipt"></i>
-                                    </a>
+                                    @if(($inv->invoice_type ?? 'freight') === 'toll')
+                                        <a href="{{ route('admin.transport.invoices.toll-print', $inv->id) }}" class="btn btn-sm btn-outline-info btn-icon" title="View / Print Toll Bill">
+                                            <i class="bx bx-printer"></i>
+                                        </a>
+                                    @else
+                                        <a href="{{ route('admin.transport.invoices.show', $inv->id) }}" class="btn btn-sm btn-outline-primary btn-icon" title="View / Print">
+                                            <i class="bx bx-show"></i>
+                                        </a>
+                                        <a href="{{ route('admin.transport.invoices.bill-generate', $inv->id) }}" class="btn btn-sm btn-outline-success btn-icon" title="Bill Generate">
+                                            <i class="bx bx-receipt"></i>
+                                        </a>
+                                    @if(auth()->user()->isSuperAdmin() || auth()->user()->can('delete invoices') || auth()->user()->can('delete billing'))
                                     <form action="{{ route('admin.transport.invoices.destroy', $inv->id) }}" method="POST" class="d-inline" onsubmit="confirmDelete(event, this);">
                                         @csrf
                                         @method('DELETE')
@@ -108,6 +129,7 @@
                                             <i class="bx bx-trash"></i>
                                         </button>
                                     </form>
+                                    @endif
                                 </div>
                             </td>
                             <td><strong>{{ $inv->invoice_no }}</strong></td>
@@ -122,7 +144,14 @@
                             <td>{{ $inv->consignor_name ?? ($inv->consignor->name ?? '-') }}</td>
                             <td>{{ $inv->consignee_names }}</td>
                             <td class="text-end">{{ number_format($inv->total_freight, 2) }}</td>
-                            <td class="text-end">{{ number_format($inv->total_gst, 2) }}</td>
+                            <td class="text-end">
+                                <div>{{ number_format($inv->total_gst, 2) }}</div>
+                                @if($inv->gst_type === 'IGST')
+                                    <span class="badge bg-label-info" style="font-size: 10px;">IGST</span>
+                                @elseif($inv->gst_type === 'CGST_SGST')
+                                    <span class="badge bg-label-secondary" style="font-size: 10px;">CGST+SGST</span>
+                                @endif
+                            </td>
                             <td class="text-end">{{ number_format($inv->total_other, 2) }}</td>
                             <td class="text-end"><strong>{{ number_format($inv->total_amount, 2) }}</strong></td>
                             <td>
@@ -172,10 +201,10 @@
                     <tfoot class="table-dark fw-bold">
                         <tr>
                             <td colspan="6" class="text-end">Total:</td>
-                            <td class="text-end">{{ number_format($invoices->sum('total_freight'), 2) }}</td>
-                            <td class="text-end">{{ number_format($invoices->sum('total_gst'), 2) }}</td>
-                            <td class="text-end">{{ number_format($invoices->sum('total_other'), 2) }}</td>
-                            <td class="text-end">{{ number_format($invoices->sum('total_amount'), 2) }}</td>
+                            <td class="text-end">{{ number_format($totalFreight ?? $invoices->sum('total_freight'), 2) }}</td>
+                            <td class="text-end">{{ number_format($totalGst ?? $invoices->sum('total_gst'), 2) }}</td>
+                            <td class="text-end">{{ number_format($totalOther ?? $invoices->sum('total_other'), 2) }}</td>
+                            <td class="text-end">{{ number_format($totalAmount ?? $invoices->sum('total_amount'), 2) }}</td>
                             <td></td>
                         </tr>
                     </tfoot>
