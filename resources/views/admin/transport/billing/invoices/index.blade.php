@@ -121,6 +121,7 @@
                                         <a href="{{ route('admin.transport.invoices.bill-generate', $inv->id) }}" class="btn btn-sm btn-outline-success btn-icon" title="Bill Generate">
                                             <i class="bx bx-receipt"></i>
                                         </a>
+                                    @endif
                                     @if(auth()->user()->isSuperAdmin() || auth()->user()->can('delete invoices') || auth()->user()->can('delete billing'))
                                     <form action="{{ route('admin.transport.invoices.destroy', $inv->id) }}" method="POST" class="d-inline" onsubmit="confirmDelete(event, this);">
                                         @csrf
