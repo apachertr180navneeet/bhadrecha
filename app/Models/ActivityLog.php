@@ -48,6 +48,16 @@ class ActivityLog extends Model
 
     public static function log($action, $description = null, $model = null, $properties = [])
     {
+        $companyId = session('current_company_id');
+        if ($companyId === 'all' || !is_numeric($companyId)) {
+            $companyId = auth()->user()?->company_id ?? ($model?->company_id ?? null);
+        }
+
+        $branchId = session('current_branch_id');
+        if ($branchId === 'all' || !is_numeric($branchId)) {
+            $branchId = $model?->branch_id ?? null;
+        }
+
         return static::create([
             'user_id' => auth()->id(),
             'action' => $action,
@@ -57,8 +67,8 @@ class ActivityLog extends Model
             'properties' => $properties,
             'ip_address' => request()->ip(),
             'user_agent' => request()->userAgent(),
-            'company_id' => session('current_company_id') === 'all' ? null : session('current_company_id'),
-            'branch_id' => session('current_branch_id'),
+            'company_id' => is_numeric($companyId) ? (int) $companyId : null,
+            'branch_id' => is_numeric($branchId) ? (int) $branchId : null,
         ]);
     }
 }
