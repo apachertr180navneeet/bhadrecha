@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class SalesLedgerController extends Controller
 {
@@ -32,15 +33,19 @@ class SalesLedgerController extends Controller
             $query->where('consignor_id', $request->consignor_id);
         }
 
+        $hasCaseId = Schema::hasColumn('invoices', 'case_id');
+
         if ($request->filled('bill_number')) {
-            $query->where(function ($q) use ($request) {
+            $query->where(function ($q) use ($request, $hasCaseId) {
                 $q->where('bill_number', 'LIKE', '%' . $request->bill_number . '%')
-                  ->orWhere('invoice_no', 'LIKE', '%' . $request->bill_number . '%')
-                  ->orWhere('case_id', 'LIKE', '%' . $request->bill_number . '%');
+                  ->orWhere('invoice_no', 'LIKE', '%' . $request->bill_number . '%');
+                if ($hasCaseId) {
+                    $q->orWhere('case_id', 'LIKE', '%' . $request->bill_number . '%');
+                }
             });
         }
 
-        if ($request->filled('case_id')) {
+        if ($request->filled('case_id') && $hasCaseId) {
             $query->where('case_id', 'LIKE', '%' . $request->case_id . '%');
         }
 
@@ -191,15 +196,19 @@ class SalesLedgerController extends Controller
             $query->where('consignor_id', $request->consignor_id);
         }
 
+        $hasCaseId = Schema::hasColumn('invoices', 'case_id');
+
         if ($request->filled('bill_number')) {
-            $query->where(function ($q) use ($request) {
+            $query->where(function ($q) use ($request, $hasCaseId) {
                 $q->where('bill_number', 'LIKE', '%' . $request->bill_number . '%')
-                  ->orWhere('invoice_no', 'LIKE', '%' . $request->bill_number . '%')
-                  ->orWhere('case_id', 'LIKE', '%' . $request->bill_number . '%');
+                  ->orWhere('invoice_no', 'LIKE', '%' . $request->bill_number . '%');
+                if ($hasCaseId) {
+                    $q->orWhere('case_id', 'LIKE', '%' . $request->bill_number . '%');
+                }
             });
         }
 
-        if ($request->filled('case_id')) {
+        if ($request->filled('case_id') && $hasCaseId) {
             $query->where('case_id', 'LIKE', '%' . $request->case_id . '%');
         }
 
@@ -760,27 +769,36 @@ class SalesLedgerController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        $request->validate([
+        $hasCaseId = Schema::hasColumn('invoices', 'case_id');
+        $rules = [
             'bill_number' => 'required|string|max:255',
-            'case_id' => 'nullable|string|max:255|unique:invoices,case_id,' . $id,
             'invoice_date' => 'required|date',
             'consignor_name' => 'nullable|string|max:255',
             'billing_address' => 'nullable|string|max:1000',
             'status' => 'required|in:pending,paid,cancelled',
-        ], [
+        ];
+        if ($hasCaseId) {
+            $rules['case_id'] = 'nullable|string|max:255|unique:invoices,case_id,' . $id;
+        }
+
+        $request->validate($rules, [
             'case_id.unique' => 'The Case ID is already mapped to another bill. Please enter a unique Case ID.'
         ]);
 
         $invoice = \App\Models\Invoice::findOrFail($id);
 
-        $invoice->update([
+        $updateData = [
             'bill_number' => $request->bill_number,
-            'case_id' => $request->case_id,
             'invoice_date' => $request->invoice_date,
             'consignor_name' => $request->consignor_name ?: $invoice->consignor_name,
             'billing_address' => $request->billing_address,
             'status' => $request->status,
-        ]);
+        ];
+        if ($hasCaseId) {
+            $updateData['case_id'] = $request->case_id;
+        }
+
+        $invoice->update($updateData);
 
         return back()->with('success', 'Bill details updated successfully.');
     }
@@ -789,6 +807,10 @@ class SalesLedgerController extends Controller
     {
         if (!auth()->user()->can('edit sales ledger') && !auth()->user()->isSuperAdmin()) {
             abort(403, 'Unauthorized action.');
+        }
+
+        if (!Schema::hasColumn('invoices', 'case_id')) {
+            return back()->with('error', 'The case_id column does not exist yet. Please run php artisan migrate.');
         }
 
         $request->validate([
