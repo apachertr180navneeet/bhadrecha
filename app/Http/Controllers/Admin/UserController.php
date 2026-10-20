@@ -10,6 +10,7 @@ use App\Models\ActivityLog;
 use App\Models\City;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
@@ -131,7 +132,9 @@ class UserController extends Controller
         if (!empty($user->branch_id) && !in_array($user->branch_id, $assignedIds)) {
             $assignedIds[] = $user->branch_id;
         }
-        $user->accessibleBranches()->sync($assignedIds);
+        if (Schema::hasTable('user_branches')) {
+            $user->accessibleBranches()->sync($assignedIds);
+        }
 
         ActivityLog::log('user_created', "Created user: {$user->full_name}", $user);
 
@@ -140,18 +143,26 @@ class UserController extends Controller
 
     public function show(User $user)
     {
-        $user->load(['company', 'branch', 'roles', 'accessibleBranches']);
+        $relations = ['company', 'branch', 'roles'];
+        if (Schema::hasTable('user_branches')) {
+            $relations[] = 'accessibleBranches';
+        }
+        $user->load($relations);
         return view('admin.users.show', compact('user'));
     }
 
     public function edit(User $user)
     {
-        $user->load('accessibleBranches');
+        if (Schema::hasTable('user_branches')) {
+            $user->load('accessibleBranches');
+            $assignedBranchIds = $user->accessibleBranches->pluck('id')->toArray();
+        } else {
+            $assignedBranchIds = $user->branch_id ? [(int) $user->branch_id] : [];
+        }
         $companies = Company::where('status', 'active')->orderBy('name')->get();
         $branches = Branch::where('company_id', $user->company_id)->get();
         $roles = Role::all();
         $states = City::distinct()->where('status', 'active')->orderBy('state')->pluck('state')->mapWithKeys(fn($s) => [$s => true])->toArray();
-        $assignedBranchIds = $user->accessibleBranches->pluck('id')->toArray();
         return view('admin.users.edit', compact('user', 'companies', 'branches', 'roles', 'states', 'assignedBranchIds'));
     }
 
@@ -193,11 +204,13 @@ class UserController extends Controller
 
         $user->syncRoles([$validated['role']]);
 
-        $assignedIds = $request->input('branch_ids', []);
-        if (!empty($user->branch_id) && !in_array($user->branch_id, $assignedIds)) {
-            $assignedIds[] = $user->branch_id;
+        if (Schema::hasTable('user_branches')) {
+            $assignedIds = $request->input('branch_ids', []);
+            if (!empty($user->branch_id) && !in_array($user->branch_id, $assignedIds)) {
+                $assignedIds[] = $user->branch_id;
+            }
+            $user->accessibleBranches()->sync($assignedIds);
         }
-        $user->accessibleBranches()->sync($assignedIds);
 
         ActivityLog::log('user_updated', "Updated user: {$user->full_name}", $user);
 

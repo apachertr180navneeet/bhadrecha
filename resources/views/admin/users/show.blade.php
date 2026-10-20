@@ -37,7 +37,7 @@
                         <tr><th>Company</th><td>{{ $user->company->name ?? 'N/A' }}</td></tr>
                         <tr><th>Primary Branch</th><td>{{ $user->branch->name ?? 'N/A' }}</td></tr>
                         <tr><th>Accessible Branches</th><td>
-                            @if($user->accessibleBranches->count() > 0)
+                            @if($user->relationLoaded('accessibleBranches') && $user->accessibleBranches->count() > 0)
                                 @foreach($user->accessibleBranches as $b)
                                     <span class="badge bg-label-info me-1">{{ $b->name }}</span>
                                 @endforeach
