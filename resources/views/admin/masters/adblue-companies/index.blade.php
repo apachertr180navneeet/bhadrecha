@@ -63,7 +63,7 @@
                         <td class="text-center text-nowrap">
                             <a href="{{ route('admin.masters.adblue-companies.edit', $adblueCompany->id) }}" class="btn btn-sm btn-icon btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
                             <form action="{{ route('admin.masters.adblue-companies.toggle-status', $adblueCompany->id) }}" method="POST" class="d-inline">@csrf
-                                <button type="submit" class="btn btn-sm btn-icon btn-outline-{{ $adblueCompany->status == 'active' ? 'warning' : 'success' }}" title="{{ $adblueCompany->status == 'active' ? 'Deactivate' : 'Activate' }}"><i class="bx bx-{{ $adblueCompany->status == 'pause' : 'play' }}"></i></button>
+                                <button type="submit" class="btn btn-sm btn-icon btn-outline-{{ $adblueCompany->status == 'active' ? 'warning' : 'success' }}" title="{{ $adblueCompany->status == 'active' ? 'Deactivate' : 'Activate' }}"><i class="bx bx-{{ $adblueCompany->status == 'active' ? 'pause' : 'play' }}"></i></button>
                             </form>
                             <button type="button" class="btn btn-sm btn-icon btn-outline-danger" onclick="handleDelete({{ $adblueCompany->id }}, '{{ $adblueCompany->name }}')" title="Delete"><i class="bx bx-trash"></i></button>
                         </td>
