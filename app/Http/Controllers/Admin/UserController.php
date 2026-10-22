@@ -124,6 +124,8 @@ class UserController extends Controller
         $user->city = $validated['city'] ?? null;
         $user->state = $validated['state'] ?? null;
         $user->role = in_array($validated['role'], ['admin', 'user']) ? $validated['role'] : 'user';
+        $user->avatar = '';
+        $user->bio = '';
 
         $user->save();
         $user->assignRole($validated['role']);

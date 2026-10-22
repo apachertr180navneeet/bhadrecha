@@ -45,6 +45,11 @@ class User extends Authenticatable implements JWTSubject
         'phone_verified_at',
     ];
 
+    protected $attributes = [
+        'avatar' => '',
+        'bio' => '',
+    ];
+
     protected $appends = ['avatar_full_path'];
 
     protected $hidden = [
