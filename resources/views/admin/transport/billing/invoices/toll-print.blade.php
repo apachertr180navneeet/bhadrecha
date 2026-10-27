@@ -126,6 +126,12 @@
                 </select>
             </div>
 
+            <!-- UTCL Billing Location Selector / Input -->
+            <div class="d-inline-flex align-items-center gap-1 bg-white border rounded px-2 py-1 shadow-sm">
+                <label for="toll_utcl_location_input" class="form-label small fw-bold mb-0 text-muted">UTCL Billing Location:</label>
+                <input type="text" id="toll_utcl_location_input" class="form-control form-control-sm fw-semibold" style="width: 140px; text-transform: uppercase;" value="{{ $partyCity }}" placeholder="Billing Location">
+            </div>
+
             <form id="save-toll-form" method="POST" action="{{ route('admin.transport.invoices.save-toll', $invoice->id) }}" class="d-inline">
                 @csrf
                 <input type="hidden" name="bill_number" id="hidden_bill_number" value="">
@@ -133,11 +139,14 @@
                 <input type="hidden" name="billing_address" id="hidden_billing_address" value="">
                 <input type="hidden" name="custom_hsn_code" id="hidden_custom_hsn_code" value="">
                 <input type="hidden" name="custom_place_of_supply" id="hidden_custom_place_of_supply" value="">
-                <input type="hidden" name="custom_district" id="hidden_custom_district" value="">
+                <input type="hidden" name="custom_district" id="hidden_custom_district" value="{{ $partyCity }}">
                 <input type="hidden" name="custom_state" id="hidden_custom_state" value="">
                 <input type="hidden" name="custom_state_code" id="hidden_custom_state_code" value="">
                 <input type="hidden" name="custom_gstn" id="hidden_custom_gstn" value="">
                 <input type="hidden" name="custom_pan_no" id="hidden_custom_pan_no" value="">
+                <input type="hidden" name="state_vendor_code" id="hidden_state_vendor_code" value="{{ $invoice->state_vendor_code ?? '' }}">
+                <input type="hidden" name="vendor_code" id="hidden_vendor_code" value="{{ $invoice->vendor_code ?? '' }}">
+                <input type="hidden" name="vendor_name" id="hidden_vendor_name" value="{{ $invoice->vendor_name ?? '' }}">
                 <input type="hidden" name="consignor_name" id="hidden_consignor_name" value="">
                 <input type="hidden" name="no_of_lrs" id="hidden_no_of_lrs" value="">
                 <input type="hidden" name="gst_type" id="hidden_gst_type" value="{{ $gstType }}">
@@ -154,11 +163,16 @@
                     document.getElementById('hidden_billing_address').value = gh('billing_address_cell');
                     document.getElementById('hidden_custom_hsn_code').value = gv('custom_hsn_cell');
                     document.getElementById('hidden_custom_place_of_supply').value = gv('custom_place_of_supply_cell');
-                    document.getElementById('hidden_custom_district').value = gv('custom_district_cell');
+                    var utclInp = document.getElementById('toll_utcl_location_input');
+                    var utclCell = document.querySelector('.utcl-billing-location');
+                    document.getElementById('hidden_custom_district').value = (utclInp && utclInp.value.trim() !== '') ? utclInp.value.trim() : (gv('custom_district_cell') || (utclCell ? utclCell.innerText.trim() : ''));
                     document.getElementById('hidden_custom_state').value = gv('custom_state_cell');
                     document.getElementById('hidden_custom_state_code').value = gv('custom_state_code_cell');
                     document.getElementById('hidden_custom_gstn').value = gv('custom_gstn_cell');
                     document.getElementById('hidden_custom_pan_no').value = gv('custom_pan_no_cell');
+                    document.getElementById('hidden_state_vendor_code').value = gv('state_vendor_code_cell');
+                    document.getElementById('hidden_vendor_code').value = gv('vendor_code_cell');
+                    document.getElementById('hidden_vendor_name').value = gv('vendor_name_cell');
                     document.getElementById('hidden_consignor_name').value = gv('consignor_name_cell');
                     document.getElementById('hidden_gst_type').value = document.getElementById('toll_gst_type_select').value;
                     document.getElementById('hidden_status').value = document.getElementById('toll_status_select').value;
@@ -229,15 +243,15 @@
                         </tr>
                         <tr>
                             <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">STATE VENDOR CODE</td>
-                            <td id="state_vendor_code_cell" style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center;">{{ $invoice->state_vendor_code ?? '' }}</td>
+                            <td id="state_vendor_code_cell" contenteditable="true" style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center; outline: none;" title="Click to edit State Vendor Code">{{ $invoice->state_vendor_code ?? ($invoice->consignor->vendor_code ?? '') }}</td>
                         </tr>
                         <tr>
                             <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">VENDOR CODE</td>
-                            <td id="vendor_code_cell" style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center;">{{ $invoice->vendor_code ?? '' }}</td>
+                            <td id="vendor_code_cell" contenteditable="true" style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center; outline: none;" title="Click to edit Vendor Code">{{ $invoice->vendor_code ?? ($invoice->consignor->vendor_code ?? '') }}</td>
                         </tr>
                         <tr>
                             <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">VENDOR NAME</td>
-                            <td id="vendor_name_cell" style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center; text-transform: uppercase;">{{ $invoice->vendor_name ?? '' }}</td>
+                            <td id="vendor_name_cell" contenteditable="true" style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center; text-transform: uppercase; outline: none;" title="Click to edit Vendor Name">{{ $invoice->vendor_name ?? '' }}</td>
                         </tr>
                         <tr>
                             <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">BILL NO.</td>
@@ -356,7 +370,7 @@
                                         
                                         <td style="font-weight: bold;">{{ number_format($bultyTollSum, 2) }}</td>
                                         <td style="text-transform: uppercase; font-weight: bold;">{{ $bulty->invoice ? $bulty->invoice->invoice_no : ($bulty->invoice_id ? '' : '-') }}</td>
-                                        <td style="text-transform: uppercase; font-weight: bold;" class="utcl-billing-location">{{ $partyCity }}</td>
+                                        <td style="text-transform: uppercase; font-weight: bold; outline: none;" class="utcl-billing-location" contenteditable="true" title="Click to edit UTCL Billing Location">{{ $partyCity }}</td>
                                     </tr>
                                 @endforeach
 
@@ -672,13 +686,42 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    var utclInput = document.getElementById('toll_utcl_location_input');
+    var utclCells = document.querySelectorAll('.utcl-billing-location');
+
+    if (utclInput) {
+        utclInput.addEventListener('input', function() {
+            var val = this.value.toUpperCase();
+            utclCells.forEach(function(td) {
+                td.textContent = val;
+            });
+            var hidden = document.getElementById('hidden_custom_district');
+            if (hidden) hidden.value = val;
+        });
+    }
+
+    utclCells.forEach(function(td) {
+        td.addEventListener('input', function() {
+            var val = this.innerText.trim().toUpperCase();
+            if (utclInput) utclInput.value = val;
+            utclCells.forEach(function(otherTd) {
+                if (otherTd !== td) otherTd.textContent = val;
+            });
+            var hidden = document.getElementById('hidden_custom_district');
+            if (hidden) hidden.value = val;
+        });
+    });
+
     var districtCell = document.getElementById('custom_district_cell');
     if (districtCell) {
         districtCell.addEventListener('input', function() {
             var val = this.innerText.trim();
-            document.querySelectorAll('.utcl-billing-location').forEach(function(td) {
+            if (utclInput) utclInput.value = val.toUpperCase();
+            utclCells.forEach(function(td) {
                 td.textContent = val;
             });
+            var hidden = document.getElementById('hidden_custom_district');
+            if (hidden) hidden.value = val;
         });
     }
 

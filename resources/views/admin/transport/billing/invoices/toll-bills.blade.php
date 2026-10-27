@@ -173,7 +173,22 @@
                             </td>
                             <td><strong>{{ $inv->invoice_no }}</strong></td>
                             <td>{{ $inv->invoice_date->format('d M Y') }}</td>
-                            <td>{{ $inv->consignor_name ?? ($inv->consignor->name ?? '-') }}</td>
+                            <td>
+                                <div><strong>{{ $inv->consignor_name ?? ($inv->consignor->name ?? '-') }}</strong></div>
+                                @if(!empty($inv->state_vendor_code) || !empty($inv->vendor_code) || !empty($inv->custom_district))
+                                    <div class="mt-1 d-flex flex-wrap gap-1" style="font-size: 11px;">
+                                        @if(!empty($inv->state_vendor_code))
+                                            <span class="badge bg-label-secondary" title="State Vendor Code">State: {{ $inv->state_vendor_code }}</span>
+                                        @endif
+                                        @if(!empty($inv->vendor_code))
+                                            <span class="badge bg-label-info" title="Vendor Code">Vendor: {{ $inv->vendor_code }}</span>
+                                        @endif
+                                        @if(!empty($inv->custom_district))
+                                            <span class="badge bg-label-primary" title="UTCL Billing Location">Loc: {{ $inv->custom_district }}</span>
+                                        @endif
+                                    </div>
+                                @endif
+                            </td>
                             <td>{{ $inv->consignee_names }}</td>
                             <td class="text-end">{{ number_format($inv->total_freight, 2) }}</td>
                             <td class="text-end">{{ number_format($inv->total_gst, 2) }}</td>

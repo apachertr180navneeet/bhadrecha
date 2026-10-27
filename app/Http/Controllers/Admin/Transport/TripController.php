@@ -1391,7 +1391,7 @@ class TripController extends Controller
 
     public function storeFuelPayment(Request $request)
     {
-        if (!auth()->user()->can('create fuel outstanding')) {
+        if (!auth()->user()->can('create fuel outstanding') && !auth()->user()->isSuperAdmin()) {
             if ($request->ajax()) {
                 return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
             }
@@ -1444,7 +1444,7 @@ class TripController extends Controller
 
     public function editFuelPayment($id)
     {
-        if (!auth()->user()->can('edit fuel outstanding')) {
+        if (!auth()->user()->can('edit fuel outstanding') && !auth()->user()->isSuperAdmin()) {
             return response()->json(['message' => 'Unauthorized action.'], 403);
         }
 
@@ -1454,7 +1454,7 @@ class TripController extends Controller
 
     public function updateFuelPayment(Request $request, $id)
     {
-        if (!auth()->user()->can('edit fuel outstanding')) {
+        if (!auth()->user()->can('edit fuel outstanding') && !auth()->user()->isSuperAdmin()) {
             if ($request->ajax()) {
                 return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
             }
@@ -1488,7 +1488,7 @@ class TripController extends Controller
 
     public function destroyFuelPayment($id)
     {
-        if (!auth()->user()->can('delete fuel outstanding')) {
+        if (!auth()->user()->can('delete fuel outstanding') && !auth()->user()->isSuperAdmin()) {
             return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
         }
 
@@ -1858,6 +1858,13 @@ class TripController extends Controller
 
     public function storeAdBluePayment(Request $request)
     {
+        if (!auth()->user()->can('create adblue outstanding') && !auth()->user()->isSuperAdmin()) {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+            }
+            abort(403, 'Unauthorized action.');
+        }
+
         $validated = $request->validate([
             'company_id' => 'nullable|exists:companies,id',
             'date' => 'required|date|before_or_equal:9999-12-31',
@@ -1902,12 +1909,23 @@ class TripController extends Controller
 
     public function editAdBluePayment($id)
     {
+        if (!auth()->user()->can('edit adblue outstanding') && !auth()->user()->isSuperAdmin()) {
+            return response()->json(['message' => 'Unauthorized action.'], 403);
+        }
+
         $payment = AdBlueCompanyPayment::with('company')->findOrFail($id);
         return response()->json($payment);
     }
 
     public function updateAdBluePayment(Request $request, $id)
     {
+        if (!auth()->user()->can('edit adblue outstanding') && !auth()->user()->isSuperAdmin()) {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+            }
+            abort(403, 'Unauthorized action.');
+        }
+
         $payment = AdBlueCompanyPayment::findOrFail($id);
 
         $validated = $request->validate([
@@ -1934,6 +1952,10 @@ class TripController extends Controller
 
     public function destroyAdBluePayment($id)
     {
+        if (!auth()->user()->can('delete adblue outstanding') && !auth()->user()->isSuperAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+        }
+
         $payment = AdBlueCompanyPayment::findOrFail($id);
         $payment->delete();
 

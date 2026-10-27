@@ -130,7 +130,7 @@
         <td colspan="10" style="border: 2px solid #000; padding: 6px 10px; font-weight: bold; background: #fafafa;">
             <strong>BILL NO:</strong> - {{ $billNo }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
             <strong>DATE:</strong> - {{ $billDate }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-            <strong>NO. OF LR:</strong> - {{ $invoice->no_of_lrs ?? $invoice->bulties->count() }}
+            <strong>NO. OF DI:</strong> - {{ $invoice->no_of_lrs ?? $invoice->bulties->count() }}
         </td>
     </tr>
     <tr>

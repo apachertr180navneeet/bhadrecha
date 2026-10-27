@@ -26,6 +26,8 @@ class Invoice extends Model
         'invoice_no',
         'invoice_type',
         'bill_number',
+        'e_invoice_no',
+        'ee_invoice_no',
         'case_id',
         'template_type',
         'invoice_date',
@@ -82,6 +84,31 @@ class Invoice extends Model
         'sgst_amount' => 'decimal:2',
         'igst_amount' => 'decimal:2',
     ];
+
+    protected static function booted()
+    {
+        static::creating(function ($invoice) {
+            if (empty($invoice->bill_number)) {
+                $invoice->bill_number = $invoice->invoice_no;
+            }
+        });
+
+        static::saving(function ($invoice) {
+            if (empty($invoice->bill_number) && !empty($invoice->invoice_no)) {
+                $invoice->bill_number = $invoice->invoice_no;
+            }
+        });
+    }
+
+    public function getEffectiveEInvoiceNoAttribute()
+    {
+        return !empty($this->e_invoice_no) ? $this->e_invoice_no : $this->invoice_no;
+    }
+
+    public function getDisplayBillNumberAttribute()
+    {
+        return !empty($this->bill_number) ? $this->bill_number : ($this->invoice_no ?: ('INV-' . $this->id));
+    }
 
     public function company()
     {

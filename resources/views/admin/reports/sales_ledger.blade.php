@@ -223,6 +223,10 @@
                     <input type="text" name="bill_number" class="form-control" value="{{ request('bill_number') }}" placeholder="Search by Bill No or Case ID">
                 </div>
                 <div class="col-md-3 col-sm-6">
+                    <label class="form-label small fw-bold">E-Invoice / EE-Invoice No</label>
+                    <input type="text" name="e_invoice_no" class="form-control" value="{{ request('e_invoice_no') }}" placeholder="Search by E-Invoice or EE-Invoice">
+                </div>
+                <div class="col-md-3 col-sm-6">
                     <label class="form-label small fw-bold">Case ID / Case Number</label>
                     <input type="text" name="case_id" class="form-control" value="{{ request('case_id') }}" placeholder="Search by Case ID">
                 </div>
@@ -488,6 +492,20 @@
                                                 </button>
                                                 @endif
                                             </div>
+                                            @if(!empty($invoice->effective_e_invoice_no))
+                                                <div class="mt-1">
+                                                    <span class="badge bg-label-secondary" style="font-size: 0.72rem;" title="E-Invoice Number">
+                                                        <i class="bx bx-file me-1"></i>E-Inv: {{ $invoice->effective_e_invoice_no }}
+                                                    </span>
+                                                </div>
+                                            @endif
+                                            @if(!empty($invoice->ee_invoice_no))
+                                                <div class="mt-1">
+                                                    <span class="badge bg-label-warning text-dark" style="font-size: 0.72rem;" title="EE Invoice Number">
+                                                        <i class="bx bx-receipt me-1"></i>EE-Inv: {{ $invoice->ee_invoice_no }}
+                                                    </span>
+                                                </div>
+                                            @endif
                                         </td>
                                         <td>
                                             @if(!empty($invoice->case_id))
@@ -628,6 +646,14 @@
                         <div class="col-md-6">
                             <label class="form-label">Case ID / Case Number</label>
                             <input type="text" name="case_id" id="eb_case_id" class="form-control fw-bold text-info" placeholder="Enter Case ID / Case Number">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">E-Invoice Number</label>
+                            <input type="text" name="e_invoice_no" id="eb_e_invoice_no" class="form-control" placeholder="Enter E-Invoice Number">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">EE Invoice Number (Special/Toll)</label>
+                            <input type="text" name="ee_invoice_no" id="eb_ee_invoice_no" class="form-control" placeholder="Enter EE Invoice Number (if applicable)">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Bill Date <span class="text-danger">*</span></label>
@@ -887,6 +913,8 @@
                         var d = response.data;
                         $('#editBillForm').attr('action', "{{ url('admin/reports/sales-ledger/bill') }}/" + invoiceId);
                         $('#eb_bill_number').val(d.bill_number);
+                        $('#eb_e_invoice_no').val(d.e_invoice_no || '');
+                        $('#eb_ee_invoice_no').val(d.ee_invoice_no || '');
                         $('#eb_case_id').val(d.case_id || '');
                         $('#eb_invoice_date').val(d.invoice_date);
                         $('#eb_company').val(d.company_name);
@@ -912,6 +940,8 @@
 
         $('#editBillModal').on('hidden.bs.modal', function () {
             $('#eb_bill_number').val('');
+            $('#eb_e_invoice_no').val('');
+            $('#eb_ee_invoice_no').val('');
             $('#eb_case_id').val('');
             $('#eb_invoice_date').val('');
             $('#eb_company').val('');

@@ -520,15 +520,28 @@ class BillingController extends Controller
 
         if ($invoiceCount === 1) {
             $singleInvoice = $invoices->first();
-            if ($action === 'save') {
-                return redirect()->route('admin.transport.toll-bills.index')
-                    ->with('success', 'Invoice ' . $singleInvoice->invoice_no . ' saved successfully for ' . $totalLrs . ' LR(s)');
+            if ($action === 'save' || $action === 'sales_ledger') {
+                if ($invoiceType === 'toll') {
+                    return redirect()->route('admin.transport.toll-bills.index')
+                        ->with('success', 'Toll Bill ' . $singleInvoice->invoice_no . ' saved successfully for ' . $totalLrs . ' LR(s)');
+                }
+                return redirect()->route('admin.reports.sales-ledger', ['bill_number' => $singleInvoice->bill_number])
+                    ->with('success', 'Bill ' . ($singleInvoice->bill_number ?: $singleInvoice->invoice_no) . ' created successfully for ' . $totalLrs . ' LR(s)');
             }
             return redirect()->route('admin.transport.invoices.show', $singleInvoice->id)
                 ->with('success', 'Invoice ' . $singleInvoice->invoice_no . ' generated successfully for ' . $totalLrs . ' LR(s)');
         }
 
-        return redirect()->route('admin.transport.toll-bills.index')
+        if ($action === 'save' || $action === 'sales_ledger') {
+            if ($invoiceType === 'toll') {
+                return redirect()->route('admin.transport.toll-bills.index')
+                    ->with('success', $invoiceCount . ' toll invoice(s) saved successfully for ' . $totalLrs . ' LR(s)');
+            }
+            return redirect()->route('admin.reports.sales-ledger')
+                ->with('success', $invoiceCount . ' bill(s) created successfully for ' . $totalLrs . ' LR(s)');
+        }
+
+        return redirect()->route('admin.transport.invoices.index')
             ->with('success', $invoiceCount . ' invoice(s) generated successfully for ' . $totalLrs . ' LR(s)');
     }
 
@@ -549,6 +562,9 @@ class BillingController extends Controller
             $query->where(function($q) use ($search) {
                 $q->where('invoice_no', 'LIKE', "%{$search}%")
                   ->orWhere('bill_number', 'LIKE', "%{$search}%")
+                  ->orWhere('state_vendor_code', 'LIKE', "%{$search}%")
+                  ->orWhere('vendor_code', 'LIKE', "%{$search}%")
+                  ->orWhere('custom_district', 'LIKE', "%{$search}%")
                   ->orWhere('consignor_name', 'LIKE', "%{$search}%")
                   ->orWhereHas('consignor', function ($qc) use ($search) {
                       $qc->where('name', 'LIKE', "%{$search}%");
@@ -622,6 +638,9 @@ class BillingController extends Controller
             $query->where(function($q) use ($search) {
                 $q->where('invoice_no', 'LIKE', "%{$search}%")
                   ->orWhere('bill_number', 'LIKE', "%{$search}%")
+                  ->orWhere('state_vendor_code', 'LIKE', "%{$search}%")
+                  ->orWhere('vendor_code', 'LIKE', "%{$search}%")
+                  ->orWhere('custom_district', 'LIKE', "%{$search}%")
                   ->orWhere('consignor_name', 'LIKE', "%{$search}%")
                   ->orWhereHas('consignor', function ($qc) use ($search) {
                       $qc->where('name', 'LIKE', "%{$search}%");
@@ -845,7 +864,12 @@ class BillingController extends Controller
 
     private function resolveTollInvoiceMetaData(Invoice $sourceInvoice, Request $request): array
     {
-        $resolveValue = function (string $field) use ($sourceInvoice, $request) {
+        $firstBulty = $sourceInvoice->bulties ? $sourceInvoice->bulties->first() : null;
+        $defaultVendorCode = $sourceInvoice->vendor_code ?: ($sourceInvoice->consignor->vendor_code ?? null);
+        $defaultStateVendorCode = $sourceInvoice->state_vendor_code ?: ($sourceInvoice->consignor->vendor_code ?? null);
+        $defaultDistrict = $sourceInvoice->custom_district ?: ($firstBulty?->destinationCity?->name ?? null);
+
+        $resolveValue = function (string $field, $fallback = null) use ($sourceInvoice, $request) {
             if ($request->exists($field)) {
                 $value = $request->input($field);
 
@@ -858,7 +882,7 @@ class BillingController extends Controller
                 }
             }
 
-            return data_get($sourceInvoice, $field);
+            return data_get($sourceInvoice, $field) ?: $fallback;
         };
 
         return [
@@ -866,13 +890,13 @@ class BillingController extends Controller
             'company_name' => $resolveValue('company_name'),
             'billing_address' => $resolveValue('billing_address'),
             'custom_place_of_supply' => $resolveValue('custom_place_of_supply'),
-            'custom_district' => $resolveValue('custom_district'),
+            'custom_district' => $resolveValue('custom_district', $defaultDistrict),
             'custom_state' => $resolveValue('custom_state'),
             'custom_state_code' => $resolveValue('custom_state_code'),
             'custom_gstn' => $resolveValue('custom_gstn'),
             'custom_pan_no' => $resolveValue('custom_pan_no'),
-            'state_vendor_code' => $resolveValue('state_vendor_code'),
-            'vendor_code' => $resolveValue('vendor_code'),
+            'state_vendor_code' => $resolveValue('state_vendor_code', $defaultStateVendorCode),
+            'vendor_code' => $resolveValue('vendor_code', $defaultVendorCode),
             'vendor_name' => $resolveValue('vendor_name'),
             'consignor_name' => $resolveValue('consignor_name'),
             'epod_status' => $resolveValue('epod_status'),

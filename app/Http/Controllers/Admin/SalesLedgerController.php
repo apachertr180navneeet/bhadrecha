@@ -38,11 +38,24 @@ class SalesLedgerController extends Controller
         if ($request->filled('bill_number')) {
             $query->where(function ($q) use ($request, $hasCaseId) {
                 $q->where('bill_number', 'LIKE', '%' . $request->bill_number . '%')
-                  ->orWhere('invoice_no', 'LIKE', '%' . $request->bill_number . '%');
+                  ->orWhere('invoice_no', 'LIKE', '%' . $request->bill_number . '%')
+                  ->orWhere('e_invoice_no', 'LIKE', '%' . $request->bill_number . '%')
+                  ->orWhere('ee_invoice_no', 'LIKE', '%' . $request->bill_number . '%');
                 if ($hasCaseId) {
                     $q->orWhere('case_id', 'LIKE', '%' . $request->bill_number . '%');
                 }
             });
+        }
+
+        if ($request->filled('e_invoice_no')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('e_invoice_no', 'LIKE', '%' . $request->e_invoice_no . '%')
+                  ->orWhere('invoice_no', 'LIKE', '%' . $request->e_invoice_no . '%');
+            });
+        }
+
+        if ($request->filled('ee_invoice_no')) {
+            $query->where('ee_invoice_no', 'LIKE', '%' . $request->ee_invoice_no . '%');
         }
 
         if ($request->filled('case_id') && $hasCaseId) {
@@ -327,6 +340,8 @@ class SalesLedgerController extends Controller
             'Company',
             'Branch',
             'Bill No',
+            'E-Invoice No',
+            'EE Invoice No',
             'Case ID',
             'Bill To / Consigner',
             'Total Amt (w/o GST)',
@@ -360,6 +375,8 @@ class SalesLedgerController extends Controller
             $sumOut += $outstanding;
 
             $billNo = !empty($invoice->bill_number) ? $invoice->bill_number : ($invoice->invoice_no ?? ('INV-' . $invoice->id));
+            $eInvoiceNo = !empty($invoice->e_invoice_no) ? $invoice->e_invoice_no : ($invoice->invoice_no ?? $billNo);
+            $eeInvoiceNo = !empty($invoice->ee_invoice_no) ? $invoice->ee_invoice_no : '-';
 
             $data[] = [
                 $index + 1,
@@ -367,6 +384,8 @@ class SalesLedgerController extends Controller
                 $invoice->company?->name ?? 'N/A',
                 $invoice->branch?->name ?? 'N/A',
                 $billNo,
+                $eInvoiceNo,
+                $eeInvoiceNo,
                 $invoice->case_id ?? '-',
                 $invoice->consignor_name,
                 number_format($amountWithoutGst, 2, '.', ''),
@@ -383,7 +402,7 @@ class SalesLedgerController extends Controller
         }
 
         $data[] = [
-            'TOTAL', '', '', '', '', '', '',
+            'TOTAL', '', '', '', '', '', '', '', '',
             number_format($sumWoGst, 2, '.', ''),
             number_format($sumGst, 2, '.', ''),
             number_format($sumTds, 2, '.', ''),
@@ -743,6 +762,8 @@ class SalesLedgerController extends Controller
             'data' => [
                 'id' => $invoice->id,
                 'bill_number' => $billNo,
+                'e_invoice_no' => $invoice->e_invoice_no ?: $invoice->invoice_no,
+                'ee_invoice_no' => $invoice->ee_invoice_no ?: '',
                 'case_id' => $invoice->case_id ?? '',
                 'invoice_no' => $invoice->invoice_no,
                 'invoice_date' => $invoice->invoice_date?->format('Y-m-d'),
@@ -772,6 +793,8 @@ class SalesLedgerController extends Controller
         $hasCaseId = Schema::hasColumn('invoices', 'case_id');
         $rules = [
             'bill_number' => 'required|string|max:255',
+            'e_invoice_no' => 'nullable|string|max:255',
+            'ee_invoice_no' => 'nullable|string|max:255',
             'invoice_date' => 'required|date',
             'consignor_name' => 'nullable|string|max:255',
             'billing_address' => 'nullable|string|max:1000',
@@ -789,6 +812,8 @@ class SalesLedgerController extends Controller
 
         $updateData = [
             'bill_number' => $request->bill_number,
+            'e_invoice_no' => $request->e_invoice_no,
+            'ee_invoice_no' => $request->ee_invoice_no,
             'invoice_date' => $request->invoice_date,
             'consignor_name' => $request->consignor_name ?: $invoice->consignor_name,
             'billing_address' => $request->billing_address,

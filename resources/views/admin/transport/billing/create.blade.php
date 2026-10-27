@@ -738,9 +738,14 @@
                             </div>
                         </div>
 
-                        <button type="submit" name="action" value="generate_print" class="btn btn-success btn-lg w-100 shadow-sm py-2 fw-bold">
-                            <i class="bx bx-printer me-2 fs-5"></i> Generate & Print Invoice
-                        </button>
+                        <div class="d-flex flex-column gap-2">
+                            <button type="submit" name="action" value="generate_print" class="btn btn-success btn-lg w-100 shadow-sm py-2 fw-bold">
+                                <i class="bx bx-printer me-2 fs-5"></i> Generate & Print Invoice
+                            </button>
+                            <button type="submit" name="action" value="sales_ledger" class="btn btn-outline-primary btn-md w-100 shadow-sm py-2 fw-semibold">
+                                <i class="bx bx-book-open me-2 fs-5"></i> Save & Go to Sales Ledger
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>

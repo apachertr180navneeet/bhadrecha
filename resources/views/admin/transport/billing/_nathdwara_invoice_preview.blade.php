@@ -119,7 +119,7 @@
                 <strong>DATE:</strong> - <span>{{ $invoiceDate }}</span>
             </div>
             <div class="col-4 text-end">
-                <strong>NO. OF LR:</strong> - <span>{{ $existingInvoice->no_of_lrs ?? $bulties->count() }}</span>
+                <strong>NO. OF DI:</strong> - <span>{{ $existingInvoice->no_of_lrs ?? $bulties->count() }}</span>
             </div>
         </div>
         
