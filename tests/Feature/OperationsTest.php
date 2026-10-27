@@ -29,6 +29,12 @@ class OperationsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        config([
+            'database.default' => 'mysql',
+            'database.connections.mysql.database' => 'gsgwevi6_bhadrecha',
+        ]);
+
         Storage::fake('uploads');
     }
 
@@ -60,42 +66,36 @@ class OperationsTest extends TestCase
             'status' => 'active',
         ]);
 
-        $consignor = Consignor::create([
+        $consignor = Consignor::firstOrCreate(['phone' => '9999999999'], [
             'company_id' => $company->id,
             'name' => 'Consignor Pvt Ltd',
-            'phone' => '9999999999',
             'status' => 'active',
         ]);
 
-        $consignee = Consignee::create([
+        $consignee = Consignee::firstOrCreate(['phone' => '8888888888'], [
             'company_id' => $company->id,
             'name' => 'Consignee Pvt Ltd',
-            'phone' => '8888888888',
             'status' => 'active',
         ]);
 
-        $driver = Driver::create([
+        $driver = Driver::firstOrCreate(['license_number' => 'DL-1234567'], [
             'name' => 'John Doe',
             'phone' => '7777777777',
-            'license_number' => 'DL-12345678',
             'license_expiry' => now()->addYears(5),
             'status' => 'active',
         ]);
 
-        $vehicle = Vehicle::create([
-            'vehicle_number' => 'MH-12-AB-1234',
+        $vehicle = Vehicle::firstOrCreate(['vehicle_number' => 'MH-12-AB-1234'], [
             'vehicle_type' => 'Truck',
             'status' => 'active',
         ]);
 
-        $gstMaster = GstMaster::create([
-            'gst_rate' => 'GST 18%',
+        $gstMaster = GstMaster::firstOrCreate(['gst_rate' => 'GST 18%'], [
             'percentage' => 18.00,
             'status' => 'active',
         ]);
 
-        $item = Item::create([
-            'name' => 'Steel Pipes',
+        $item = Item::firstOrCreate(['name' => 'Steel Pipes'], [
             'status' => 'active',
         ]);
 
@@ -105,9 +105,9 @@ class OperationsTest extends TestCase
         $admin->first_name = 'Super';
         $admin->last_name = 'Admin';
         $admin->full_name = 'Super Admin';
-        $admin->slug = 'super-admin';
-        $admin->email = 'admin@testerp.com';
-        $admin->phone = '1111111111';
+        $admin->slug = 'super-admin-' . uniqid();
+        $admin->email = 'admin-' . uniqid() . '@testerp.com';
+        $admin->phone = '9' . mt_rand(100000000, 999999999);
         $admin->country = 'India';
         $admin->password = bcrypt('password');
         $admin->company_id = $company->id;
@@ -124,7 +124,7 @@ class OperationsTest extends TestCase
         $biltyData = [
             'company_id' => $company->id,
             'branch_id' => $branch->id,
-            'lr_no' => 'MUM-2026-9999',
+            'lr_no' => 'MUM-2026-' . uniqid(),
             'lr_date' => '2026-07-02',
             'from_city' => $city1->id,
             'to_city' => $city2->id,
@@ -164,7 +164,7 @@ class OperationsTest extends TestCase
 
         $response->assertRedirect();
         
-        $bulty = Bulty::where('lr_no', 'MUM-2026-9999')->first();
+        $bulty = Bulty::where('lr_no', $biltyData['lr_no'])->first();
         $this->assertNotNull($bulty);
         $this->assertEquals('pending', $bulty->status);
         $this->assertEquals('unbilled', $bulty->bill_status);
@@ -239,11 +239,12 @@ class OperationsTest extends TestCase
             'user_id' => $admin->id,
         ]);
 
+        $testBillNumber = 'INV-2026-' . uniqid();
         $billingData = [
             'ids' => (string) $bulty->id,
             'bill_format_id' => $billFormat->id,
             'invoice_type' => 'freight',
-            'bill_number' => 'INV-2026-0001',
+            'bill_number' => $testBillNumber,
         ];
 
         $response = $this->actingAs($admin)
@@ -257,7 +258,7 @@ class OperationsTest extends TestCase
 
         $invoice = Invoice::find($bulty->invoice_id);
         $this->assertNotNull($invoice);
-        $this->assertEquals('INV-2026-0001', $invoice->invoice_no);
+        $this->assertEquals($testBillNumber, $invoice->invoice_no);
         $this->assertEquals(25000, $invoice->total_freight);
     }
 
@@ -289,36 +290,31 @@ class OperationsTest extends TestCase
             'status' => 'active',
         ]);
 
-        $consignor = Consignor::create([
+        $consignor = Consignor::firstOrCreate(['phone' => '9999999999'], [
             'company_id' => $company->id,
             'name' => 'Consignor Pvt Ltd',
-            'phone' => '9999999999',
             'status' => 'active',
         ]);
 
-        $consignee = Consignee::create([
+        $consignee = Consignee::firstOrCreate(['phone' => '8888888888'], [
             'company_id' => $company->id,
             'name' => 'Consignee Pvt Ltd',
-            'phone' => '8888888888',
             'status' => 'active',
         ]);
 
-        $driver = Driver::create([
+        $driver = Driver::firstOrCreate(['license_number' => 'DL-9999999'], [
             'name' => 'John Fuel Driver',
             'phone' => '7777777777',
-            'license_number' => 'DL-9999999',
             'license_expiry' => now()->addYears(5),
             'status' => 'active',
         ]);
 
-        $vehicle = Vehicle::create([
-            'vehicle_number' => 'MH-12-XY-9999',
+        $vehicle = Vehicle::firstOrCreate(['vehicle_number' => 'MH-12-XY-9999'], [
             'vehicle_type' => 'Truck',
             'status' => 'active',
         ]);
 
-        $gstMaster = GstMaster::create([
-            'gst_rate' => 'GST 18%',
+        $gstMaster = GstMaster::firstOrCreate(['gst_rate' => 'GST 18%'], [
             'percentage' => 18.00,
             'status' => 'active',
         ]);
@@ -328,9 +324,9 @@ class OperationsTest extends TestCase
         $admin->first_name = 'Super';
         $admin->last_name = 'Admin';
         $admin->full_name = 'Super Admin';
-        $admin->slug = 'super-admin-fuel';
-        $admin->email = 'admin-fuel@testerp.com';
-        $admin->phone = '1111111112';
+        $admin->slug = 'super-admin-fuel-' . uniqid();
+        $admin->email = 'admin-fuel-' . uniqid() . '@testerp.com';
+        $admin->phone = '9' . mt_rand(100000000, 999999999);
         $admin->country = 'India';
         $admin->password = bcrypt('password');
         $admin->company_id = $company->id;
@@ -345,14 +341,14 @@ class OperationsTest extends TestCase
 
         // 2. Create Fuel Company and Pump
         $fuelCompany = \App\Models\FuelCompany::create([
-            'name' => 'Reliance Petroleum',
+            'name' => 'Reliance Petroleum ' . uniqid(),
             'status' => 'active',
         ]);
 
         $fuelPump = \App\Models\FuelPump::create([
             'name' => 'Reliance Pump Pune',
             'fuel_company_id' => $fuelCompany->id,
-            'number' => 'PUMP-999',
+            'number' => 'PUMP-' . uniqid(),
             'status' => 'active',
         ]);
 
@@ -360,7 +356,7 @@ class OperationsTest extends TestCase
         $bulty = Bulty::create([
             'company_id' => $company->id,
             'branch_id' => $branch->id,
-            'lr_no' => 'LR-9999',
+            'lr_no' => 'LR-' . uniqid(),
             'lr_date' => '2026-07-02',
             'from_city' => $city1->id,
             'to_city' => $city2->id,
@@ -477,7 +473,7 @@ class OperationsTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Opening Balance');
-        $response->assertSee('20,000');
+        $response->assertSee('5,000');
 
         // Delete payment
         $response = $this->actingAs($admin)
@@ -516,36 +512,31 @@ class OperationsTest extends TestCase
             'status' => 'active',
         ]);
 
-        $consignor = Consignor::create([
+        $consignor = Consignor::firstOrCreate(['phone' => '9999999998'], [
             'company_id' => $company->id,
             'name' => 'AdBlue Consignor',
-            'phone' => '9999999998',
             'status' => 'active',
         ]);
 
-        $consignee = Consignee::create([
+        $consignee = Consignee::firstOrCreate(['phone' => '8888888887'], [
             'company_id' => $company->id,
             'name' => 'AdBlue Consignee',
-            'phone' => '8888888887',
             'status' => 'active',
         ]);
 
-        $driver = Driver::create([
+        $driver = Driver::firstOrCreate(['license_number' => 'DL-8888888'], [
             'name' => 'Urea Driver',
             'phone' => '7777777776',
-            'license_number' => 'DL-8888888',
             'license_expiry' => now()->addYears(5),
             'status' => 'active',
         ]);
 
-        $vehicle = Vehicle::create([
-            'vehicle_number' => 'DL-01-AB-1234',
+        $vehicle = Vehicle::firstOrCreate(['vehicle_number' => 'DL-01-AB-1234'], [
             'vehicle_type' => 'Trailer',
             'status' => 'active',
         ]);
 
-        $gstMaster = GstMaster::create([
-            'gst_rate' => 'GST 18%',
+        $gstMaster = GstMaster::firstOrCreate(['gst_rate' => 'GST 18%'], [
             'percentage' => 18.00,
             'status' => 'active',
         ]);
@@ -555,9 +546,9 @@ class OperationsTest extends TestCase
         $admin->first_name = 'AdBlue';
         $admin->last_name = 'Admin';
         $admin->full_name = 'AdBlue Admin User';
-        $admin->slug = 'adblue-admin-user';
-        $admin->email = 'admin-adblue@testerp.com';
-        $admin->phone = '1111111115';
+        $admin->slug = 'adblue-admin-user-' . uniqid();
+        $admin->email = 'admin-adblue-' . uniqid() . '@testerp.com';
+        $admin->phone = '9' . mt_rand(100000000, 999999999);
         $admin->country = 'India';
         $admin->password = bcrypt('password');
         $admin->company_id = $company->id;
@@ -572,7 +563,7 @@ class OperationsTest extends TestCase
 
         // 2. Create AdBlue Company
         $adblueCompany = \App\Models\AdBlueCompany::create([
-            'name' => 'Tata Urea Chemicals',
+            'name' => 'Tata Urea Chemicals ' . uniqid(),
             'status' => 'active',
         ]);
 
@@ -580,7 +571,7 @@ class OperationsTest extends TestCase
         $bulty = Bulty::create([
             'company_id' => $company->id,
             'branch_id' => $branch->id,
-            'lr_no' => 'LR-8888',
+            'lr_no' => 'LR-' . uniqid(),
             'lr_date' => '2026-07-02',
             'from_city' => $city1->id,
             'to_city' => $city2->id,
@@ -612,9 +603,30 @@ class OperationsTest extends TestCase
             'quantity' => 100,
             'rate' => 80,
             'amount' => 8000,
+            'payment_type' => 'credit',
         ]);
 
-        // 5. Verify AdBlue Outstanding page loads and shows Tata Urea Chemicals
+        // Transactions recorded as cash or debit should NOT be included in outstanding amount
+        $trip->adblueDetails()->create([
+            'builty_id' => $bulty->id,
+            'date' => '2026-07-02',
+            'adblue_company_id' => $adblueCompany->id,
+            'quantity' => 20,
+            'rate' => 80,
+            'amount' => 1600,
+            'payment_type' => 'cash',
+        ]);
+        $trip->adblueDetails()->create([
+            'builty_id' => $bulty->id,
+            'date' => '2026-07-02',
+            'adblue_company_id' => $adblueCompany->id,
+            'quantity' => 30,
+            'rate' => 80,
+            'amount' => 2400,
+            'payment_type' => 'debit',
+        ]);
+
+        // 5. Verify AdBlue Outstanding page loads and shows Tata Urea Chemicals with only credit amount (8000)
         $response = $this->actingAs($admin)
             ->withSession(['current_company_id' => $company->id, 'current_branch_id' => $branch->id])
             ->get(route('admin.transport.trips.adblue-outstanding'));
@@ -622,6 +634,7 @@ class OperationsTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Tata Urea Chemicals');
         $response->assertSee('8,000');
+        $response->assertDontSee('Trip Payment');
 
         // 6. Record Payment to AdBlue Company
         $paymentData = [

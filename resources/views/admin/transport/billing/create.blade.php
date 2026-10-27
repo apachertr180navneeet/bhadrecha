@@ -1498,7 +1498,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     let tollSum = 0;
                     const ftDetails = bulty.trip ? (bulty.trip.fast_tag_details || bulty.trip.fastTagDetails || []) : [];
                     ftDetails.forEach(ft => {
-                        tollSum += parseFloat(ft.amount || 0);
+                        const amt = parseFloat(ft.amount || 0);
+                        const oneWay = parseFloat(ft.one_way || 0);
+                        const ret = parseFloat(ft.return || 0);
+                        tollSum += amt > 0 ? amt : (oneWay + ret);
                     });
                     freight = tollSum;
                     other = 0;
@@ -1882,7 +1885,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 let tollSum = 0;
                 const ftDetails = bulty.trip ? (bulty.trip.fast_tag_details || bulty.trip.fastTagDetails || []) : [];
                 ftDetails.forEach(ft => {
-                    tollSum += parseFloat(ft.amount || 0);
+                    const amt = parseFloat(ft.amount || 0);
+                    const oneWay = parseFloat(ft.one_way || 0);
+                    const ret = parseFloat(ft.return || 0);
+                    tollSum += amt > 0 ? amt : (oneWay + ret);
                 });
                 amt = tollSum;
             } else {
@@ -2139,13 +2145,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td style="padding: 4px;">NET TOTAL</td>
                 </tr>
             `);
+            const enteredNoOfLrs = $('input[name="no_of_lrs"], #no-of-lrs-input').val();
+            const diCount = (enteredNoOfLrs && enteredNoOfLrs.toString().trim() !== '') ? enteredNoOfLrs : bulties.length;
             $('#nathdwara-table-1 tbody').html(`
                 <tr style="border-bottom: 2px solid #000; font-weight: bold;">
                     <td style="border-right: 2px solid #000; padding: 8px;">1</td>
                     <td style="border-right: 2px solid #000; padding: 8px;" id="nath-s1-desc">` + descToUse + `</td>
                     <td style="border-right: 2px solid #000; padding: 8px;" id="nath-s1-bill-no">` + billNo + `</td>
                     <td style="border-right: 2px solid #000; padding: 8px;" id="nath-s1-mn-no">` + mnNo + `</td>
-                    <td style="border-right: 2px solid #000; padding: 8px;" id="nath-s1-di-count">` + bulties.length + `</td>
+                    <td style="border-right: 2px solid #000; padding: 8px;" id="nath-s1-di-count">` + diCount + `</td>
                     <td style="border-right: 2px solid #000; padding: 8px;" id="nath-s1-mt">` + displayMt + `</td>
                     <td style="border-right: 2px solid #000; padding: 8px;" id="nath-s1-bill-amt">` + totalAmt.toFixed(2) + `</td>
                     <td style="border-right: 2px solid #000; padding: 8px;" id="nath-s1-shortage">` + totalShortageAmt.toFixed(2) + `</td>
@@ -2183,6 +2191,7 @@ document.addEventListener('DOMContentLoaded', function() {
         safeSetText('preview-no-of-lrs', val);
         safeSetText('preview-grn-no-of-lrs', val);
         safeSetText('nath-no-of-lrs', val);
+        safeSetText('nath-s1-di-count', (val && val.toString().trim() !== '') ? val : (window.bultiesData ? window.bultiesData.length : ''));
         safeSetText('gyp-no-of-lrs', val);
     });
 

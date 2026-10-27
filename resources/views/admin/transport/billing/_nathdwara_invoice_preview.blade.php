@@ -196,7 +196,7 @@
                     <td style="border-right: 2px solid #000; padding: 8px;">{{ $existingInvoice?->description ?? 'WALL PUTTY TRANSPORATION' }}</td>
                     <td style="border-right: 2px solid #000; padding: 8px;">{{ $rowBillNo }}</td>
                     <td style="border-right: 2px solid #000; padding: 8px;">{{ $rowMnNo }}</td>
-                    <td style="border-right: 2px solid #000; padding: 8px;">{{ count($bulties) }}</td>
+                    <td style="border-right: 2px solid #000; padding: 8px;">{{ $existingInvoice?->no_of_lrs ?? count($bulties) }}</td>
                     <td style="border-right: 2px solid #000; padding: 8px;">{{ number_format($totalMt, 3) }}</td>
                     <td style="border-right: 2px solid #000; padding: 8px;">{{ number_format($totalAmount, 2) }}</td>
                     <td style="border-right: 2px solid #000; padding: 8px;">{{ number_format($totalShortageAmount, 2) }}</td>

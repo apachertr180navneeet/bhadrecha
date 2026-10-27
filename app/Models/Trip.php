@@ -90,10 +90,15 @@ class Trip extends Model
     public function getTotalFasttagAmountAttribute()
     {
         if ($this->relationLoaded('fastTagDetails')) {
-            $sum = (float)$this->fastTagDetails->sum('amount');
+            $sum = (float)$this->fastTagDetails->sum(function ($ft) {
+                $amt = (float)($ft->amount ?? 0);
+                return $amt > 0 ? $amt : ((float)($ft->one_way ?? 0) + (float)($ft->return ?? 0));
+            });
             if ($sum > 0) return $sum;
         } elseif ($this->exists && $this->fastTagDetails()->exists()) {
-            $sum = (float)$this->fastTagDetails()->sum('amount');
+            $sum = (float)$this->fastTagDetails()->sum(
+                \Illuminate\Support\Facades\DB::raw('COALESCE(NULLIF(amount, 0), `one_way` + `return`, 0)')
+            );
             if ($sum > 0) return $sum;
         }
         return (float)($this->fasttag_total_amount ?? 0);

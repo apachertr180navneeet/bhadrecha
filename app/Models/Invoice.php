@@ -108,6 +108,15 @@ class Invoice extends Model
         return $this->belongsTo(GstMaster::class, 'gst_master_id');
     }
 
+    public function newInstance($attributes = [], $exists = false)
+    {
+        $model = parent::newInstance($attributes, $exists);
+        if ($this->invoice_type !== null && !isset($attributes['invoice_type'])) {
+            $model->invoice_type = $this->invoice_type;
+        }
+        return $model;
+    }
+
     public function bulties()
     {
         return $this->hasMany(Bulty::class, $this->invoice_type === 'toll' ? 'toll_invoice_id' : 'invoice_id');

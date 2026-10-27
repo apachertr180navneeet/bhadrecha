@@ -35,7 +35,8 @@
     // State & GST Type calculation
     $originState = $invoice->company && $invoice->company->state ? $invoice->company->state : ($firstBulty && $firstBulty->originCity ? ($firstBulty->originCity->state ?? 'RAJASTHAN') : 'RAJASTHAN');
     $isSameState = \App\Http\Controllers\Admin\Transport\BillingController::isSameGstState($originState, $placeOfSupply);
-    $gstType = !empty($invoice->gst_type) ? $invoice->gst_type : ($isSameState ? 'CGST_SGST' : 'IGST');
+    $gstType = ($invoice->invoice_type === 'toll' && !empty($invoice->gst_type)) ? $invoice->gst_type : ($isSameState ? 'CGST_SGST' : 'IGST');
+    $defaultPaymentStatus = ($invoice->invoice_type === 'toll' && !empty($invoice->status)) ? $invoice->status : 'pending';
 
     $gstRate = $invoice->gstMaster ? floatval($invoice->gstMaster->percentage) : 18.00;
 
@@ -68,19 +69,21 @@
         $grandTollSum = 0;
         foreach ($invoice->bulties as $bulty) {
             if ($bulty->trip) {
-                $ftSum = floatval($bulty->trip->fastTagDetails->sum('amount'));
-                if ($ftSum <= 0) {
-                    $ftSum = floatval($bulty->trip->fastTagDetails->sum(fn($ft) => floatval($ft->one_way ?? 0) + floatval($ft->return ?? 0)));
-                }
-                $grandTollSum += $ftSum;
+                $grandTollSum += floatval($bulty->trip->total_fasttag_amount);
             }
         }
     }
 
     $calculatedGst = round($grandTollSum * ($gstRate / 100), 2);
-    $cgstVal = round($calculatedGst / 2, 2);
-    $sgstVal = round($calculatedGst - $cgstVal, 2);
-    $igstVal = $calculatedGst;
+    if ($gstType === 'CGST_SGST') {
+        $cgstVal = round($calculatedGst / 2, 2);
+        $sgstVal = round($calculatedGst - $cgstVal, 2);
+        $igstVal = 0.00;
+    } else {
+        $cgstVal = 0.00;
+        $sgstVal = 0.00;
+        $igstVal = $calculatedGst;
+    }
 
     $grandTotal = round($grandTollSum + $calculatedGst, 2);
     $amountInWords = \App\Http\Controllers\Admin\Transport\BillingController::convertNumberToWords($grandTotal);
@@ -117,9 +120,9 @@
             <div class="d-inline-flex align-items-center gap-1 bg-white border rounded px-2 py-1 shadow-sm">
                 <label for="toll_status_select" class="form-label small fw-bold mb-0 text-muted">Payment Status:</label>
                 <select id="toll_status_select" class="form-select form-select-sm fw-semibold" style="width: auto;">
-                    <option value="pending" {{ ($invoice->status ?? 'pending') === 'pending' ? 'selected' : '' }}>Pending</option>
-                    <option value="paid" {{ ($invoice->status ?? 'pending') === 'paid' ? 'selected' : '' }}>Paid</option>
-                    <option value="cancelled" {{ ($invoice->status ?? 'pending') === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                    <option value="pending" {{ $defaultPaymentStatus === 'pending' ? 'selected' : '' }}>Pending</option>
+                    <option value="paid" {{ $defaultPaymentStatus === 'paid' ? 'selected' : '' }}>Paid</option>
+                    <option value="cancelled" {{ $defaultPaymentStatus === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
                 </select>
             </div>
 
@@ -138,7 +141,7 @@
                 <input type="hidden" name="consignor_name" id="hidden_consignor_name" value="">
                 <input type="hidden" name="no_of_lrs" id="hidden_no_of_lrs" value="">
                 <input type="hidden" name="gst_type" id="hidden_gst_type" value="{{ $gstType }}">
-                <input type="hidden" name="status" id="hidden_status" value="{{ $invoice->status ?? 'pending' }}">
+                <input type="hidden" name="status" id="hidden_status" value="{{ $defaultPaymentStatus }}">
                 @foreach($invoice->bulties as $bulty)
                     <input type="hidden" name="bulty_modes[{{ $bulty->id }}]" id="hidden_bulty_mode_{{ $bulty->id }}" value="">
                 @endforeach
@@ -321,11 +324,21 @@
                                                     $oneWay = $match && floatval($match->one_way) > 0 ? floatval($match->one_way) : null;
                                                     $returnVal = $match && floatval($match->return_amount) > 0 ? floatval($match->return_amount) : null;
                                                 } else {
-                                                    $match = $ftDetails->first(function($ft) use ($location) {
-                                                        return strtoupper(trim($ft->location)) === $location;
+                                                    $matched = $ftDetails->filter(function($ft) use ($location) {
+                                                        $loc = strtoupper(trim((string)($ft->location ?? '')));
+                                                        if ($location === 'TOLL PLAZA') {
+                                                            return empty($loc) || $loc === 'TOLL PLAZA';
+                                                        }
+                                                        return $loc === $location;
                                                     });
-                                                    $oneWay = $match && floatval($match->one_way) > 0 ? floatval($match->one_way) : null;
-                                                    $returnVal = $match && floatval($match->return) > 0 ? floatval($match->return) : null;
+                                                    $oneWaySum = (float) $matched->sum('one_way');
+                                                    $returnSum = (float) $matched->sum('return');
+                                                    $amountSum = (float) $matched->sum('amount');
+                                                    if ($oneWaySum <= 0 && $returnSum <= 0 && $amountSum > 0) {
+                                                        $oneWaySum = $amountSum;
+                                                    }
+                                                    $oneWay = $oneWaySum > 0 ? $oneWaySum : null;
+                                                    $returnVal = $returnSum > 0 ? $returnSum : null;
                                                 }
                                                 
                                                 if ($oneWay) $bultyTollSum += $oneWay;

@@ -302,11 +302,6 @@ Route::name('admin.')->prefix('admin')->group(function () {
             Route::post('trips/import', [TripController::class, 'import'])->name('trips.import');
             Route::get('trips/create/{builty}', [TripController::class, 'create'])->name('trips.create');
             Route::post('trips', [TripController::class, 'store'])->name('trips.store');
-            Route::get('trips/{trip}', [TripController::class, 'show'])->name('trips.show');
-            Route::get('trips/{trip}/edit', [TripController::class, 'edit'])->name('trips.edit');
-            Route::put('trips/{trip}', [TripController::class, 'update'])->name('trips.update');
-            Route::delete('trips/{trip}', [TripController::class, 'destroy'])->name('trips.destroy');
-            Route::post('trips/{trip}/toggle-status', [TripController::class, 'toggleStatus'])->name('trips.toggle-status');
             Route::get('trips/fast-tag/download-template', [TripController::class, 'downloadFastTagTemplate'])->name('trips.fast-tag.download-template');
             Route::post('trips/fast-tag/import', [TripController::class, 'importFastTag'])->name('trips.fast-tag.import');
             Route::get('trips/fuel-detail/download-template', [TripController::class, 'downloadFuelDetailTemplate'])->name('trips.fuel-detail.download-template');
@@ -319,17 +314,25 @@ Route::name('admin.')->prefix('admin')->group(function () {
             Route::post('trips/advance-detail/import', [TripController::class, 'importAdvanceDetail'])->name('trips.advance-detail.import');
             Route::get('trips/pumps-by-company/{companyId}', [TripController::class, 'getPumpsByCompany'])->name('trips.pumps-by-company');
 
+            Route::get('fuel-outstanding', [TripController::class, 'fuelOutstanding'])->name('fuel-outstanding');
             Route::get('trips/fuel-outstanding', [TripController::class, 'fuelOutstanding'])->name('trips.fuel-outstanding');
             Route::post('trips/fuel-payments', [TripController::class, 'storeFuelPayment'])->name('trips.fuel-payments.store');
             Route::get('trips/fuel-payments/{id}/edit', [TripController::class, 'editFuelPayment'])->name('trips.fuel-payments.edit');
             Route::put('trips/fuel-payments/{id}', [TripController::class, 'updateFuelPayment'])->name('trips.fuel-payments.update');
             Route::delete('trips/fuel-payments/{id}', [TripController::class, 'destroyFuelPayment'])->name('trips.fuel-payments.destroy');
 
+            Route::get('adblue-outstanding', [TripController::class, 'adblueOutstanding'])->name('adblue-outstanding');
             Route::get('trips/adblue-outstanding', [TripController::class, 'adblueOutstanding'])->name('trips.adblue-outstanding');
             Route::post('trips/adblue-payments', [TripController::class, 'storeAdBluePayment'])->name('trips.adblue-payments.store');
             Route::get('trips/adblue-payments/{id}/edit', [TripController::class, 'editAdBluePayment'])->name('trips.adblue-payments.edit');
             Route::put('trips/adblue-payments/{id}', [TripController::class, 'updateAdBluePayment'])->name('trips.adblue-payments.update');
             Route::delete('trips/adblue-payments/{id}', [TripController::class, 'destroyAdBluePayment'])->name('trips.adblue-payments.destroy');
+
+            Route::get('trips/{trip}', [TripController::class, 'show'])->name('trips.show');
+            Route::get('trips/{trip}/edit', [TripController::class, 'edit'])->name('trips.edit');
+            Route::put('trips/{trip}', [TripController::class, 'update'])->name('trips.update');
+            Route::delete('trips/{trip}', [TripController::class, 'destroy'])->name('trips.destroy');
+            Route::post('trips/{trip}/toggle-status', [TripController::class, 'toggleStatus'])->name('trips.toggle-status');
 
             Route::get('billing', [\App\Http\Controllers\Admin\Transport\BillingController::class, 'index'])->name('billing');
             Route::post('billing/match-lrs', [\App\Http\Controllers\Admin\Transport\BillingController::class, 'matchLrs'])->name('billing.match-lrs');

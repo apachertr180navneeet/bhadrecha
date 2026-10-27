@@ -39,7 +39,7 @@
     // State calculation
     $originState = $invoice->company && $invoice->company->state ? $invoice->company->state : ($firstBulty && $firstBulty->originCity ? ($firstBulty->originCity->state ?? 'RAJASTHAN') : 'RAJASTHAN');
     $isSameState = \App\Http\Controllers\Admin\Transport\BillingController::isSameGstState($originState, $placeOfSupply);
-    $gstType = $isSameState ? 'CGST_SGST' : 'IGST';
+    $gstType = !empty($invoice->gst_type) ? $invoice->gst_type : ($isSameState ? 'CGST_SGST' : 'IGST');
 
     $gstRate = $invoice->gstMaster ? floatval($invoice->gstMaster->percentage) : 18.00;
 
@@ -58,8 +58,11 @@
         foreach ($invoice->bulties as $bulty) {
             if ($bulty->trip) {
                 foreach ($bulty->trip->fastTagDetails as $ft) {
-                    if ($ft->location) {
-                        $tollLocations->push(strtoupper(trim($ft->location)));
+                    $loc = strtoupper(trim((string)($ft->location ?? '')));
+                    if (!empty($loc)) {
+                        $tollLocations->push($loc);
+                    } elseif (floatval($ft->amount ?? 0) > 0 || floatval($ft->one_way ?? 0) > 0 || floatval($ft->return ?? 0) > 0) {
+                        $tollLocations->push('TOLL PLAZA');
                     }
                 }
             }
@@ -69,7 +72,7 @@
         $grandTollSum = 0;
         foreach ($invoice->bulties as $bulty) {
             if ($bulty->trip) {
-                $grandTollSum += floatval($bulty->trip->fastTagDetails->sum('amount'));
+                $grandTollSum += floatval($bulty->trip->total_fasttag_amount);
             }
         }
     }
@@ -216,11 +219,21 @@
                                                     $oneWay = $match && floatval($match->one_way) > 0 ? floatval($match->one_way) : null;
                                                     $returnVal = $match && floatval($match->return_amount) > 0 ? floatval($match->return_amount) : null;
                                                 } else {
-                                                    $match = $ftDetails->first(function($ft) use ($location) {
-                                                        return strtoupper(trim($ft->location)) === $location;
+                                                    $matched = $ftDetails->filter(function($ft) use ($location) {
+                                                        $loc = strtoupper(trim((string)($ft->location ?? '')));
+                                                        if ($location === 'TOLL PLAZA') {
+                                                            return empty($loc) || $loc === 'TOLL PLAZA';
+                                                        }
+                                                        return $loc === $location;
                                                     });
-                                                    $oneWay = $match && floatval($match->one_way) > 0 ? floatval($match->one_way) : null;
-                                                    $returnVal = $match && floatval($match->return) > 0 ? floatval($match->return) : null;
+                                                    $oneWaySum = (float) $matched->sum('one_way');
+                                                    $returnSum = (float) $matched->sum('return');
+                                                    $amountSum = (float) $matched->sum('amount');
+                                                    if ($oneWaySum <= 0 && $returnSum <= 0 && $amountSum > 0) {
+                                                        $oneWaySum = $amountSum;
+                                                    }
+                                                    $oneWay = $oneWaySum > 0 ? $oneWaySum : null;
+                                                    $returnVal = $returnSum > 0 ? $returnSum : null;
                                                 }
                                                 
                                                 if ($oneWay) $bultyTollSum += $oneWay;

@@ -262,16 +262,19 @@ class TripController extends Controller
 
             if ($request->has('fast_tag_details')) {
                 foreach ($request->fast_tag_details as $detail) {
-                    if (!empty($detail['amount'])) {
+                    $tollOneWay = (float)($detail['one_way'] ?? 0);
+                    $tollReturn = (float)($detail['return'] ?? 0);
+                    $tollAmount = (float)($detail['amount'] ?? 0);
+                    if ($tollAmount > 0 || $tollOneWay > 0 || $tollReturn > 0 || !empty($detail['location']) || !empty($detail['transaction_id'])) {
                         $trip->fastTagDetails()->create([
                             'builty_id' => $trip->builty_id,
                             'transaction_time' => $this->parseDatetime($detail['transaction_time'] ?? null),
-                            'amount' => $detail['amount'] ?? 0,
+                            'amount' => $tollAmount > 0 ? $tollAmount : ($tollOneWay + $tollReturn),
                             'description' => $detail['description'] ?? null,
                             'transaction_id' => $detail['transaction_id'] ?? null,
                             'location' => $detail['location'] ?? null,
-                            'one_way' => $detail['one_way'] ?? 0,
-                            'return' => $detail['return'] ?? 0,
+                            'one_way' => $tollOneWay,
+                            'return' => $tollReturn,
                         ]);
                     }
                 }
@@ -440,16 +443,19 @@ class TripController extends Controller
             $trip->fastTagDetails()->delete();
             if ($request->has('fast_tag_details')) {
                 foreach ($request->fast_tag_details as $detail) {
-                    if (!empty($detail['amount'])) {
+                    $tollOneWay = (float)($detail['one_way'] ?? 0);
+                    $tollReturn = (float)($detail['return'] ?? 0);
+                    $tollAmount = (float)($detail['amount'] ?? 0);
+                    if ($tollAmount > 0 || $tollOneWay > 0 || $tollReturn > 0 || !empty($detail['location']) || !empty($detail['transaction_id'])) {
                         $trip->fastTagDetails()->create([
                             'builty_id' => $trip->builty_id,
                             'transaction_time' => $this->parseDatetime($detail['transaction_time'] ?? null),
-                            'amount' => $detail['amount'] ?? 0,
+                            'amount' => $tollAmount > 0 ? $tollAmount : ($tollOneWay + $tollReturn),
                             'description' => $detail['description'] ?? null,
                             'transaction_id' => $detail['transaction_id'] ?? null,
                             'location' => $detail['location'] ?? null,
-                            'one_way' => $detail['one_way'] ?? 0,
-                            'return' => $detail['return'] ?? 0,
+                            'one_way' => $tollOneWay,
+                            'return' => $tollReturn,
                         ]);
                     }
                 }
@@ -1545,22 +1551,6 @@ class TripController extends Controller
             $opAdBlues = $opAdBlueQuery->select('adblue_company_id')->selectRaw('SUM(amount) as total')->groupBy('adblue_company_id')->get();
             $opPayments = $opPaymentQuery->select('adblue_company_id')->selectRaw('SUM(amount) as total')->groupBy('adblue_company_id')->get();
 
-            // Trip payments (debit/cash) reduce opening balance
-            $opTripPaymentQuery = TripAdBlueDetail::query()->whereIn('payment_type', ['debit', 'cash'])->where('date', '<', $request->date_from);
-            if ($targetCompanyId) {
-                $opTripPaymentQuery->whereHas('builty', fn($q) => $q->where('company_id', $targetCompanyId));
-            }
-            if ($request->filled('adblue_company_id')) {
-                $opTripPaymentQuery->where('adblue_company_id', $request->adblue_company_id);
-            }
-            if ($request->filled('vehicle_id')) {
-                $opTripPaymentQuery->whereHas('builty', fn($q) => $q->where('vehicle_id', $request->vehicle_id));
-            }
-            if ($request->filled('lr_no')) {
-                $opTripPaymentQuery->whereHas('builty', fn($q) => $q->where('lr_no', 'like', "%{$request->lr_no}%"));
-            }
-            $opTripPayments = $opTripPaymentQuery->select('adblue_company_id')->selectRaw('SUM(amount) as total')->groupBy('adblue_company_id')->get();
-
             foreach ($opAdBlues as $o) {
                 $k = $o->adblue_company_id;
                 $openingBalancesMap[$k] = ($openingBalancesMap[$k] ?? 0.0) + (float)$o->total;
@@ -1569,52 +1559,41 @@ class TripController extends Controller
                 $k = $o->adblue_company_id;
                 $openingBalancesMap[$k] = ($openingBalancesMap[$k] ?? 0.0) - (float)$o->total;
             }
-            foreach ($opTripPayments as $o) {
-                $k = $o->adblue_company_id;
-                $openingBalancesMap[$k] = ($openingBalancesMap[$k] ?? 0.0) - (float)$o->total;
-            }
         }
 
         // 2. Calculate Summary Table (Overview) of all companies for the selected period
         $adblueQuery = TripAdBlueDetail::query()->where(function ($q) { $q->whereNull('payment_type')->orWhere('payment_type', 'credit'); });
         $paymentQuery = AdBlueCompanyPayment::query()->withoutGlobalScope('company');
-        $tripPaymentQuery = TripAdBlueDetail::query()->whereIn('payment_type', ['debit', 'cash']);
 
         if ($targetCompanyId) {
             $adblueQuery->whereHas('builty', function ($q) use ($targetCompanyId) {
                 $q->where('company_id', $targetCompanyId);
             });
             $paymentQuery->where('company_id', $targetCompanyId);
-            $tripPaymentQuery->whereHas('builty', fn($q) => $q->where('company_id', $targetCompanyId));
         }
 
         // Apply filters to summary query if filtered
         if ($request->filled('adblue_company_id')) {
             $adblueQuery->where('adblue_company_id', $request->adblue_company_id);
             $paymentQuery->where('adblue_company_id', $request->adblue_company_id);
-            $tripPaymentQuery->where('adblue_company_id', $request->adblue_company_id);
         }
         if ($request->filled('date_from')) {
             $adblueQuery->where('date', '>=', $request->date_from);
             $paymentQuery->where('date', '>=', $request->date_from);
-            $tripPaymentQuery->where('date', '>=', $request->date_from);
         }
         if ($request->filled('date_to')) {
             $adblueQuery->where('date', '<=', $request->date_to);
             $paymentQuery->where('date', '<=', $request->date_to);
-            $tripPaymentQuery->where('date', '<=', $request->date_to);
         }
         if ($request->filled('vehicle_id')) {
             $adblueQuery->whereHas('builty', function ($q) use ($request) {
                 $q->where('vehicle_id', $request->vehicle_id);
             });
-            $tripPaymentQuery->whereHas('builty', fn($q) => $q->where('vehicle_id', $request->vehicle_id));
         }
         if ($request->filled('lr_no')) {
             $adblueQuery->whereHas('builty', function ($q) use ($request) {
                 $q->where('lr_no', 'like', "%{$request->lr_no}%");
             });
-            $tripPaymentQuery->whereHas('builty', fn($q) => $q->where('lr_no', 'like', "%{$request->lr_no}%"));
         }
 
         $adbluePurchases = $adblueQuery->select('adblue_company_id')
@@ -1624,11 +1603,6 @@ class TripController extends Controller
             ->get();
 
         $companyPayments = $paymentQuery->select('adblue_company_id')
-            ->selectRaw('SUM(amount) as total_amount')
-            ->groupBy('adblue_company_id')
-            ->get();
-
-        $tripPayments = $tripPaymentQuery->select('adblue_company_id')
             ->selectRaw('SUM(amount) as total_amount')
             ->groupBy('adblue_company_id')
             ->get();
@@ -1658,17 +1632,15 @@ class TripController extends Controller
             $overviewData[$key]['payment_amount'] = (float)$cp->total_amount;
         }
 
-        foreach ($tripPayments as $tp) {
-            $key = $tp->adblue_company_id;
-            if (!isset($overviewData[$key])) {
-                $overviewData[$key] = [
-                    'adblue_company_id' => $tp->adblue_company_id,
+        foreach ($openingBalancesMap as $k => $opVal) {
+            if (!isset($overviewData[$k]) && abs($opVal) > 0.001) {
+                $overviewData[$k] = [
+                    'adblue_company_id' => $k,
                     'total_qty' => 0.0,
                     'adblue_amount' => 0.0,
                     'payment_amount' => 0.0,
                 ];
             }
-            $overviewData[$key]['payment_amount'] += (float)$tp->total_amount;
         }
 
         $companiesMap = $adblueCompanies->keyBy('id');
@@ -1699,43 +1671,35 @@ class TripController extends Controller
         $adblueLedgerQuery = TripAdBlueDetail::with(['trip.builty.vehicle', 'adblueCompany'])
             ->where(function ($q) { $q->whereNull('payment_type')->orWhere('payment_type', 'credit'); });
         $paymentLedgerQuery = AdBlueCompanyPayment::with(['adblueCompany', 'company'])->withoutGlobalScope('company');
-        $tripPaymentLedgerQuery = TripAdBlueDetail::with(['trip.builty.vehicle', 'adblueCompany'])
-            ->whereIn('payment_type', ['debit', 'cash']);
 
         if ($targetCompanyId) {
             $adblueLedgerQuery->whereHas('builty', function ($q) use ($targetCompanyId) {
                 $q->where('company_id', $targetCompanyId);
             });
             $paymentLedgerQuery->where('company_id', $targetCompanyId);
-            $tripPaymentLedgerQuery->whereHas('builty', fn($q) => $q->where('company_id', $targetCompanyId));
         }
 
         if ($request->filled('adblue_company_id')) {
             $adblueLedgerQuery->where('adblue_company_id', $request->adblue_company_id);
             $paymentLedgerQuery->where('adblue_company_id', $request->adblue_company_id);
-            $tripPaymentLedgerQuery->where('adblue_company_id', $request->adblue_company_id);
         }
         if ($request->filled('date_from')) {
             $adblueLedgerQuery->where('date', '>=', $request->date_from);
             $paymentLedgerQuery->where('date', '>=', $request->date_from);
-            $tripPaymentLedgerQuery->where('date', '>=', $request->date_from);
         }
         if ($request->filled('date_to')) {
             $adblueLedgerQuery->where('date', '<=', $request->date_to);
             $paymentLedgerQuery->where('date', '<=', $request->date_to);
-            $tripPaymentLedgerQuery->where('date', '<=', $request->date_to);
         }
         if ($request->filled('vehicle_id')) {
             $adblueLedgerQuery->whereHas('builty', function ($q) use ($request) {
                 $q->where('vehicle_id', $request->vehicle_id);
             });
-            $tripPaymentLedgerQuery->whereHas('builty', fn($q) => $q->where('vehicle_id', $request->vehicle_id));
         }
         if ($request->filled('lr_no')) {
             $adblueLedgerQuery->whereHas('builty', function ($q) use ($request) {
                 $q->where('lr_no', 'like', "%{$request->lr_no}%");
             });
-            $tripPaymentLedgerQuery->whereHas('builty', fn($q) => $q->where('lr_no', 'like', "%{$request->lr_no}%"));
         }
 
         // Calculate single overall opening balance for the ledger view
@@ -1743,36 +1707,31 @@ class TripController extends Controller
         if ($request->filled('date_from')) {
             $singleOpAdBlueQuery = TripAdBlueDetail::query()->where(function ($q) { $q->whereNull('payment_type')->orWhere('payment_type', 'credit'); })->where('date', '<', $request->date_from);
             $singleOpPaymentQuery = AdBlueCompanyPayment::query()->withoutGlobalScope('company')->where('date', '<', $request->date_from);
-            $singleOpTripPaymentQuery = TripAdBlueDetail::query()->whereIn('payment_type', ['debit', 'cash'])->where('date', '<', $request->date_from);
 
             if ($targetCompanyId) {
                 $singleOpAdBlueQuery->whereHas('builty', function ($q) use ($targetCompanyId) {
                     $q->where('company_id', $targetCompanyId);
                 });
                 $singleOpPaymentQuery->where('company_id', $targetCompanyId);
-                $singleOpTripPaymentQuery->whereHas('builty', fn($q) => $q->where('company_id', $targetCompanyId));
             }
 
             if ($request->filled('adblue_company_id')) {
                 $singleOpAdBlueQuery->where('adblue_company_id', $request->adblue_company_id);
                 $singleOpPaymentQuery->where('adblue_company_id', $request->adblue_company_id);
-                $singleOpTripPaymentQuery->where('adblue_company_id', $request->adblue_company_id);
             }
             if ($request->filled('vehicle_id')) {
                 $singleOpAdBlueQuery->whereHas('builty', function ($q) use ($request) {
                     $q->where('vehicle_id', $request->vehicle_id);
                 });
-                $singleOpTripPaymentQuery->whereHas('builty', fn($q) => $q->where('vehicle_id', $request->vehicle_id));
             }
             if ($request->filled('lr_no')) {
                 $singleOpAdBlueQuery->whereHas('builty', function ($q) use ($request) {
                     $q->where('lr_no', 'like', "%{$request->lr_no}%");
                 });
-                $singleOpTripPaymentQuery->whereHas('builty', fn($q) => $q->where('lr_no', 'like', "%{$request->lr_no}%"));
             }
 
             $singleOpDebit = (float)$singleOpAdBlueQuery->sum('amount');
-            $singleOpCredit = (float)$singleOpPaymentQuery->sum('amount') + (float)$singleOpTripPaymentQuery->sum('amount');
+            $singleOpCredit = (float)$singleOpPaymentQuery->sum('amount');
             $singleOpeningBalance = $singleOpDebit - $singleOpCredit;
         }
 
@@ -1807,23 +1766,6 @@ class TripController extends Controller
                 'debit' => (float)$ab->amount,
                 'credit' => 0.00,
                 'remark' => '-',
-            ];
-        }
-
-        $tripPaymentsList = $tripPaymentLedgerQuery->get();
-        foreach ($tripPaymentsList as $tp) {
-            $ledgerItems[] = [
-                'date' => $tp->date ? $tp->date->format('Y-m-d') : null,
-                'date_raw' => $tp->date,
-                'type' => 'Trip Payment (' . ucfirst($tp->payment_type) . ')',
-                'ref_no' => $tp->trip?->builty?->lr_no ?? '-',
-                'vehicle' => $tp->trip?->builty?->vehicle?->vehicle_number ?? '-',
-                'company' => $tp->adblueCompany?->name ?? '-',
-                'qty' => (float)$tp->quantity,
-                'rate' => (float)$tp->rate,
-                'debit' => 0.00,
-                'credit' => (float)$tp->amount,
-                'remark' => 'Paid via ' . ucfirst($tp->payment_type) . ' on Trip',
             ];
         }
 

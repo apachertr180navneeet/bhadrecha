@@ -65,8 +65,8 @@ class UserMailService
         }
 
         return [
-            'address' => $user->email ?: $defaultAddress,
-            'name' => $user->full_name ?: $defaultName,
+            'address' => $defaultAddress ?: ($user->email ?: 'noreply@bhadrechatransport.com'),
+            'name' => $defaultName ?: ($user->full_name ?: config('app.name', 'Transport ERP')),
         ];
     }
 
@@ -87,7 +87,21 @@ class UserMailService
             return $mailer->to($to)->send($mailable);
         }
 
-        // If closure or raw message callback
+        if ($mailable instanceof \Closure) {
+            return $mailer->send([], [], function ($message) use ($to, $from, $mailable) {
+                $message->to($to)
+                    ->from($from['address'], $from['name']);
+                $mailable($message);
+            });
+        }
+
+        if (is_string($mailable)) {
+            return $mailer->raw($mailable, function ($message) use ($to, $from) {
+                $message->to($to)
+                    ->from($from['address'], $from['name']);
+            });
+        }
+
         return $mailer->to($to)->send($mailable);
     }
 

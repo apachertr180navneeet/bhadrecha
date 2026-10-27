@@ -116,7 +116,7 @@
         'depot_name' => 'DEPOT NAME',
         'billed_qty' => 'BILLED QTY',
         'mn_no' => 'MN NO',
-        'no_of_lr' => 'NO. OF DI'
+        'no_of_lr' => 'NO. OF LR'
     ];
 
     $getFieldValuePhp = function($bulty, $fieldKey) use ($existingInvoice) {

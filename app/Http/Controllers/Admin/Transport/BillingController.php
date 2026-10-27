@@ -267,7 +267,7 @@ class BillingController extends Controller
                 $shortage = floatval($bulty->shortage_amount ?? 0);
 
                 if ($invoiceType === 'toll') {
-                    $freight = $bulty->trip ? floatval($bulty->trip->fastTagDetails->sum('amount')) : 0;
+                    $freight = $bulty->trip ? floatval($bulty->trip->total_fasttag_amount) : 0;
                     $other = 0;
                     $damage = 0;
                     $shortage = 0;
@@ -462,6 +462,52 @@ class BillingController extends Controller
 
             if ($invoiceType === 'toll') {
                 $this->saveTollDetails($invoice);
+                $invoice->load(['tollDetails', 'gstMaster', 'company']);
+                $bulties = $invoice->tollBulties()->with('trip.fastTagDetails')->get();
+                if ($bulties->isEmpty()) {
+                    $bulties = $invoice->bulties;
+                }
+                $invoice->setRelation('bulties', $bulties);
+                $invoice->setRelation('tollBulties', $bulties);
+
+                $grandTollSum = 0;
+                if ($invoice->tollDetails->isNotEmpty()) {
+                    $grandTollSum = floatval($invoice->tollDetails->sum(function($d) {
+                        return floatval($d->one_way) + floatval($d->return_amount);
+                    }));
+                } else {
+                    foreach ($invoice->bulties as $bulty) {
+                        if ($bulty->trip) {
+                            $grandTollSum += floatval($bulty->trip->total_fasttag_amount);
+                        }
+                    }
+                }
+
+                $appliedGstRate = $invoice->gstMaster ? floatval($invoice->gstMaster->percentage) : ($gstPercentage ?: 18.00);
+                $calculatedGst = round($grandTollSum * ($appliedGstRate / 100), 2);
+                $grandTotal = round($grandTollSum + $calculatedGst, 2);
+                $amountInWords = self::convertNumberToWords($grandTotal);
+
+                if ($gstType === 'CGST_SGST') {
+                    $cgstVal = round($calculatedGst / 2, 2);
+                    $sgstVal = round($calculatedGst - $cgstVal, 2);
+                    $igstVal = 0.00;
+                } else {
+                    $cgstVal = 0.00;
+                    $sgstVal = 0.00;
+                    $igstVal = $calculatedGst;
+                }
+
+                $invoice->update([
+                    'total_freight' => $grandTollSum,
+                    'total_gst' => $calculatedGst,
+                    'cgst_amount' => $cgstVal,
+                    'sgst_amount' => $sgstVal,
+                    'igst_amount' => $igstVal,
+                    'total_amount' => $grandTotal,
+                    'amount_in_words' => $amountInWords,
+                    'status' => 'pending',
+                ]);
             }
 
             $invoices->push($invoice);
@@ -723,11 +769,15 @@ class BillingController extends Controller
 
     private function saveTollDetails(Invoice $invoice)
     {
-        $invoice->load([
-            'bulties' => function($q) {
-                $q->with(['trip.fastTagDetails']);
-            }
-        ]);
+        $bulties = $invoice->tollBulties()->with('trip.fastTagDetails')->get();
+        if ($bulties->isEmpty()) {
+            $bulties = $invoice->freightBulties()->with('trip.fastTagDetails')->get();
+        }
+        if ($bulties->isEmpty() && $invoice->bulties) {
+            $bulties = $invoice->bulties;
+        }
+        $invoice->setRelation('bulties', $bulties);
+        $invoice->setRelation('tollBulties', $bulties);
 
         $invoice->tollDetails()->delete();
 
@@ -746,34 +796,47 @@ class BillingController extends Controller
         }
         $tollLocations = $tollLocations->unique()->values();
 
-        foreach ($invoice->bulties as $bulty) {
-            $ftDetails = $bulty->trip ? $bulty->trip->fastTagDetails : collect();
+        if ($tollLocations->isEmpty()) {
+            foreach ($invoice->bulties as $bulty) {
+                if ($bulty->trip && floatval($bulty->trip->total_fasttag_amount) > 0) {
+                    $invoice->tollDetails()->create([
+                        'builty_id' => $bulty->id,
+                        'location' => 'TOLL PLAZA',
+                        'one_way' => floatval($bulty->trip->total_fasttag_amount),
+                        'return_amount' => 0,
+                    ]);
+                }
+            }
+        } else {
+            foreach ($invoice->bulties as $bulty) {
+                $ftDetails = $bulty->trip ? $bulty->trip->fastTagDetails : collect();
 
-            foreach ($tollLocations as $location) {
-                $matched = $ftDetails->filter(function($ft) use ($location) {
-                    $loc = strtoupper(trim((string)($ft->location ?? '')));
-                    if ($location === 'TOLL PLAZA') {
-                        return empty($loc) || $loc === 'TOLL PLAZA';
-                    }
-                    return $loc === $location;
-                });
+                foreach ($tollLocations as $location) {
+                    $matched = $ftDetails->filter(function($ft) use ($location) {
+                        $loc = strtoupper(trim((string)($ft->location ?? '')));
+                        if ($location === 'TOLL PLAZA') {
+                            return empty($loc) || $loc === 'TOLL PLAZA';
+                        }
+                        return $loc === $location;
+                    });
 
-                if ($matched->isNotEmpty()) {
-                    $oneWaySum = (float) $matched->sum('one_way');
-                    $returnSum = (float) $matched->sum('return');
-                    $amountSum = (float) $matched->sum('amount');
+                    if ($matched->isNotEmpty()) {
+                        $oneWaySum = (float) $matched->sum('one_way');
+                        $returnSum = (float) $matched->sum('return');
+                        $amountSum = (float) $matched->sum('amount');
 
-                    if ($oneWaySum <= 0 && $returnSum <= 0 && $amountSum > 0) {
-                        $oneWaySum = $amountSum;
-                    }
+                        if ($oneWaySum <= 0 && $returnSum <= 0 && $amountSum > 0) {
+                            $oneWaySum = $amountSum;
+                        }
 
-                    if ($oneWaySum > 0 || $returnSum > 0) {
-                        $invoice->tollDetails()->create([
-                            'builty_id' => $bulty->id,
-                            'location' => $location,
-                            'one_way' => $oneWaySum,
-                            'return_amount' => $returnSum,
-                        ]);
+                        if ($oneWaySum > 0 || $returnSum > 0) {
+                            $invoice->tollDetails()->create([
+                                'builty_id' => $bulty->id,
+                                'location' => $location,
+                                'one_way' => $oneWaySum,
+                                'return_amount' => $returnSum,
+                            ]);
+                        }
                     }
                 }
             }
@@ -845,22 +908,22 @@ class BillingController extends Controller
         // Check if user selected GST type or fallback to saved / auto-detected
         $gstType = $request->input('gst_type');
         if (!in_array($gstType, ['CGST_SGST', 'IGST'])) {
-            $gstType = $targetInvoice->gst_type ?: $autoGstType;
+            $gstType = ($targetInvoice->invoice_type === 'toll' && !empty($targetInvoice->gst_type)) ? $targetInvoice->gst_type : $autoGstType;
         }
 
         // Default Payment Status: Pending by default unless explicitly specified
         $submittedStatus = $request->input('status');
-        $status = in_array($submittedStatus, ['pending', 'paid', 'cancelled']) ? $submittedStatus : ($invoice->invoice_type === 'toll' ? ($invoice->status ?: 'pending') : 'pending');
+        if ($invoice->invoice_type === 'toll') {
+            $status = in_array($submittedStatus, ['pending', 'paid', 'cancelled']) ? $submittedStatus : ($invoice->status ?: 'pending');
+        } else {
+            $status = in_array($submittedStatus, ['pending', 'paid', 'cancelled']) ? $submittedStatus : 'pending';
+        }
 
         if ($invoice->invoice_type !== 'toll') {
             $grandTollSum = 0;
             foreach ($invoice->bulties as $bulty) {
                 if ($bulty->trip) {
-                    $fastTagSum = floatval($bulty->trip->fastTagDetails->sum('amount'));
-                    if ($fastTagSum <= 0) {
-                        $fastTagSum = floatval($bulty->trip->fastTagDetails->sum(fn($ft) => floatval($ft->one_way ?? 0) + floatval($ft->return ?? 0)));
-                    }
-                    $grandTollSum += $fastTagSum;
+                    $grandTollSum += floatval($bulty->trip->total_fasttag_amount);
                 }
             }
             
@@ -973,7 +1036,14 @@ class BillingController extends Controller
             }
         }
 
-        $targetInvoice->load(['tollDetails', 'bulties.trip.fastTagDetails', 'gstMaster', 'company']);
+        $targetInvoice->load(['tollDetails', 'gstMaster', 'company']);
+        $bulties = $targetInvoice->tollBulties()->with('trip.fastTagDetails')->get();
+        if ($bulties->isEmpty()) {
+            $bulties = $targetInvoice->bulties;
+        }
+        $targetInvoice->setRelation('bulties', $bulties);
+        $targetInvoice->setRelation('tollBulties', $bulties);
+
         $grandTollSum = 0;
         if ($targetInvoice->tollDetails->isNotEmpty()) {
             $grandTollSum = floatval($targetInvoice->tollDetails->sum(function($d) {
@@ -982,11 +1052,7 @@ class BillingController extends Controller
         } else {
             foreach ($targetInvoice->bulties as $bulty) {
                 if ($bulty->trip) {
-                    $fastTagSum = floatval($bulty->trip->fastTagDetails->sum('amount'));
-                    if ($fastTagSum <= 0) {
-                        $fastTagSum = floatval($bulty->trip->fastTagDetails->sum(fn($ft) => floatval($ft->one_way ?? 0) + floatval($ft->return ?? 0)));
-                    }
-                    $grandTollSum += $fastTagSum;
+                    $grandTollSum += floatval($bulty->trip->total_fasttag_amount);
                 }
             }
         }
@@ -1007,6 +1073,7 @@ class BillingController extends Controller
         }
 
         $targetInvoice->update([
+            'status' => $status,
             'gst_type' => $gstType,
             'total_freight' => $grandTollSum,
             'total_gst' => $calculatedGst,

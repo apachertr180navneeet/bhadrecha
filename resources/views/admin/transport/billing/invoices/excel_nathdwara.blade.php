@@ -176,7 +176,7 @@
         <td style="border: 2px solid #000; text-align: center; padding: 4px; font-weight: bold;">{{ $desc }}</td>
         <td style="border: 2px solid #000; text-align: center; padding: 4px; font-weight: bold;">{{ $billNo }}</td>
         <td style="border: 2px solid #000; text-align: center; padding: 4px; font-weight: bold;">{{ $mnNo }}</td>
-        <td style="border: 2px solid #000; text-align: center; padding: 4px; font-weight: bold;">{{ $bulties->count() }}</td>
+        <td style="border: 2px solid #000; text-align: center; padding: 4px; font-weight: bold;">{{ $invoice->no_of_lrs ?? $bulties->count() }}</td>
         <td style="border: 2px solid #000; text-align: center; padding: 4px; font-weight: bold;">{{ $displayMt }}</td>
         <td style="border: 2px solid #000; text-align: center; padding: 4px; font-weight: bold;">{{ number_format($totalAmt, 2, '.', '') }}</td>
         <td style="border: 2px solid #000; text-align: center; padding: 4px; font-weight: bold;">{{ number_format($totalShortageAmt, 2, '.', '') }}</td>

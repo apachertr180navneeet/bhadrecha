@@ -28,7 +28,7 @@
             <div class="mb-4">
                 <h6 class="fw-bold">Invoice Number: <span class="text-primary">{{ $invoice->invoice_no }}</span></h6>
                 <h6 class="fw-bold">Invoice Date: {{ $invoice->invoice_date->format('d M Y') }}</h6>
-                <h6 class="fw-bold">Total LRs: {{ $invoice->bulties->count() }}</h6>
+                <h6 class="fw-bold">Total LRs: {{ $invoice->no_of_lrs ?? $invoice->bulties->count() }}</h6>
             </div>
 
             <div class="table-responsive">
