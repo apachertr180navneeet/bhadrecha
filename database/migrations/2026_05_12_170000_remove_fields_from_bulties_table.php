@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('bulties', function (Blueprint $table) {
-            $table->dropForeign(['route_id']);
+            $table->dropForeign(['created_by']);
             $table->dropColumn(['route_id', 'trip_id', 'dispatched_at', 'delivered_at', 'created_by']);
         });
     }

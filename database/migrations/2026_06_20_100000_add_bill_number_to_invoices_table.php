@@ -9,7 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('invoices', function (Blueprint $table) {
-            $table->string('bill_number')->nullable()->after('invoice_no');
+            if (!Schema::hasColumn('invoices', 'bill_number')) {
+                $table->string('bill_number')->nullable()->after('invoice_no');
+            }
         });
     }
 

@@ -5,7 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\ExpenseCategory;
-use Validator, Exception;
+use Illuminate\Support\Facades\Validator;
+use Exception;
 
 class ExpenseCategoryController extends Controller
 {
@@ -35,7 +36,7 @@ class ExpenseCategoryController extends Controller
             }
 
             $data = $request->all();
-            $data['status'] = in_array($request->status, ['active', '1', 1], true) ? 1 : 0;
+            $data['status'] = in_array($request->status, ['active', '1', 1, true], true) ? 1 : 0;
             $category = ExpenseCategory::create($data);
             return response()->json(['success' => true, 'message' => 'Category created successfully']);
         } catch (Exception $e) {
@@ -62,7 +63,7 @@ class ExpenseCategoryController extends Controller
 
             $data = $request->all();
             if ($request->has('status')) {
-                $data['status'] = in_array($request->status, ['active', '1', 1], true) ? 1 : 0;
+                $data['status'] = in_array($request->status, ['active', '1', 1, true], true) ? 1 : 0;
             }
             $category->update($data);
             return response()->json(['success' => true, 'message' => 'Category updated successfully']);
@@ -79,5 +80,16 @@ class ExpenseCategoryController extends Controller
         } catch (Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
+    }
+
+    public function toggleStatus(ExpenseCategory $expenseCategory)
+    {
+        $expenseCategory->status = !$expenseCategory->status;
+        $expenseCategory->save();
+
+        if (request()->ajax() || request()->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Status updated successfully', 'status' => $expenseCategory->status]);
+        }
+        return back()->with('success', 'Status updated successfully.');
     }
 }

@@ -308,9 +308,9 @@ $(document).ready(function() {
                     $('#preview-signatory-company').text('For ' + comp.name);
 
                     if (comp.digital_signature_url) {
-                        $('#preview-signature-container').html('<img src="' + comp.digital_signature_url + '" style="max-height: 40px; max-width: 140px;" alt="Signature">');
+                        $('#preview-signature-container').html('<img src="' + comp.digital_signature_url + '" style="max-height: 40px; max-width: 140px; object-fit: contain;" alt="Signature">');
                     } else {
-                        $('#preview-signature-container').html('');
+                        $('#preview-signature-container').html('<div class="d-inline-block text-center border p-1 rounded" style="border: 1.5px solid #062E39 !important; background-color: #f8fafc; min-width: 130px;"><div style="font-size: 7.5pt; color: #062E39; font-weight: bold; letter-spacing: 0.5px;"><i class="bx bx-check-shield text-success me-1"></i> DIGITALLY SIGNED</div><div style="font-size: 7pt; color: #555; font-style: italic;">' + (comp.name || 'Authorized Signatory') + '</div></div>');
                     }
 
                     var footerContact = comp.name;

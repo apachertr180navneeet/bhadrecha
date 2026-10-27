@@ -16,4 +16,19 @@ class AdBlueCompany extends Model
         'name',
         'status',
     ];
+
+    public function tripAdBlueDetails()
+    {
+        return $this->hasMany(TripAdBlueDetail::class, 'adblue_company_id');
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(AdBlueCompanyPayment::class, 'adblue_company_id');
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
 }

@@ -13,6 +13,8 @@ use App\Http\Controllers\Admin\BranchController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\BiltyAdvanceDetailController;
 use App\Http\Controllers\Admin\DriverManagementController;
+use App\Http\Controllers\Admin\ExpenseController;
+use App\Http\Controllers\Admin\ExpenseCategoryController;
 
 use App\Http\Controllers\Admin\LetterheadController;
 
@@ -223,6 +225,10 @@ Route::name('admin.')->prefix('admin')->group(function () {
         });
         Route::get('reports/companies/export', [ReportController::class, 'exportCompanies'])->name('reports.companies.export');
         Route::get('reports/activity/export', [ReportController::class, 'exportActivity'])->name('reports.activity.export');
+        
+        Route::post('expense-categories/{expenseCategory}/toggle-status', [ExpenseCategoryController::class, 'toggleStatus'])->name('expense-categories.toggle-status');
+        Route::resource('expense-categories', ExpenseCategoryController::class);
+        Route::resource('expenses', ExpenseController::class);
 
         Route::name('driver-management.')->prefix('driver-management')->group(function () {
             Route::get('salary', [DriverManagementController::class, 'salaryManagement'])->name('salary');
@@ -449,6 +455,7 @@ Route::name('admin.')->prefix('admin')->group(function () {
             Route::delete('adblue-companies/{adblue_company}/force-delete', [AdBlueCompanyController::class, 'forceDelete'])->name('adblue-companies.force-delete');
             Route::post('adblue-companies/{adblue_company}/toggle-status', [AdBlueCompanyController::class, 'toggleStatus'])->name('adblue-companies.toggle-status');
             Route::resource('adblue-companies', AdBlueCompanyController::class);
+            Route::post('adblue-companies/quick-store', [AdBlueCompanyController::class, 'quickStore'])->name('adblue-companies.quick-store');
 
             Route::get('tyre-brands/trashed', [\App\Http\Controllers\Admin\Masters\TyreBrandController::class, 'trashed'])->name('tyre-brands.trashed');
             Route::put('tyre-brands/{id}/restore', [\App\Http\Controllers\Admin\Masters\TyreBrandController::class, 'restore'])->name('tyre-brands.restore');

@@ -465,7 +465,7 @@ class ReportController extends Controller
             ->groupBy('trip_id');
 
         $fasttagSubquery = DB::table('trip_fast_tag_details')
-            ->select('trip_id', DB::raw('SUM(COALESCE(NULLIF(amount, 0), one_way + return, 0)) as total_fasttag'))
+            ->select('trip_id', DB::raw('SUM(COALESCE(NULLIF(amount, 0), `one_way` + `return`, 0)) as total_fasttag'))
             ->groupBy('trip_id');
 
         $adblueSubquery = DB::table('trip_adblue_details')
@@ -642,7 +642,7 @@ class ReportController extends Controller
             )
             ->leftJoinSub(
                 DB::table('trip_fast_tag_details')
-                    ->select('trip_id', DB::raw('SUM(COALESCE(NULLIF(amount, 0), one_way + return, 0)) as amt'))
+                    ->select('trip_id', DB::raw('SUM(COALESCE(NULLIF(amount, 0), `one_way` + `return`, 0)) as amt'))
                     ->groupBy('trip_id'),
                 'ft_sub', 'ft_sub.trip_id', '=', 'trips.id'
             )
@@ -762,7 +762,7 @@ class ReportController extends Controller
                 'fuel_sub', 'fuel_sub.trip_id', '=', 'trips.id'
             )
             ->leftJoinSub(
-                DB::table('trip_fast_tag_details')->select('trip_id', DB::raw('SUM(COALESCE(NULLIF(amount, 0), one_way + return, 0)) as amt'))->groupBy('trip_id'),
+                DB::table('trip_fast_tag_details')->select('trip_id', DB::raw('SUM(COALESCE(NULLIF(amount, 0), `one_way` + `return`, 0)) as amt'))->groupBy('trip_id'),
                 'fasttag_sub', 'fasttag_sub.trip_id', '=', 'trips.id'
             )
             ->leftJoinSub(
@@ -829,7 +829,7 @@ class ReportController extends Controller
                 'fuel_sub', 'fuel_sub.trip_id', '=', 'trips.id'
             )
             ->leftJoinSub(
-                DB::table('trip_fast_tag_details')->select('trip_id', DB::raw('SUM(COALESCE(NULLIF(amount, 0), one_way + return, 0)) as amt'))->groupBy('trip_id'),
+                DB::table('trip_fast_tag_details')->select('trip_id', DB::raw('SUM(COALESCE(NULLIF(amount, 0), `one_way` + `return`, 0)) as amt'))->groupBy('trip_id'),
                 'fasttag_sub', 'fasttag_sub.trip_id', '=', 'trips.id'
             )
             ->leftJoinSub(
@@ -2034,7 +2034,7 @@ class ReportController extends Controller
             ->groupBy('trip_id');
 
         $fasttagSubquery = DB::table('trip_fast_tag_details')
-            ->select('trip_id', DB::raw('SUM(COALESCE(NULLIF(amount, 0), one_way + return, 0)) as total_fasttag'))
+            ->select('trip_id', DB::raw('SUM(COALESCE(NULLIF(amount, 0), `one_way` + `return`, 0)) as total_fasttag'))
             ->groupBy('trip_id');
 
         $adblueSubquery = DB::table('trip_adblue_details')
@@ -2183,7 +2183,7 @@ class ReportController extends Controller
             )
             ->leftJoinSub(
                 DB::table('trip_fast_tag_details')
-                    ->select('trip_id', DB::raw('SUM(COALESCE(NULLIF(amount, 0), one_way + return, 0)) as amt'))
+                    ->select('trip_id', DB::raw('SUM(COALESCE(NULLIF(amount, 0), `one_way` + `return`, 0)) as amt'))
                     ->groupBy('trip_id'),
                 'ft_sub', 'ft_sub.trip_id', '=', 'trips.id'
             )
@@ -2308,7 +2308,7 @@ class ReportController extends Controller
                 'fuel_sub', 'fuel_sub.trip_id', '=', 'trips.id'
             )
             ->leftJoinSub(
-                DB::table('trip_fast_tag_details')->select('trip_id', DB::raw('SUM(COALESCE(NULLIF(amount, 0), one_way + return, 0)) as amt'))->groupBy('trip_id'),
+                DB::table('trip_fast_tag_details')->select('trip_id', DB::raw('SUM(COALESCE(NULLIF(amount, 0), `one_way` + `return`, 0)) as amt'))->groupBy('trip_id'),
                 'fasttag_sub', 'fasttag_sub.trip_id', '=', 'trips.id'
             )
             ->leftJoinSub(
@@ -2365,7 +2365,7 @@ class ReportController extends Controller
                 'fuel_sub', 'fuel_sub.trip_id', '=', 'trips.id'
             )
             ->leftJoinSub(
-                DB::table('trip_fast_tag_details')->select('trip_id', DB::raw('SUM(COALESCE(NULLIF(amount, 0), one_way + return, 0)) as amt'))->groupBy('trip_id'),
+                DB::table('trip_fast_tag_details')->select('trip_id', DB::raw('SUM(COALESCE(NULLIF(amount, 0), `one_way` + `return`, 0)) as amt'))->groupBy('trip_id'),
                 'fasttag_sub', 'fasttag_sub.trip_id', '=', 'trips.id'
             )
             ->leftJoinSub(
@@ -2708,3 +2708,4 @@ class ReportController extends Controller
         return Excel::download(new ReportExport($headings, $data, 'Profit & Loss Report'), 'profit_loss_report_' . now()->format('Y-m-d') . '.xlsx');
     }
 }
+

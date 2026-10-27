@@ -14,12 +14,10 @@ class AdBlueCompanyController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(function ($request, $next) {
-            if (!auth()->user() || (!auth()->user()->can('view adblue companies') && !auth()->user()->isSuperAdmin())) {
-                abort(403);
-            }
-            return $next($request);
-        })->except(['quickStore']);
+        $this->middleware('permission:view adblue companies')->only(['index', 'show']);
+        $this->middleware('permission:create adblue companies')->only(['create', 'store', 'import', 'downloadTemplate']);
+        $this->middleware('permission:edit adblue companies')->only(['edit', 'update', 'toggleStatus']);
+        $this->middleware('permission:delete adblue companies')->only(['destroy', 'trashed', 'restore', 'forceDelete']);
     }
 
     public function index(Request $request)
@@ -31,7 +29,11 @@ class AdBlueCompanyController extends Controller
             $query->where('name', 'like', "%{$search}%");
         }
 
-        $adblueCompanies = $query->orderBy('name')->paginate(15);
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $adblueCompanies = $query->orderBy('name')->paginate(15)->withQueryString();
         return view('admin.masters.adblue-companies.index', compact('adblueCompanies'));
     }
 
@@ -50,6 +52,22 @@ class AdBlueCompanyController extends Controller
 
         return redirect()->route('admin.masters.adblue-companies.index')
             ->with('success', 'AdBlue company created successfully.');
+    }
+
+    public function quickStore(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255|unique:adblue_companies,name',
+        ]);
+
+        $adblueCompany = AdBlueCompany::create($validated + ['status' => 'active']);
+
+        return response()->json([
+            'id' => $adblueCompany->id,
+            'name' => $adblueCompany->name,
+            'status' => $adblueCompany->status,
+            'success' => true
+        ]);
     }
 
     public function edit(AdBlueCompany $adblueCompany)

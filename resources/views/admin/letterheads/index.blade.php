@@ -153,7 +153,9 @@
                                     <div class="small text-muted"><i class="bx bx-time-five me-1"></i>{{ \Carbon\Carbon::parse($lh->created_at ?? $lh->letter_date)->format('h:i A') }}</div>
                                 </td>
                                 <td>
-                                    <span class="badge badge-info p-2">{{ $lh->company->name ?? 'N/A' }}</span>
+                                    <span class="badge font-weight-bold p-2 text-dark" style="color: #062E39 !important; font-weight: 700; font-size: 0.85rem; background-color: #e8eef3; border: 1px solid #c2d4e0;">
+                                        <i class="bx bx-buildings text-primary me-1"></i>{{ $lh->company->name ?? 'N/A' }}
+                                    </span>
                                 </td>
                                 <td>
                                     <div class="font-weight-bold text-dark">{{ $lh->recipient_name }}</div>

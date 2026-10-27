@@ -13,26 +13,26 @@
             top: -68px;
             left: 0px;
             right: 0px;
-            height: 62px;
+            height: 58px;
             border-bottom: 2px solid #062E39;
-            padding-bottom: 4px;
+            padding-bottom: 2px;
         }
         footer {
             position: fixed;
             bottom: -45px;
             left: 0px;
             right: 0px;
-            height: 40px;
+            height: 38px;
             border-top: 1px solid #ddd;
-            padding-top: 3px;
-            font-size: 8pt;
+            padding-top: 2px;
+            font-size: 7.5pt;
             color: #555;
             text-align: center;
         }
         body {
             font-family: 'Helvetica Neue', 'Helvetica', Arial, sans-serif;
-            font-size: 9.5pt;
-            line-height: 1.4;
+            font-size: 9pt;
+            line-height: 1.35;
             color: #222;
         }
         .header-table {
@@ -43,34 +43,35 @@
             vertical-align: top;
         }
         .company-logo {
-            max-height: 55px;
-            max-width: 160px;
+            max-height: 50px;
+            max-width: 150px;
         }
         .company-name {
-            font-size: 14pt;
+            font-size: 13pt;
             font-weight: bold;
-            color: #062E39;
+            color: #062E39 !important;
             margin: 0;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
         .company-info {
-            font-size: 8pt;
+            font-size: 7.5pt;
             color: #444;
-            line-height: 1.25;
+            line-height: 1.2;
         }
         .ref-table {
             width: 100%;
-            margin-top: 5px;
-            margin-bottom: 12px;
+            margin-top: 0px;
+            margin-bottom: 6px;
             border-collapse: collapse;
         }
         .ref-table td {
-            font-size: 9pt;
+            font-size: 8.5pt;
         }
         .recipient-box {
-            margin-bottom: 12px;
-            line-height: 1.35;
+            margin-bottom: 6px;
+            line-height: 1.25;
+            font-size: 8.5pt;
         }
         .recipient-title {
             font-weight: bold;
@@ -78,35 +79,46 @@
         }
         .subject-box {
             font-weight: bold;
-            font-size: 10pt;
-            margin: 10px 0;
-            padding: 5px 8px;
+            font-size: 9pt;
+            margin: 6px 0;
+            padding: 4px 6px;
             background-color: #f4f6f9;
             border-left: 4px solid #062E39;
         }
         .letter-content {
-            margin-top: 10px;
-            margin-bottom: 15px;
+            margin-top: 6px;
+            margin-bottom: 8px;
             text-align: justify;
             white-space: pre-wrap;
             word-wrap: break-word;
-            line-height: 1.45;
+            line-height: 1.35;
+            font-size: 9pt;
         }
         .signatory-table {
             width: 100%;
-            margin-top: 20px;
+            margin-top: 8px;
             page-break-inside: avoid;
         }
         .signature-img {
-            max-height: 45px;
+            max-height: 40px;
             max-width: 130px;
             display: block;
-            margin-bottom: 3px;
+            margin: 0 0 2px auto;
+        }
+        .digital-signature-seal {
+            display: inline-block;
+            border: 1.5px solid #062E39;
+            border-radius: 3px;
+            padding: 3px 6px;
+            background-color: #f8fafc;
+            text-align: center;
+            min-width: 130px;
+            margin-bottom: 2px;
         }
         .footer-disclaimer {
-            font-size: 7.5pt;
+            font-size: 7pt;
             color: #777;
-            margin-top: 2px;
+            margin-top: 1px;
             font-style: italic;
         }
     </style>
@@ -116,18 +128,31 @@
     if (!empty($letterhead->company->logo)) {
         $cleanLogo = ltrim($letterhead->company->logo, '/');
         $resolvedLogo = null;
-        if (file_exists(public_path($cleanLogo))) {
-            $resolvedLogo = public_path($cleanLogo);
-        } elseif (file_exists(public_path('uploads/' . $cleanLogo))) {
-            $resolvedLogo = public_path('uploads/' . $cleanLogo);
-        } elseif (file_exists(storage_path('app/public/' . $cleanLogo))) {
-            $resolvedLogo = storage_path('app/public/' . $cleanLogo);
+        $logoCandidates = [
+            public_path($cleanLogo),
+            public_path('uploads/' . $cleanLogo),
+            public_path('uploads/' . preg_replace('#^uploads/#', '', $cleanLogo)),
+            storage_path('app/public/' . $cleanLogo),
+            storage_path('app/public/' . preg_replace('#^storage/#', '', $cleanLogo)),
+        ];
+        foreach ($logoCandidates as $cand) {
+            if (file_exists($cand) && is_file($cand)) {
+                $resolvedLogo = $cand;
+                break;
+            }
         }
         if ($resolvedLogo && is_file($resolvedLogo)) {
             $ext = strtolower(pathinfo($resolvedLogo, PATHINFO_EXTENSION));
             $mime = ($ext === 'png') ? 'image/png' : (($ext === 'svg') ? 'image/svg+xml' : 'image/jpeg');
             $data = @file_get_contents($resolvedLogo);
             if ($data !== false) {
+                $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode($data);
+            }
+        } elseif (\Illuminate\Support\Str::startsWith($cleanLogo, ['http://', 'https://'])) {
+            $data = @file_get_contents($cleanLogo);
+            if ($data !== false) {
+                $ext = strtolower(pathinfo(parse_url($cleanLogo, PHP_URL_PATH), PATHINFO_EXTENSION)) ?: 'png';
+                $mime = ($ext === 'png') ? 'image/png' : (($ext === 'svg') ? 'image/svg+xml' : 'image/jpeg');
                 $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode($data);
             }
         }
@@ -137,18 +162,31 @@
     if (!empty($letterhead->company->digital_signature)) {
         $cleanSig = ltrim($letterhead->company->digital_signature, '/');
         $resolvedSig = null;
-        if (file_exists(public_path($cleanSig))) {
-            $resolvedSig = public_path($cleanSig);
-        } elseif (file_exists(public_path('uploads/' . $cleanSig))) {
-            $resolvedSig = public_path('uploads/' . $cleanSig);
-        } elseif (file_exists(storage_path('app/public/' . $cleanSig))) {
-            $resolvedSig = storage_path('app/public/' . $cleanSig);
+        $sigCandidates = [
+            public_path($cleanSig),
+            public_path('uploads/' . $cleanSig),
+            public_path('uploads/' . preg_replace('#^uploads/#', '', $cleanSig)),
+            storage_path('app/public/' . $cleanSig),
+            storage_path('app/public/' . preg_replace('#^storage/#', '', $cleanSig)),
+        ];
+        foreach ($sigCandidates as $cand) {
+            if (file_exists($cand) && is_file($cand)) {
+                $resolvedSig = $cand;
+                break;
+            }
         }
         if ($resolvedSig && is_file($resolvedSig)) {
             $ext = strtolower(pathinfo($resolvedSig, PATHINFO_EXTENSION));
             $mime = ($ext === 'png') ? 'image/png' : (($ext === 'svg') ? 'image/svg+xml' : 'image/jpeg');
             $data = @file_get_contents($resolvedSig);
             if ($data !== false) {
+                $sigBase64 = 'data:' . $mime . ';base64,' . base64_encode($data);
+            }
+        } elseif (\Illuminate\Support\Str::startsWith($cleanSig, ['http://', 'https://'])) {
+            $data = @file_get_contents($cleanSig);
+            if ($data !== false) {
+                $ext = strtolower(pathinfo(parse_url($cleanSig, PHP_URL_PATH), PATHINFO_EXTENSION)) ?: 'png';
+                $mime = ($ext === 'png') ? 'image/png' : (($ext === 'svg') ? 'image/svg+xml' : 'image/jpeg');
                 $sigBase64 = 'data:' . $mime . ';base64,' . base64_encode($data);
             }
         }
@@ -243,12 +281,21 @@
             <td style="width: 50%;"></td>
             <td style="width: 50%; text-align: right;">
                 <div>Yours faithfully,</div>
-                <div style="font-weight: bold; margin-top: 4px;">For {{ $letterhead->company->name ?? 'Company' }}</div>
+                <div style="font-weight: bold; margin-top: 3px; color: #062E39 !important;">For {{ $letterhead->company->name ?? 'Company' }}</div>
                 
-                <div style="margin-top: 10px; min-height: 40px;">
+                <div style="margin-top: 4px; min-height: 40px; text-align: right;">
                     @if($sigBase64)
                         <img src="{{ $sigBase64 }}" class="signature-img" style="float: right;" alt="Signature">
                         <div style="clear: both;"></div>
+                    @else
+                        <div class="digital-signature-seal">
+                            <div style="font-size: 7.5pt; color: #062E39; font-weight: bold; letter-spacing: 0.5px; text-transform: uppercase;">
+                                DIGITALLY SIGNED
+                            </div>
+                            <div style="font-size: 6.5pt; color: #555; font-style: italic;">
+                                {{ $letterhead->signatory_name ?: ($letterhead->company->name ?? 'Authorized Signatory') }}
+                            </div>
+                        </div>
                     @endif
                 </div>
 

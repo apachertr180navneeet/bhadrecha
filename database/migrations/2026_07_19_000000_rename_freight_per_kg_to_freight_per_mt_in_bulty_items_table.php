@@ -9,17 +9,21 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('bulty_items', function (Blueprint $table) {
-            $table->decimal('freight_per_mt', 10, 2)->default(0)->after('unit');
-        });
+        if (Schema::hasColumn('bulty_items', 'freight_per_kg')) {
+            if (!Schema::hasColumn('bulty_items', 'freight_per_mt')) {
+                Schema::table('bulty_items', function (Blueprint $table) {
+                    $table->decimal('freight_per_mt', 10, 2)->default(0)->after('unit');
+                });
+            }
 
-        DB::table('bulty_items')->update([
-            'freight_per_mt' => DB::raw('freight_per_kg'),
-        ]);
+            DB::table('bulty_items')->update([
+                'freight_per_mt' => DB::raw('freight_per_kg'),
+            ]);
 
-        Schema::table('bulty_items', function (Blueprint $table) {
-            $table->dropColumn('freight_per_kg');
-        });
+            Schema::table('bulty_items', function (Blueprint $table) {
+                $table->dropColumn('freight_per_kg');
+            });
+        }
     }
 
     public function down(): void

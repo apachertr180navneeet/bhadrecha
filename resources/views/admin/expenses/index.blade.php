@@ -63,7 +63,7 @@
                             <select name="branch_id" id="expenseFilterBranch" class="form-select" {{ (auth()->user()->branch_id && !($canViewAllBranches ?? (auth()->user()->hasRole('Admin') || auth()->user()->can('view branches')))) ? 'disabled' : '' }}>
                                 <option value="">All Branches</option>
                                 @foreach($branches as $branch)
-                                    <option value="{{ $branch->id }}" data-store-id="{{ $branch->store_id }}" {{ (string)($selectedBranchId ?? request('branch_id')) === (string)$branch->id ? 'selected' : '' }}>{{ $branch->name }}</option>
+                                    <option value="{{ $branch->id }}" data-store-id="{{ $branch->company_id ?? $branch->store_id }}" {{ (string)($selectedBranchId ?? request('branch_id')) === (string)$branch->id ? 'selected' : '' }}>{{ $branch->name }}</option>
                                 @endforeach
                             </select>
                             @if(auth()->user()->branch_id && !($canViewAllBranches ?? (auth()->user()->hasRole('Admin') || auth()->user()->can('view branches'))))
@@ -246,7 +246,7 @@
                         <select class="form-select" name="branch_id" id="expenseModalBranch" required {{ (auth()->user()->branch_id && !($canViewAllBranches ?? (auth()->user()->hasRole('Admin') || auth()->user()->can('view branches')))) ? 'disabled' : '' }}>
                             <option value="">Select Branch</option>
                             @foreach($branches as $branch)
-                                <option value="{{ $branch->id }}" data-store-id="{{ $branch->store_id }}">{{ $branch->name }}</option>
+                                <option value="{{ $branch->id }}" data-store-id="{{ $branch->company_id ?? $branch->store_id }}">{{ $branch->name }}</option>
                             @endforeach
                         </select>
                         @if(auth()->user()->branch_id && !($canViewAllBranches ?? (auth()->user()->hasRole('Admin') || auth()->user()->can('view branches'))))

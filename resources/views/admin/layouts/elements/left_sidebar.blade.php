@@ -343,6 +343,37 @@
             </li>
         @endcanany
 
+        @canany(['view expenses', 'view expense categories'])
+            <li class="menu-divider"></li>
+            <li class="menu-header small text-uppercase">
+                <span class="menu-header-text">Expense Management</span>
+            </li>
+            <li class="menu-item {{ (request()->is('admin/expenses*') || request()->is('admin/expense-categories*')) ? 'active open' : '' }} has-sub">
+                <a href="javascript:void(0);" class="menu-link menu-toggle">
+                    <i class="menu-icon tf-icons bx bx-wallet"></i>
+                    <div data-i18n="Expenses">Expenses</div>
+                </a>
+                <ul class="menu-sub">
+                    @can('view expenses')
+                        <li class="menu-item {{ request()->is('admin/expenses*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.expenses.index') }}" class="menu-link">
+                                <i class="menu-icon tf-icons bx bx-credit-card"></i>
+                                <div data-i18n="Expense List">Expense List</div>
+                            </a>
+                        </li>
+                    @endcan
+                    @can('view expense categories')
+                        <li class="menu-item {{ request()->is('admin/expense-categories*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.expense-categories.index') }}" class="menu-link">
+                                <i class="menu-icon tf-icons bx bx-category"></i>
+                                <div data-i18n="Expense Categories">Categories</div>
+                            </a>
+                        </li>
+                    @endcan
+                </ul>
+            </li>
+        @endcanany
+
         @canany(['view reports', 'view vehicle report', 'view driver trip report', 'view customer ledger', 'view sales ledger', 'view tds report', 'view trip reports', 'view bilty advance details', 'view fuel report', 'view adblue report', 'view fuel outstanding', 'view adblue outstanding', 'view vehicle utilization', 'view mis report', 'view expense management', 'view vehicle document report', 'view gst tax report', 'view profit loss report'])
             <li class="menu-divider"></li>
             <li class="menu-header small text-uppercase">

@@ -83,6 +83,12 @@ class RolePermissionSeeder extends Seeder
             'adblue_outstanding' => [
                 'view adblue outstanding', 'create adblue outstanding', 'edit adblue outstanding', 'delete adblue outstanding'
             ],
+            'expenses' => [
+                'view expenses', 'create expenses', 'edit expenses', 'delete expenses'
+            ],
+            'expense_categories' => [
+                'view expense categories', 'create expense categories', 'edit expense categories', 'delete expense categories'
+            ],
             'consignors' => [
                 'view consignors', 'create consignors', 'edit consignors', 'delete consignors', 'restore consignors', 'force delete consignors', 'transfer consignors', 'import consignors'
             ],
