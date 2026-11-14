@@ -56,3 +56,15 @@ Route::middleware('jwt.verify')->group(function() {
         Route::delete('/{document}', [\App\Http\Controllers\Api\DocumentApiController::class, 'destroy']);
     });
 });
+
+
+// BlackBuck FASTag Integration REST API
+Route::prefix('fastag')->group(function () {
+    Route::get('/transactions', [\App\Http\Controllers\Admin\FastagController::class, 'index']);
+    Route::get('/transactions/{id}', [\App\Http\Controllers\Admin\FastagController::class, 'show']);
+    Route::get('/summary', [\App\Http\Controllers\Admin\FastagController::class, 'summary']);
+    Route::get('/reports', [\App\Http\Controllers\Admin\FastagController::class, 'reports']);
+    Route::get('/sync-logs', [\App\Http\Controllers\Admin\FastagController::class, 'syncLogs']);
+    Route::post('/sync', [\App\Http\Controllers\Admin\FastagController::class, 'sync']);
+    Route::post('/sync-all', [\App\Http\Controllers\Admin\FastagController::class, 'syncAll']);
+});

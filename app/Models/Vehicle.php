@@ -24,4 +24,12 @@ class Vehicle extends Model
         'permit_expiry' => 'date',
         'pollution_expiry' => 'date',
     ];
+
+    /**
+     * Get FASTag transactions for this vehicle.
+     */
+    public function fastagTransactions()
+    {
+        return $this->hasMany(FastagTransaction::class, 'vehicle_id');
+    }
 }

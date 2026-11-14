@@ -102,6 +102,21 @@ Route::name('admin.')->prefix('admin')->group(function () {
         Route::post('mail-configuration', [\App\Http\Controllers\Admin\UserMailConfigurationController::class, 'update'])->name('mail-configuration.update');
         Route::post('mail-configuration/test', [\App\Http\Controllers\Admin\UserMailConfigurationController::class, 'test'])->name('mail-configuration.test');
 
+        // BlackBuck FASTag Toll Management
+        Route::prefix('fastag')->name('fastag.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\FastagController::class, 'index'])->name('index');
+            Route::get('/fetch', [\App\Http\Controllers\Admin\FastagController::class, 'fetch'])->name('fetch');
+            Route::get('/vehicle-wise', [\App\Http\Controllers\Admin\FastagController::class, 'vehicleWise'])->name('vehicle-wise');
+            Route::get('/reports', [\App\Http\Controllers\Admin\FastagController::class, 'reports'])->name('reports');
+            Route::get('/sync-logs', [\App\Http\Controllers\Admin\FastagController::class, 'syncLogs'])->name('sync-logs');
+            Route::get('/config', [\App\Http\Controllers\Admin\FastagController::class, 'config'])->name('config');
+            Route::post('/test-connection', [\App\Http\Controllers\Admin\FastagController::class, 'testConnection'])->name('test-connection');
+            Route::get('/summary', [\App\Http\Controllers\Admin\FastagController::class, 'summary'])->name('summary');
+            Route::post('/sync', [\App\Http\Controllers\Admin\FastagController::class, 'sync'])->name('sync');
+            Route::post('/sync-all', [\App\Http\Controllers\Admin\FastagController::class, 'syncAll'])->name('sync-all');
+            Route::get('/{id}', [\App\Http\Controllers\Admin\FastagController::class, 'show'])->name('show');
+        });
+
         Route::get('companies/all', [CompanyController::class, 'getAllCompanies'])->name('companies.all');
         Route::get('companies/{company}/branches', [CompanyController::class, 'getBranches'])->name('companies.branches');
         Route::post('switch-company', [\App\Http\Controllers\Admin\SuperAdminController::class, 'switchCompany'])->name('switch-company');
