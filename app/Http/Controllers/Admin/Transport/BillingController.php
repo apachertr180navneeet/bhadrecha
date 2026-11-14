@@ -7,6 +7,7 @@ use App\Models\Bulty;
 use App\Models\BillFormat;
 use App\Models\Invoice;
 use App\Models\Consignor;
+use App\Models\City;
 use App\Models\Consignee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
