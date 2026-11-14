@@ -138,38 +138,40 @@
             {{ $bulties->links() }}
         </div>
         @endif
-    <!-- Modal to Enter/Paste Multiple LR Numbers -->
-    <div class="modal fade" id="enterLrModal" tabindex="-1" aria-labelledby="enterLrModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header bg-light">
-                    <h5 class="modal-title fw-bold" id="enterLrModalLabel">
-                        <i class="bx bx-receipt me-1 text-primary"></i> Enter / Paste Multiple LR Numbers
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+</div>
+
+<!-- Modal to Enter/Paste Multiple LR Numbers -->
+<div class="modal fade" id="enterLrModal" tabindex="-1" aria-labelledby="enterLrModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="true" data-bs-focus="false">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold" id="enterLrModalLabel">
+                    <i class="bx bx-receipt me-1 text-primary"></i> Enter / Paste Multiple LR Numbers
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-2">
+                    Enter or paste multiple LR numbers below separated by commas, spaces, or new lines (e.g. paste 44 LR numbers from Excel or WhatsApp).
+                </p>
+                <div class="mb-3">
+                    <textarea class="form-control font-monospace" id="pasteLrNumbersInput" rows="6" placeholder="LR-1001, LR-1002, LR-1003&#10;or one LR number per line..."></textarea>
                 </div>
-                <div class="modal-body">
-                    <p class="text-muted small mb-2">
-                        Enter or paste multiple LR numbers below separated by commas, spaces, or new lines (e.g. paste 44 LR numbers from Excel or WhatsApp).
-                    </p>
-                    <div class="mb-3">
-                        <textarea class="form-control font-monospace" id="pasteLrNumbersInput" rows="6" placeholder="LR-1001, LR-1002, LR-1003&#10;or one LR number per line..."></textarea>
-                    </div>
-                    <div id="matchLrStatus" class="d-none alert mb-0"></div>
+                <div id="matchLrStatus" class="d-none alert mb-0"></div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <div>
+                    <span id="lrCountPill" class="badge bg-label-secondary">0 LR numbers entered</span>
                 </div>
-                <div class="modal-footer justify-content-between">
-                    <div>
-                        <span id="lrCountPill" class="badge bg-label-secondary">0 LR numbers entered</span>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-info" id="validateLrsBtn">
-                            <i class="bx bx-check-double me-1"></i> Check & Match LRs
-                        </button>
-                        <button type="button" class="btn btn-success" id="proceedWithLrsBtn" disabled>
-                            <i class="bx bx-right-arrow-alt me-1"></i> Generate Bill
-                        </button>
-                    </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-info" id="validateLrsBtn">
+                        <i class="bx bx-check-double me-1"></i> Check & Match LRs
+                    </button>
+                    <button type="button" class="btn btn-success" id="proceedWithLrsBtn" disabled>
+                        <i class="bx bx-right-arrow-alt me-1"></i> Generate Bill
+                    </button>
                 </div>
             </div>
         </div>
@@ -306,6 +308,13 @@
             pill.textContent = `${lrs.length} LR number(s) entered`;
         }
     });
+
+    const enterLrModalEl = document.getElementById('enterLrModal');
+    if (enterLrModalEl) {
+        enterLrModalEl.addEventListener('shown.bs.modal', function () {
+            document.getElementById('pasteLrNumbersInput')?.focus();
+        });
+    }
 
     document.getElementById('validateLrsBtn')?.addEventListener('click', function() {
         const lrs = getEnteredLrs();
