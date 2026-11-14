@@ -328,14 +328,16 @@
                     <!-- Single vehicle picker -->
                     <div class="mb-3" id="vehiclePickerGroup">
                         <label class="form-label fw-semibold">Select Vehicle <span class="text-danger">*</span></label>
-                        <select name="vehicle_number" id="vehicleSelect" class="form-select select2">
-                            <option value="">-- Choose Truck / Vehicle --</option>
+                        <select name="vehicle_number" id="vehicleSelect" class="form-select" required>
+                            <option value="">-- Choose Truck / Vehicle ({{ count($vehicles) }} Registered) --</option>
                             @foreach($vehicles as $veh)
-                                <option value="{{ $veh->vehicle_number }}">{{ $veh->vehicle_number }} ({{ $veh->make_model ?: $veh->vehicle_type }})</option>
+                                <option value="{{ $veh->vehicle_number }}">{{ $veh->vehicle_number }} &nbsp;—&nbsp; {{ $veh->make_model ?: ($veh->vehicle_type ?: 'Truck') }}</option>
                             @endforeach
                         </select>
-                        <div class="form-text">Or enter manually below if not registered yet.</div>
-                        <input type="text" id="manualVehicleInput" class="form-control form-control-sm mt-1 text-uppercase" placeholder="Or enter manual vehicle number...">
+                        <div class="mt-2">
+                            <label class="form-label small text-muted mb-1"><i class="bx bx-search"></i> Quick search or enter manual truck number:</label>
+                            <input type="text" id="manualVehicleInput" class="form-control form-control-sm text-uppercase font-monospace" placeholder="Type truck number (e.g. RJ19GJ3506)...">
+                        </div>
                     </div>
 
                     <!-- Date range -->
@@ -417,15 +419,51 @@ document.addEventListener('DOMContentLoaded', function () {
         scopeAll.addEventListener('change', toggleScope);
     }
 
-    if (manualVehicleInput) {
+    // Live quick filter & manual vehicle support
+    if (manualVehicleInput && vehicleSelect) {
+        var originalOptions = Array.from(vehicleSelect.options).map(function(opt) {
+            return { value: opt.value, text: opt.text };
+        });
+
         manualVehicleInput.addEventListener('input', function () {
-            if (this.value.trim() !== '') {
-                vehicleSelect.value = '';
+            var search = this.value.trim().toUpperCase();
+            vehicleSelect.innerHTML = '';
+
+            var defaultOpt = document.createElement('option');
+            defaultOpt.value = '';
+            defaultOpt.text = search ? '-- Filtered Results (' + search + ') --' : '-- Choose Truck / Vehicle (' + (originalOptions.length - 1) + ' Registered) --';
+            vehicleSelect.appendChild(defaultOpt);
+
+            var matches = [];
+            if (search) {
+                matches = originalOptions.filter(function(o) {
+                    return o.value && (o.value.toUpperCase().indexOf(search) !== -1 || o.text.toUpperCase().indexOf(search) !== -1);
+                });
+            } else {
+                matches = originalOptions.filter(function(o) { return o.value !== ''; });
+            }
+
+            matches.forEach(function(o) {
                 var opt = document.createElement('option');
-                opt.value = this.value.trim().toUpperCase();
-                opt.text = this.value.trim().toUpperCase() + ' (Manual Entry)';
-                opt.selected = true;
+                opt.value = o.value;
+                opt.text = o.text;
                 vehicleSelect.appendChild(opt);
+            });
+
+            if (search && matches.length === 0) {
+                var manualOpt = document.createElement('option');
+                manualOpt.value = search;
+                manualOpt.text = search + ' (Manual Entry)';
+                manualOpt.selected = true;
+                vehicleSelect.appendChild(manualOpt);
+            } else if (matches.length === 1) {
+                vehicleSelect.options[1].selected = true;
+            }
+        });
+
+        vehicleSelect.addEventListener('change', function () {
+            if (this.value) {
+                manualVehicleInput.value = this.value;
             }
         });
     }
