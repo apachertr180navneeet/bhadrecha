@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\Web\HomeController;
 use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\SuperAdminController;
+use App\Http\Controllers\Admin\DatabaseBackupController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\PermissionController;
@@ -91,6 +92,9 @@ Route::name('admin.')->prefix('admin')->group(function () {
         Route::post('profile', [AdminAuthController::class, 'updateAdminProfile'])->name('update.profile');
 
         Route::get('activity-logs', [SuperAdminController::class, 'activityLogs'])->name('activity-logs');
+        Route::get('database-backup', [DatabaseBackupController::class, 'index'])->name('database-backup');
+        Route::get('database-backup/download', [DatabaseBackupController::class, 'download'])->name('database-backup.download');
+        Route::get('database-backup/download-file/{filename}', [DatabaseBackupController::class, 'downloadStoredBackup'])->name('database-backup.download-file');
         Route::get('settings', [SuperAdminController::class, 'systemSettings'])->name('settings');
         Route::post('settings', [SuperAdminController::class, 'updateSettings'])->name('settings.update');
 

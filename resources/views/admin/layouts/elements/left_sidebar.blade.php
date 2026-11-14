@@ -857,6 +857,15 @@
             </li>
         @endcan
 
+        @if(auth()->user()->isSuperAdmin())
+            <li class="menu-item {{ request()->is('admin/database-backup*') ? 'active' : '' }}">
+                <a href="{{ route('admin.database-backup') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-data"></i>
+                    <div data-i18n="Database Backup">Database Backup</div>
+                </a>
+            </li>
+        @endif
+
         <li class="menu-item {{ request()->is('admin/mail-configuration*') ? 'active' : '' }}">
             <a href="{{ route('admin.mail-configuration.index') }}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-envelope"></i>
