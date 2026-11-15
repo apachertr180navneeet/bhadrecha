@@ -148,8 +148,10 @@
                                 <td>
                                     @if(config('blackbuck.token') && config('blackbuck.token') !== 'YOUR_TEST_TOKEN')
                                         <span class="badge bg-label-success">CONFIGURED ({{ Str::mask(config('blackbuck.token'), '*', 4, -4) }})</span>
+                                    @elseif(config('blackbuck.token'))
+                                        <span class="badge bg-label-warning">PLACEHOLDER ({{ config('blackbuck.token') }})</span>
                                     @else
-                                        <span class="badge bg-label-danger">NOT CONFIGURED / PLACEHOLDER</span>
+                                        <span class="badge bg-label-danger">NOT SET</span>
                                     @endif
                                 </td>
                                 <td><small class="text-muted">API Auth Token</small></td>

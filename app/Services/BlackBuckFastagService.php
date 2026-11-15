@@ -47,7 +47,7 @@ class BlackBuckFastagService
             $missing[] = 'BLACKBUCK_BASE_URL';
         }
 
-        if (empty($this->token) || $this->token === 'YOUR_TEST_TOKEN') {
+        if (empty($this->token)) {
             $missing[] = 'BLACKBUCK_TOKEN';
         }
 
