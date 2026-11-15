@@ -1055,14 +1055,18 @@
                         initDateTimePickers();
                         recalcTotals();
                         if (typeof Swal !== 'undefined') {
+                            let msg = `Loaded ${res.count} transactions totaling ₹${parseFloat(res.total_amount).toFixed(2)} between ${res.from_time} and ${res.to_time}.`;
+                            if (res.notice) {
+                                msg += `\n(${res.notice})`;
+                            }
                             Swal.fire({
                                 icon: 'success',
                                 title: 'FASTag Synced',
-                                text: `Loaded ${res.count} transactions totaling ₹${parseFloat(res.total_amount).toFixed(2)} between ${res.from_time} and ${res.to_time}.`,
+                                text: msg,
                                 toast: true,
                                 position: 'top-end',
                                 showConfirmButton: false,
-                                timer: 3500
+                                timer: 4500
                             });
                         }
                     } else {
@@ -1070,11 +1074,11 @@
                             Swal.fire({
                                 icon: 'info',
                                 title: 'No Toll Deductions',
-                                text: res.message || 'No FASTag transactions found for this vehicle in this date/time range.',
+                                text: res.notice || res.message || 'No FASTag transactions found for this vehicle in this date/time range.',
                                 toast: true,
                                 position: 'top-end',
                                 showConfirmButton: false,
-                                timer: 3500
+                                timer: 4000
                             });
                         }
                     }

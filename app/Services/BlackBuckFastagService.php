@@ -140,8 +140,29 @@ class BlackBuckFastagService
         }
 
         // Default: lookback window from config
-        $fromTime = $fromTime ?? Carbon::now()->subDays($this->config['sync_days_lookback'] ?? 3)->startOfDay();
-        $toTime = $toTime ?? Carbon::now()->endOfDay();
+        $fromTime = $fromTime ? ($fromTime instanceof Carbon ? $fromTime : Carbon::parse($fromTime)) : Carbon::now()->subDays($this->config['sync_days_lookback'] ?? 3)->startOfDay();
+        $toTime = $toTime ? ($toTime instanceof Carbon ? $toTime : Carbon::parse($toTime)) : Carbon::now()->endOfDay();
+
+        $thirtyDaysAgo = Carbon::now()->subDays(30)->startOfDay();
+
+        // If the entire requested window is older than 30 days, BlackBuck API cannot provide this data
+        if ($toTime->lt($thirtyDaysAgo)) {
+            $msg = "BlackBuck API only retains transaction data for the last 30 days. Transactions between {$fromTime->format('d-M-Y')} and {$toTime->format('d-M-Y')} cannot be fetched from the API.";
+            $this->safeLog('info', "[BlackBuckFastag] {$msg}");
+            return [
+                'success' => false,
+                'error' => $msg,
+                'data' => [],
+                'raw_response' => null,
+                'is_retention_limit' => true,
+            ];
+        }
+
+        // If fromTime is older than 30 days, clamp it to 30 days ago to avoid 400 BAD_REQUEST
+        if ($fromTime->lt($thirtyDaysAgo)) {
+            $this->safeLog('info', "[BlackBuckFastag] Requested from_time ({$fromTime->toDateTimeString()}) is older than 30 days limit. Clamping from_time to {$thirtyDaysAgo->toDateTimeString()}.");
+            $fromTime = $thirtyDaysAgo->copy();
+        }
 
         $fromMs = $this->toMilliseconds($fromTime);
         $toMs = $this->toMilliseconds($toTime);
@@ -173,6 +194,10 @@ class BlackBuckFastagService
                 }
             } else {
                 $lastError = $res['error'] ?? 'API error';
+                // If it's a 400 Bad Request (such as 30-day retention or invalid truck), stop further chunks
+                if (str_contains($lastError, 'last30 days') || str_contains($lastError, '400') || str_contains($lastError, 'BAD_REQUEST')) {
+                    break;
+                }
             }
 
             $currentStart = $currentEnd;
@@ -261,11 +286,18 @@ class BlackBuckFastagService
                 'raw_response' => null,
             ];
         } catch (\Throwable $e) {
-            $msg = 'Unexpected error communicating with BlackBuck API: ' . $e->getMessage();
-            $this->safeLog('error', $msg);
+            $rawMsg = $e->getMessage();
+            $cleanMsg = $rawMsg;
+            if (preg_match('/\{.*"(?:message|error)".*\}/s', $rawMsg, $matches)) {
+                $decoded = json_decode($matches[0], true);
+                if (is_array($decoded)) {
+                    $cleanMsg = $decoded['message'] ?? $decoded['error'] ?? $rawMsg;
+                }
+            }
+            $this->safeLog('error', 'BlackBuck API communication error: ' . $cleanMsg);
             return [
                 'success' => false,
-                'error' => $msg,
+                'error' => $cleanMsg,
                 'data' => [],
                 'raw_response' => null,
             ];
@@ -554,15 +586,17 @@ class BlackBuckFastagService
             $apiResult = $this->fetchTransactions($truckNumbers, $fromParsed, $toParsed);
 
             if (!$apiResult['success']) {
+                $status = !empty($apiResult['is_retention_limit']) ? 'SKIPPED' : 'FAILED';
                 $syncLog->update([
-                    'sync_status' => 'FAILED',
+                    'sync_status' => $status,
                     'error_message' => $apiResult['error'],
                     'completed_at' => now(),
                 ]);
 
                 return [
                     'success' => false,
-                    'status' => 'FAILED',
+                    'status' => $status,
+                    'is_retention_limit' => !empty($apiResult['is_retention_limit']),
                     'truck_numbers' => $truckNumbers,
                     'records_received' => 0,
                     'records_saved' => 0,

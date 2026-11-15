@@ -198,14 +198,20 @@ class TripController extends Controller
 
         $fastTagTransactions = collect();
         if ($vehicleNumber && $startDateTime) {
-            try {
-                $service = app(\App\Services\BlackBuckFastagService::class);
-                $service->syncVehicles([$vehicleNumber], $startDateTime, $endDateTime);
-            } catch (\Exception $e) {
-                \Log::warning("Auto-sync FASTag error for {$vehicleNumber}: " . $e->getMessage());
+            $thirtyDaysAgo = Carbon::now()->subDays(30)->startOfDay();
+
+            // Only attempt API sync if the bilty range touches the 30-day window
+            if ($endDateTime->gte($thirtyDaysAgo)) {
+                $syncFrom = $startDateTime->lt($thirtyDaysAgo) ? $thirtyDaysAgo : $startDateTime;
+                try {
+                    $service = app(\App\Services\BlackBuckFastagService::class);
+                    $service->syncVehicles([$vehicleNumber], $syncFrom, $endDateTime);
+                } catch (\Exception $e) {
+                    \Log::warning("Auto-sync FASTag error for {$vehicleNumber}: " . $e->getMessage());
+                }
             }
 
-            // Only fetch DEBIT transactions (toll deductions)
+            // Only fetch DEBIT transactions (toll deductions) from local DB
             $fastTagTransactions = FastagTransaction::forVehicle($vehicleNumber)
                 ->where('transaction_type', 'DEBIT')
                 ->whereBetween('transaction_date', [$startDateTime, $endDateTime])
@@ -247,11 +253,22 @@ class TripController extends Controller
             $startDateTime = now()->subDays(3)->startOfDay();
         }
 
-        try {
-            $service = app(\App\Services\BlackBuckFastagService::class);
-            $service->syncVehicles([$vehicleNumber], $startDateTime, $endDateTime);
-        } catch (\Exception $e) {
-            \Log::warning("Live FASTag sync error for {$vehicleNumber}: " . $e->getMessage());
+        $thirtyDaysAgo = Carbon::now()->subDays(30)->startOfDay();
+        $notice = null;
+
+        if ($endDateTime->lt($thirtyDaysAgo)) {
+            $notice = 'BlackBuck API only retains data for the last 30 days. Showing historical toll records from database for this trip.';
+        } else {
+            $syncFrom = $startDateTime->lt($thirtyDaysAgo) ? $thirtyDaysAgo : $startDateTime;
+            if ($startDateTime->lt($thirtyDaysAgo)) {
+                $notice = 'Note: Trip start date is older than 30 days. Live sync was limited to the last 30 days by BlackBuck API.';
+            }
+            try {
+                $service = app(\App\Services\BlackBuckFastagService::class);
+                $service->syncVehicles([$vehicleNumber], $syncFrom, $endDateTime);
+            } catch (\Exception $e) {
+                \Log::warning("Live FASTag sync error for {$vehicleNumber}: " . $e->getMessage());
+            }
         }
 
         // Only fetch DEBIT transactions (toll deductions)
@@ -286,6 +303,7 @@ class TripController extends Controller
             'to_time' => $endDateTime->format('d M Y, h:i A'),
             'total_amount' => $formatted->sum('amount'),
             'count' => $formatted->count(),
+            'notice' => $notice,
             'transactions' => $formatted,
         ]);
     }

@@ -418,6 +418,17 @@ class FastagController extends Controller
         $fromTime = $request->from_time ?? $request->from_date;
         $toTime = $request->to_time ?? $request->to_date;
 
+        $toParsed = $toTime ? Carbon::parse($toTime) : now()->endOfDay();
+        $thirtyDaysAgo = Carbon::now()->subDays(30)->startOfDay();
+
+        if ($toParsed->lt($thirtyDaysAgo)) {
+            $msg = 'BlackBuck API only retains transaction data for the last 30 days (from ' . $thirtyDaysAgo->format('d M Y') . ' onwards). Please select dates within the last 30 days.';
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $msg, 'error' => $msg], 422);
+            }
+            return redirect()->back()->with('error', $msg);
+        }
+
         $result = $this->fastagService->syncVehicles($trucks, $fromTime, $toTime);
 
         if ($request->wantsJson()) {
@@ -463,6 +474,17 @@ class FastagController extends Controller
 
         $fromTime = $request->from_time ?? $request->from_date;
         $toTime = $request->to_time ?? $request->to_date;
+
+        $toParsed = $toTime ? Carbon::parse($toTime) : now()->endOfDay();
+        $thirtyDaysAgo = Carbon::now()->subDays(30)->startOfDay();
+
+        if ($toParsed->lt($thirtyDaysAgo)) {
+            $msg = 'BlackBuck API only retains transaction data for the last 30 days (from ' . $thirtyDaysAgo->format('d M Y') . ' onwards). Please select dates within the last 30 days.';
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $msg, 'error' => $msg], 422);
+            }
+            return redirect()->back()->with('error', $msg);
+        }
 
         $result = $this->fastagService->syncAllVehicles($fromTime, $toTime);
 

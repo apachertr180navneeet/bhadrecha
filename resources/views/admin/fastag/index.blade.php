@@ -344,11 +344,14 @@
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label class="form-label small fw-semibold">From Date</label>
-                            <input type="date" name="from_date" class="form-control" value="{{ \Carbon\Carbon::now()->subDays(3)->format('Y-m-d') }}">
+                            <input type="date" name="from_date" class="form-control" min="{{ \Carbon\Carbon::now()->subDays(30)->format('Y-m-d') }}" max="{{ \Carbon\Carbon::now()->format('Y-m-d') }}" value="{{ \Carbon\Carbon::now()->subDays(3)->format('Y-m-d') }}">
                         </div>
                         <div class="col-6">
                             <label class="form-label small fw-semibold">To Date</label>
-                            <input type="date" name="to_date" class="form-control" value="{{ \Carbon\Carbon::now()->format('Y-m-d') }}">
+                            <input type="date" name="to_date" class="form-control" min="{{ \Carbon\Carbon::now()->subDays(30)->format('Y-m-d') }}" max="{{ \Carbon\Carbon::now()->format('Y-m-d') }}" value="{{ \Carbon\Carbon::now()->format('Y-m-d') }}">
+                        </div>
+                        <div class="col-12">
+                            <span class="text-muted small"><i class="bx bx-time-five"></i> BlackBuck API provides transactions up to the last 30 days.</span>
                         </div>
                     </div>
 
