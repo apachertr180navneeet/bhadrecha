@@ -413,7 +413,12 @@
                                 <div class="info-value">{{ $bulty->delivery_number ?? '-' }}</div>
                             </div>
                             <div class="col-md-4">
-                                <div class="info-label">Delivered Date & Time</div>
+                                <div class="info-label d-flex align-items-center">
+                                    <span>Delivered Date & Time</span>
+                                    <a href="javascript:void(0)" class="ms-2 text-primary" data-bs-toggle="modal" data-bs-target="#editDeliveryDateTimeModal" title="Edit Delivery Date & Time">
+                                        <i class="bx bx-pencil" style="font-size: 13px;"></i>
+                                    </a>
+                                </div>
                                 <div class="info-value">
                                     @php
                                         $displayDelAt = $bulty->delivered_at 
@@ -553,6 +558,19 @@
                                     <div>
                                         @if($bulty->pod_document_status)
                                             <span class="badge bg-success bg-opacity-10 text-success small">Approved</span>
+                                            @php
+                                                $podDelAt = $bulty->delivered_at 
+                                                    ?? $bulty->bultyDetail?->delivered_at 
+                                                    ?? ($bulty->delivery_date ? ($bulty->delivery_date->format('Y-m-d') . ' ' . ($bulty->delivery_time ?? '')) : null)
+                                                    ?? ($bulty->status === 'delivered' ? $bulty->updated_at : null);
+                                            @endphp
+                                            <div class="mt-1" style="font-size: 11px;">
+                                                <span class="text-muted"><i class="bx bx-time me-1"></i>Delivered:</span>
+                                                <strong class="text-dark">{{ $podDelAt ? date('d M Y, h:i A', strtotime($podDelAt)) : 'Not set' }}</strong>
+                                                <a href="javascript:void(0)" class="ms-1 text-primary fw-semibold" data-bs-toggle="modal" data-bs-target="#editDeliveryDateTimeModal" title="Edit Delivery Date & Time">
+                                                    <i class="bx bx-pencil"></i>
+                                                </a>
+                                            </div>
                                         @elseif(!empty($podList))
                                             <span class="badge bg-warning bg-opacity-10 text-warning small">Pending ({{ count($podList) }} Photo{{ count($podList) > 1 ? 's' : '' }})</span>
                                         @else
@@ -582,17 +600,28 @@
                         @endif
                     </div>
 
-                    @if(!empty($podList) && !$bulty->pod_document_status)
+                    @if($bulty->pod_document_status)
+                        @if(auth()->user()?->isSuperAdmin() || auth()->user()?->isCompanyAdmin() || auth()->user()?->canAny([
+                            'approve bulty pod', 'approve bilty pod', 'approve pod', 'approve pod document',
+                            'approve bulty documents', 'approve bilty documents', 'approve documents',
+                            'edit bulties', 'edit bilties'
+                        ]) || (auth()->user()?->isBranchManager() && auth()->user()?->canAccessBranch($bulty->branch_id)))
+                        <div class="mb-3">
+                            <button type="button" class="btn btn-outline-primary btn-sm w-100" data-bs-toggle="modal" data-bs-target="#editDeliveryDateTimeModal">
+                                <i class="bx bx-calendar-edit me-1"></i> Set / Edit Delivery Date & Time
+                            </button>
+                        </div>
+                        @endif
+                    @elseif(!empty($podList))
                         @if(auth()->user()?->isSuperAdmin() || auth()->user()?->isCompanyAdmin() || auth()->user()?->canAny([
                             'approve bulty pod', 'approve bilty pod', 'approve pod', 'approve pod document',
                             'approve bulty documents', 'approve bilty documents', 'approve documents',
                             'edit bulties', 'edit bilties'
                         ]) || (auth()->user()?->isBranchManager() && auth()->user()?->canAccessBranch($bulty->branch_id)))
                         <div class="mb-3 d-flex gap-2">
-                            <form action="{{ route('admin.transport.bulties.approve-pod', $bulty->id) }}" method="POST" class="flex-grow-1">
-                                @csrf
-                                <button type="submit" class="btn btn-success btn-sm w-100">Approve</button>
-                            </form>
+                            <button type="button" class="btn btn-success btn-sm flex-grow-1" data-bs-toggle="modal" data-bs-target="#approvePodModal">
+                                <i class="bx bx-check-circle me-1"></i> Approve
+                            </button>
                             <form action="{{ route('admin.transport.bulties.reject-pod', $bulty->id) }}" method="POST" class="flex-grow-1">
                                 @csrf
                                 <button type="submit" class="btn btn-outline-danger btn-sm w-100" onclick="return confirm('Reject POD? Driver will need to re-upload.')">Reject</button>
@@ -694,6 +723,98 @@
                     <button type="submit" class="btn btn-primary" id="sendMailBtn">
                         <span id="sendMailBtnText">Send</span>
                         <span id="sendMailBtnSpinner" class="spinner-border spinner-border-sm ms-1 d-none" role="status"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Approve POD Modal with Manual Delivery Date & Time -->
+<div class="modal fade" id="approvePodModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title text-white"><i class="bx bx-check-shield me-2"></i>Approve POD & Set Delivery Time</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('admin.transport.bulties.approve-pod', $bulty->id) }}" method="POST">
+                @csrf
+                <div class="modal-body p-4">
+                    <div class="p-3 bg-light rounded-3 mb-3 border">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted small">LR Number:</span>
+                            <strong class="text-dark">{{ $bulty->lr_no }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted small">Consignee:</span>
+                            <span class="fw-semibold">{{ $bulty->consignee->name ?? '-' }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted small">Destination:</span>
+                            <span class="fw-semibold">{{ $bulty->destinationCity->name ?? '-' }}</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Manual Delivery Date & Time <span class="text-danger">*</span></label>
+                        @php
+                            $defaultDelAt = $bulty->delivered_at 
+                                ? $bulty->delivered_at->format('Y-m-d\TH:i') 
+                                : ($bulty->delivery_date ? $bulty->delivery_date->format('Y-m-d') . 'T' . ($bulty->delivery_time ? date('H:i', strtotime($bulty->delivery_time)) : '12:00') : now()->format('Y-m-d\TH:i'));
+                        @endphp
+                        <input type="datetime-local" name="delivered_at" class="form-control" value="{{ $defaultDelAt }}" required>
+                        <small class="text-muted mt-1 d-block">Specify the exact date and time when the shipment was delivered.</small>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bx bx-check-double me-1"></i> Approve & Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Delivery Date & Time Modal -->
+<div class="modal fade" id="editDeliveryDateTimeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title text-white"><i class="bx bx-time me-2"></i>Update Delivery Date & Time</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('admin.transport.bulties.delivery-datetime', $bulty->id) }}" method="POST">
+                @csrf
+                <div class="modal-body p-4">
+                    <div class="p-3 bg-light rounded-3 mb-3 border">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted small">LR Number:</span>
+                            <strong class="text-dark">{{ $bulty->lr_no }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted small">Status:</span>
+                            <span class="badge bg-success">{{ strtoupper($bulty->status) }}</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Delivery Date & Time <span class="text-danger">*</span></label>
+                        @php
+                            $currDelAt = $bulty->delivered_at 
+                                ? $bulty->delivered_at->format('Y-m-d\TH:i') 
+                                : ($bulty->delivery_date ? $bulty->delivery_date->format('Y-m-d') . 'T' . ($bulty->delivery_time ? date('H:i', strtotime($bulty->delivery_time)) : '12:00') : ($bulty->status === 'delivered' ? $bulty->updated_at->format('Y-m-d\TH:i') : now()->format('Y-m-d\TH:i')));
+                        @endphp
+                        <input type="datetime-local" name="delivered_at" class="form-control" value="{{ $currDelAt }}" required>
+                        <small class="text-muted mt-1 d-block">Change the manual delivery date and time for this shipment.</small>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bx bx-save me-1"></i> Update
                     </button>
                 </div>
             </form>

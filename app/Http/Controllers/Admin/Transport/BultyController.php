@@ -554,7 +554,7 @@ class BultyController extends Controller
         return back()->with('success', 'Material document rejected and removed.');
     }
 
-    public function approvePodDocument(Bulty $bulty)
+    public function approvePodDocument(Request $request, Bulty $bulty)
     {
         $this->authorizeBultyAction($bulty, 'approve bulty pod');
 
@@ -564,16 +564,36 @@ class BultyController extends Controller
 
         $bulty->pod_document_status = true;
         $bulty->status = 'delivered';
-        if (empty($bulty->delivered_at)) {
-            $now = now();
-            $bulty->delivered_at = $now;
-            if (empty($bulty->delivery_date)) {
-                $bulty->delivery_date = $now->toDateString();
+
+        if ($request->filled('delivered_at')) {
+            $ts = strtotime($request->input('delivered_at'));
+            if ($ts !== false) {
+                $bulty->delivered_at = date('Y-m-d H:i:s', $ts);
+                $bulty->delivery_date = date('Y-m-d', $ts);
+                $bulty->delivery_time = date('h:i A', $ts);
             }
-            if (empty($bulty->delivery_time)) {
-                $bulty->delivery_time = $now->format('h:i A');
+        } elseif ($request->filled('delivery_date')) {
+            $d = $request->input('delivery_date');
+            $t = $request->input('delivery_time', '00:00:00');
+            $ts = strtotime("$d $t");
+            if ($ts !== false) {
+                $bulty->delivered_at = date('Y-m-d H:i:s', $ts);
+                $bulty->delivery_date = date('Y-m-d', $ts);
+                $bulty->delivery_time = date('h:i A', $ts);
+            }
+        } else {
+            if (empty($bulty->delivered_at)) {
+                $now = now();
+                $bulty->delivered_at = $now;
+                if (empty($bulty->delivery_date)) {
+                    $bulty->delivery_date = $now->toDateString();
+                }
+                if (empty($bulty->delivery_time)) {
+                    $bulty->delivery_time = $now->format('h:i A');
+                }
             }
         }
+
         $bulty->save();
 
         if ($bulty->bultyDetail) {
@@ -590,7 +610,50 @@ class BultyController extends Controller
 
         ActivityLog::log('pod_approved', "Approved POD for bulty: {$bulty->lr_no}", $bulty);
 
-        return back()->with('success', 'POD approved successfully. Status updated to Delivered.');
+        return back()->with('success', 'POD approved successfully with delivery date & time. Status updated to Delivered.');
+    }
+
+    public function updateDeliveryDateTime(Request $request, Bulty $bulty)
+    {
+        $this->authorizeBultyAction($bulty, 'edit bulties');
+
+        $request->validate([
+            'delivered_at' => 'nullable',
+            'delivery_date' => 'nullable|date',
+            'delivery_time' => 'nullable|string|max:50',
+        ]);
+
+        if ($request->filled('delivered_at')) {
+            $ts = strtotime($request->input('delivered_at'));
+            if ($ts !== false) {
+                $bulty->delivered_at = date('Y-m-d H:i:s', $ts);
+                $bulty->delivery_date = date('Y-m-d', $ts);
+                $bulty->delivery_time = date('h:i A', $ts);
+            }
+        } elseif ($request->filled('delivery_date')) {
+            $d = $request->input('delivery_date');
+            $t = $request->input('delivery_time', '00:00:00');
+            $ts = strtotime("$d $t");
+            if ($ts !== false) {
+                $bulty->delivered_at = date('Y-m-d H:i:s', $ts);
+                $bulty->delivery_date = date('Y-m-d', $ts);
+                $bulty->delivery_time = date('h:i A', $ts);
+            }
+        }
+
+        $bulty->save();
+
+        if ($bulty->bultyDetail) {
+            $bulty->bultyDetail->update([
+                'delivered_at' => $bulty->delivered_at,
+                'delivery_date' => $bulty->delivery_date,
+                'delivery_time' => $bulty->delivery_time,
+            ]);
+        }
+
+        ActivityLog::log('delivery_datetime_updated', "Updated delivery date/time for bulty: {$bulty->lr_no}", $bulty);
+
+        return back()->with('success', 'Delivery date & time updated successfully.');
     }
 
     public function rejectPodDocument(Bulty $bulty)

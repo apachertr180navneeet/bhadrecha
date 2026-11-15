@@ -312,6 +312,7 @@ Route::name('admin.')->prefix('admin')->group(function () {
             Route::post('bulties/{bulty}/reject-document', [BultyController::class, 'rejectDocument'])->name('bulties.reject-document');
             Route::post('bulties/{bulty}/approve-pod', [BultyController::class, 'approvePodDocument'])->name('bulties.approve-pod');
             Route::post('bulties/{bulty}/reject-pod', [BultyController::class, 'rejectPodDocument'])->name('bulties.reject-pod');
+            Route::post('bulties/{bulty}/delivery-datetime', [BultyController::class, 'updateDeliveryDateTime'])->name('bulties.delivery-datetime');
             Route::get('bulties/{bulty}/pdf', [BultyController::class, 'generatePdf'])->name('bulties.pdf');
             Route::get('bulties/{bulty}/print-bill', [BultyController::class, 'printBill'])->name('bulties.print-bill');
             Route::post('bulties/{bulty}/send-mail', [BultyController::class, 'sendMail'])->name('bulties.send-mail');
