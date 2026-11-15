@@ -57,7 +57,7 @@
                         </div>
                         <div>
                             <small class="text-muted d-block">Auth Scheme</small>
-                            <h6 class="mb-0 text-uppercase">{{ $validation['auth_type'] }}</h6>
+                            <h6 class="mb-0 text-uppercase">{{ $validation['auth_type'] ?? config('blackbuck.auth_type', 'Token') }}</h6>
                         </div>
                     </div>
                     <small class="text-muted"><code>BLACKBUCK_AUTH_TYPE</code></small>
@@ -139,52 +139,37 @@
                                 <td><small class="text-muted">Transactions path</small></td>
                             </tr>
                             <tr>
-                                <td><code>BLACKBUCK_AUTH_ENDPOINT</code></td>
-                                <td><span class="font-monospace small">{{ config('blackbuck.auth_endpoint') }}</span></td>
-                                <td><small class="text-muted">Token generation endpoint</small></td>
-                            </tr>
-                            <tr>
                                 <td><code>BLACKBUCK_AUTH_TYPE</code></td>
-                                <td><span class="badge bg-label-info text-uppercase">{{ config('blackbuck.auth_type') }}</span></td>
-                                <td><small class="text-muted">bearer / api_key / basic / oauth</small></td>
+                                <td><span class="badge bg-label-info text-uppercase">{{ config('blackbuck.auth_type', 'Token') }}</span></td>
+                                <td><small class="text-muted">Header: <code>Authorization: Token &lt;token&gt;</code></small></td>
                             </tr>
                             <tr>
-                                <td><code>BLACKBUCK_API_KEY</code></td>
+                                <td><code>BLACKBUCK_TOKEN</code></td>
                                 <td>
-                                    @if(config('blackbuck.api_key'))
-                                        <span class="badge bg-label-success">SET ({{ Str::mask(config('blackbuck.api_key'), '*', 4, -4) }})</span>
+                                    @if(config('blackbuck.token') && config('blackbuck.token') !== 'YOUR_TEST_TOKEN')
+                                        <span class="badge bg-label-success">CONFIGURED ({{ Str::mask(config('blackbuck.token'), '*', 4, -4) }})</span>
                                     @else
-                                        <span class="badge bg-label-warning">NOT SET</span>
+                                        <span class="badge bg-label-danger">NOT CONFIGURED / PLACEHOLDER</span>
                                     @endif
                                 </td>
-                                <td><small class="text-muted">Client Key or Bearer Token</small></td>
+                                <td><small class="text-muted">API Auth Token</small></td>
                             </tr>
                             <tr>
-                                <td><code>BLACKBUCK_API_SECRET</code></td>
+                                <td><code>BLACKBUCK_PHONE_NUMBER</code></td>
                                 <td>
-                                    @if(config('blackbuck.api_secret'))
-                                        <span class="badge bg-label-success">SET (••••••••)</span>
-                                    @else
-                                        <span class="badge bg-label-secondary">NOT SET</span>
-                                    @endif
+                                    <span class="badge bg-label-primary font-monospace">{{ config('blackbuck.phone_number', '9829894925') }}</span>
                                 </td>
-                                <td><small class="text-muted">Client Secret</small></td>
-                            </tr>
-                            <tr>
-                                <td><code>BLACKBUCK_USERNAME</code></td>
-                                <td>
-                                    @if(config('blackbuck.username'))
-                                        <span class="badge bg-label-success">SET</span>
-                                    @else
-                                        <span class="badge bg-label-secondary">NOT SET</span>
-                                    @endif
-                                </td>
-                                <td><small class="text-muted">API User ID</small></td>
+                                <td><small class="text-muted">BlackBuck Account Phone</small></td>
                             </tr>
                             <tr>
                                 <td><code>BLACKBUCK_TIMEOUT</code></td>
-                                <td><span class="font-monospace small">{{ config('blackbuck.timeout') }}s</span></td>
+                                <td><span class="font-monospace small">{{ config('blackbuck.timeout', 60) }}s</span></td>
                                 <td><small class="text-muted">HTTP Client Timeout</small></td>
+                            </tr>
+                            <tr>
+                                <td><code>BLACKBUCK_RETRY_COUNT</code></td>
+                                <td><span class="font-monospace small">{{ config('blackbuck.retry_count', 3) }}</span></td>
+                                <td><small class="text-muted">Automatic Retry Attempts</small></td>
                             </tr>
                         </tbody>
                     </table>

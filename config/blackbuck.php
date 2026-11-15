@@ -22,6 +22,11 @@ return [
     'token' => env('BLACKBUCK_TOKEN'),
 
     /*
+    | Authorization type header scheme (Token)
+    */
+    'auth_type' => env('BLACKBUCK_AUTH_TYPE', 'Token'),
+
+    /*
     | Configurable Phone Number for BlackBuck FASTag Account
     */
     'phone_number' => env('BLACKBUCK_PHONE_NUMBER', '9829894925'),

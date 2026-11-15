@@ -62,6 +62,7 @@ class BlackBuckFastagService
             'transaction_endpoint' => $this->transactionEndpoint,
             'phone_number' => $this->phoneNumber,
             'auth_header' => 'Authorization: Token {BLACKBUCK_TOKEN}',
+            'auth_type' => config('blackbuck.auth_type', 'Token'),
         ];
     }
 
