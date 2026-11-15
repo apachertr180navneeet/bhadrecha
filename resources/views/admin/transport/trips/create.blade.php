@@ -130,7 +130,7 @@
                         <div class="row g-3">
                             <div class="col-md-3">
                                 <label class="form-label small">Transaction Time</label>
-                                <input type="text" name="fast_tag_details[{{ $i }}][transaction_time]" class="form-control form-control-sm datetime-picker" value="{{ $txn->transaction_date ? $txn->transaction_date->format('d-M-y h:i A') : '' }}" placeholder="DD-Mon-YY hh:mm AM/PM">
+                                <input type="text" name="fast_tag_details[{{ $i }}][transaction_time]" class="form-control form-control-sm datetime-picker" value="{{ $txn->transaction_date ? $txn->transaction_date->format('Y-m-d H:i') : '' }}" placeholder="DD-Mon-YY hh:mm AM/PM">
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label small">Amount (₹)</label>

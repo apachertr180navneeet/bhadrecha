@@ -198,24 +198,19 @@ class TripController extends Controller
 
         $fastTagTransactions = collect();
         if ($vehicleNumber && $startDateTime) {
+            try {
+                $service = app(\App\Services\BlackBuckFastagService::class);
+                $service->syncVehicles([$vehicleNumber], $startDateTime, $endDateTime);
+            } catch (\Exception $e) {
+                \Log::warning("Auto-sync FASTag error for {$vehicleNumber}: " . $e->getMessage());
+            }
+
+            // Only fetch DEBIT transactions (toll deductions)
             $fastTagTransactions = FastagTransaction::forVehicle($vehicleNumber)
+                ->where('transaction_type', 'DEBIT')
                 ->whereBetween('transaction_date', [$startDateTime, $endDateTime])
                 ->orderBy('transaction_date', 'asc')
                 ->get();
-
-            // If empty, attempt auto-sync from BlackBuck API
-            if ($fastTagTransactions->isEmpty()) {
-                try {
-                    $service = app(\App\Services\BlackBuckFastagService::class);
-                    $service->syncVehicles([$vehicleNumber], $startDateTime, $endDateTime);
-                    $fastTagTransactions = FastagTransaction::forVehicle($vehicleNumber)
-                        ->whereBetween('transaction_date', [$startDateTime, $endDateTime])
-                        ->orderBy('transaction_date', 'asc')
-                        ->get();
-                } catch (\Exception $e) {
-                    \Log::warning("Auto-sync FASTag error for {$vehicleNumber}: " . $e->getMessage());
-                }
-            }
         }
 
         return view('admin.transport.trips.create', compact(
@@ -252,21 +247,16 @@ class TripController extends Controller
             $startDateTime = now()->subDays(3)->startOfDay();
         }
 
-        $syncRequested = $request->boolean('sync', false);
-        $localCount = FastagTransaction::forVehicle($vehicleNumber)
-            ->whereBetween('transaction_date', [$startDateTime, $endDateTime])
-            ->count();
-
-        if ($syncRequested || $localCount === 0) {
-            try {
-                $service = app(\App\Services\BlackBuckFastagService::class);
-                $service->syncVehicles([$vehicleNumber], $startDateTime, $endDateTime);
-            } catch (\Exception $e) {
-                \Log::warning("Live FASTag sync error for {$vehicleNumber}: " . $e->getMessage());
-            }
+        try {
+            $service = app(\App\Services\BlackBuckFastagService::class);
+            $service->syncVehicles([$vehicleNumber], $startDateTime, $endDateTime);
+        } catch (\Exception $e) {
+            \Log::warning("Live FASTag sync error for {$vehicleNumber}: " . $e->getMessage());
         }
 
+        // Only fetch DEBIT transactions (toll deductions)
         $transactions = FastagTransaction::forVehicle($vehicleNumber)
+            ->where('transaction_type', 'DEBIT')
             ->whereBetween('transaction_date', [$startDateTime, $endDateTime])
             ->orderBy('transaction_date', 'asc')
             ->get();
@@ -279,7 +269,7 @@ class TripController extends Controller
             }
 
             return [
-                'transaction_time' => $txn->transaction_date ? $txn->transaction_date->format('d-M-y h:i A') : '',
+                'transaction_time' => $txn->transaction_date ? $txn->transaction_date->format('Y-m-d H:i') : '',
                 'amount' => (float)$txn->amount,
                 'location' => $plazaName,
                 'description' => $plazaName . ' - FASTag',
