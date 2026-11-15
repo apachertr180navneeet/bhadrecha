@@ -320,6 +320,7 @@ Route::name('admin.')->prefix('admin')->group(function () {
             Route::get('trips/download-template', [TripController::class, 'downloadTemplate'])->name('trips.download-template');
             Route::post('trips/import', [TripController::class, 'import'])->name('trips.import');
             Route::get('trips/create/{builty}', [TripController::class, 'create'])->name('trips.create');
+            Route::get('trips/builty-fastag/{builty}', [TripController::class, 'getBuiltyFastag'])->name('trips.builty-fastag');
             Route::post('trips', [TripController::class, 'store'])->name('trips.store');
             Route::get('trips/{trip}', [TripController::class, 'show'])->name('trips.show');
             Route::get('trips/{trip}/edit', [TripController::class, 'edit'])->name('trips.edit');

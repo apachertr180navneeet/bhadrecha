@@ -27,6 +27,7 @@ use App\Models\TripAdvanceDetail;
 use App\Models\Vehicle;
 use App\Models\AdBlueCompanyPayment;
 use App\Models\TripAdBlueDetail;
+use App\Models\FastagTransaction;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -181,13 +182,122 @@ class TripController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        $builty = Bulty::with(['consignor', 'consignee', 'originCity', 'destinationCity', 'bultyItems'])->findOrFail($builtyId);
+        $builty = Bulty::with(['consignor', 'consignee', 'originCity', 'destinationCity', 'bultyItems', 'vehicle', 'bultyDetail'])->findOrFail($builtyId);
         $fuelPumps = FuelPump::with('fuelCompany')->orderBy('name')->get();
         $fuelCompanies = FuelCompany::orderBy('name')->get();
         $adblueCompanies = AdBlueCompany::orderBy('name')->get();
         $cities = \App\Models\City::orderBy('name')->get();
 
-        return view('admin.transport.trips.create', compact('builty', 'fuelPumps', 'fuelCompanies', 'adblueCompanies', 'cities'));
+        // FASTag transactions pre-population for this builty based on lr_date and delivered_at
+        $vehicleNumber = $builty->vehicle?->vehicle_number;
+        $startDateTime = $builty->lr_date ? Carbon::parse($builty->lr_date)->startOfDay() : null;
+        $endDateTime = $builty->delivered_at 
+            ?? $builty->bultyDetail?->delivered_at
+            ?? ($builty->delivery_date ? Carbon::parse($builty->delivery_date->format('Y-m-d') . ' ' . ($builty->delivery_time ?: '23:59:59')) : null)
+            ?? ($builty->status === 'delivered' ? $builty->updated_at : now());
+
+        $fastTagTransactions = collect();
+        if ($vehicleNumber && $startDateTime) {
+            $fastTagTransactions = FastagTransaction::forVehicle($vehicleNumber)
+                ->whereBetween('transaction_date', [$startDateTime, $endDateTime])
+                ->orderBy('transaction_date', 'asc')
+                ->get();
+
+            // If empty, attempt auto-sync from BlackBuck API
+            if ($fastTagTransactions->isEmpty()) {
+                try {
+                    $service = app(\App\Services\BlackBuckFastagService::class);
+                    $service->syncVehicles([$vehicleNumber], $startDateTime, $endDateTime);
+                    $fastTagTransactions = FastagTransaction::forVehicle($vehicleNumber)
+                        ->whereBetween('transaction_date', [$startDateTime, $endDateTime])
+                        ->orderBy('transaction_date', 'asc')
+                        ->get();
+                } catch (\Exception $e) {
+                    \Log::warning("Auto-sync FASTag error for {$vehicleNumber}: " . $e->getMessage());
+                }
+            }
+        }
+
+        return view('admin.transport.trips.create', compact(
+            'builty', 'fuelPumps', 'fuelCompanies', 'adblueCompanies', 'cities',
+            'fastTagTransactions', 'startDateTime', 'endDateTime'
+        ));
+    }
+
+    public function getBuiltyFastag(Request $request, $builtyId)
+    {
+        $user = auth()->user();
+        if (!$user || (!$user->can('create trips') && !$user->can('create trip details') && !$user->isSuperAdmin())) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+        }
+
+        $builty = Bulty::with(['vehicle', 'bultyDetail'])->findOrFail($builtyId);
+        $vehicleNumber = $builty->vehicle?->vehicle_number;
+
+        if (!$vehicleNumber) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No vehicle attached to this Bilty.',
+                'transactions' => [],
+            ]);
+        }
+
+        $startDateTime = $builty->lr_date ? Carbon::parse($builty->lr_date)->startOfDay() : null;
+        $endDateTime = $builty->delivered_at 
+            ?? $builty->bultyDetail?->delivered_at
+            ?? ($builty->delivery_date ? Carbon::parse($builty->delivery_date->format('Y-m-d') . ' ' . ($builty->delivery_time ?: '23:59:59')) : null)
+            ?? ($builty->status === 'delivered' ? $builty->updated_at : now());
+
+        if (!$startDateTime) {
+            $startDateTime = now()->subDays(3)->startOfDay();
+        }
+
+        $syncRequested = $request->boolean('sync', false);
+        $localCount = FastagTransaction::forVehicle($vehicleNumber)
+            ->whereBetween('transaction_date', [$startDateTime, $endDateTime])
+            ->count();
+
+        if ($syncRequested || $localCount === 0) {
+            try {
+                $service = app(\App\Services\BlackBuckFastagService::class);
+                $service->syncVehicles([$vehicleNumber], $startDateTime, $endDateTime);
+            } catch (\Exception $e) {
+                \Log::warning("Live FASTag sync error for {$vehicleNumber}: " . $e->getMessage());
+            }
+        }
+
+        $transactions = FastagTransaction::forVehicle($vehicleNumber)
+            ->whereBetween('transaction_date', [$startDateTime, $endDateTime])
+            ->orderBy('transaction_date', 'asc')
+            ->get();
+
+        $formatted = $transactions->map(function ($txn) {
+            $plazaName = $txn->toll_plaza_name;
+            if (empty($plazaName) || $plazaName === 'Unknown Plaza') {
+                $raw = $txn->raw_response;
+                $plazaName = !empty($raw['entity_id']) ? "FASTag Toll ({$raw['entity_id']})" : 'FASTag Toll';
+            }
+
+            return [
+                'transaction_time' => $txn->transaction_date ? $txn->transaction_date->format('d-M-y h:i A') : '',
+                'amount' => (float)$txn->amount,
+                'location' => $plazaName,
+                'description' => $plazaName . ' - FASTag',
+                'transaction_id' => (string)($txn->transaction_id ?? ''),
+                'one_way' => (float)$txn->amount,
+                'return' => 0,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'vehicle_number' => $vehicleNumber,
+            'from_time' => $startDateTime->format('d M Y, h:i A'),
+            'to_time' => $endDateTime->format('d M Y, h:i A'),
+            'total_amount' => $formatted->sum('amount'),
+            'count' => $formatted->count(),
+            'transactions' => $formatted,
+        ]);
     }
 
     public function store(Request $request)
