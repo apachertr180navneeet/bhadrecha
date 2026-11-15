@@ -188,13 +188,29 @@ class TripController extends Controller
         $adblueCompanies = AdBlueCompany::orderBy('name')->get();
         $cities = \App\Models\City::orderBy('name')->get();
 
-        // FASTag transactions pre-population for this builty based on lr_date and delivered_at
+        // FASTag transactions pre-population for this builty based on lr_date, delivery, and return journey
         $vehicleNumber = $builty->vehicle?->vehicle_number;
-        $startDateTime = $builty->lr_date ? Carbon::parse($builty->lr_date)->startOfDay() : null;
-        $endDateTime = $builty->delivered_at 
+        $deliveryDateTime = $builty->delivered_at 
             ?? $builty->bultyDetail?->delivered_at
-            ?? ($builty->delivery_date ? Carbon::parse($builty->delivery_date->format('Y-m-d') . ' ' . ($builty->delivery_time ?: '23:59:59')) : null)
-            ?? ($builty->status === 'delivered' ? $builty->updated_at : now());
+            ?? ($builty->delivery_date ? Carbon::parse($builty->delivery_date->format('Y-m-d') . ' ' . ($builty->delivery_time ?: '23:59:59')) : null);
+
+        $startDateTime = $builty->lr_date ? Carbon::parse($builty->lr_date)->startOfDay() : null;
+
+        // Check if there is a next bilty for this truck to cap return journey
+        $nextBuilty = $builty->vehicle_id && $builty->lr_date ? Bulty::where('vehicle_id', $builty->vehicle_id)
+            ->where('id', '!=', $builty->id)
+            ->where('lr_date', '>', $builty->lr_date)
+            ->orderBy('lr_date', 'asc')
+            ->first() : null;
+
+        if ($nextBuilty && $nextBuilty->lr_date) {
+            $endDateTime = Carbon::parse($nextBuilty->lr_date)->startOfDay();
+        } elseif ($deliveryDateTime) {
+            $returnEnd = $deliveryDateTime->copy()->addDays(3);
+            $endDateTime = $returnEnd->gt(now()) ? now() : $returnEnd;
+        } else {
+            $endDateTime = now();
+        }
 
         $fastTagTransactions = collect();
         if ($vehicleNumber && $startDateTime) {
@@ -221,7 +237,7 @@ class TripController extends Controller
 
         return view('admin.transport.trips.create', compact(
             'builty', 'fuelPumps', 'fuelCompanies', 'adblueCompanies', 'cities',
-            'fastTagTransactions', 'startDateTime', 'endDateTime'
+            'fastTagTransactions', 'startDateTime', 'endDateTime', 'deliveryDateTime'
         ));
     }
 
@@ -243,11 +259,27 @@ class TripController extends Controller
             ]);
         }
 
-        $startDateTime = $builty->lr_date ? Carbon::parse($builty->lr_date)->startOfDay() : null;
-        $endDateTime = $builty->delivered_at 
+        $deliveryDateTime = $builty->delivered_at 
             ?? $builty->bultyDetail?->delivered_at
-            ?? ($builty->delivery_date ? Carbon::parse($builty->delivery_date->format('Y-m-d') . ' ' . ($builty->delivery_time ?: '23:59:59')) : null)
-            ?? ($builty->status === 'delivered' ? $builty->updated_at : now());
+            ?? ($builty->delivery_date ? Carbon::parse($builty->delivery_date->format('Y-m-d') . ' ' . ($builty->delivery_time ?: '23:59:59')) : null);
+
+        $startDateTime = $builty->lr_date ? Carbon::parse($builty->lr_date)->startOfDay() : null;
+
+        // Check if there is a next bilty for this truck to cap return journey
+        $nextBuilty = $builty->vehicle_id && $builty->lr_date ? Bulty::where('vehicle_id', $builty->vehicle_id)
+            ->where('id', '!=', $builty->id)
+            ->where('lr_date', '>', $builty->lr_date)
+            ->orderBy('lr_date', 'asc')
+            ->first() : null;
+
+        if ($nextBuilty && $nextBuilty->lr_date) {
+            $endDateTime = Carbon::parse($nextBuilty->lr_date)->startOfDay();
+        } elseif ($deliveryDateTime) {
+            $returnEnd = $deliveryDateTime->copy()->addDays(3);
+            $endDateTime = $returnEnd->gt(now()) ? now() : $returnEnd;
+        } else {
+            $endDateTime = now();
+        }
 
         if (!$startDateTime) {
             $startDateTime = now()->subDays(3)->startOfDay();
@@ -278,21 +310,28 @@ class TripController extends Controller
             ->orderBy('transaction_date', 'asc')
             ->get();
 
-        $formatted = $transactions->map(function ($txn) {
+        $formatted = $transactions->map(function ($txn) use ($deliveryDateTime) {
             $plazaName = $txn->toll_plaza_name;
             if (empty($plazaName) || $plazaName === 'Unknown Plaza') {
                 $raw = $txn->raw_response;
                 $plazaName = !empty($raw['entity_id']) ? "FASTag Toll ({$raw['entity_id']})" : 'FASTag Toll';
             }
 
+            // Option 2: Transactions after delivery_time are Return journey; before delivery are One Way journey
+            $isReturn = $deliveryDateTime && $txn->transaction_date && $txn->transaction_date->gt($deliveryDateTime);
+            $oneWay = $isReturn ? 0 : (float)$txn->amount;
+            $return = $isReturn ? (float)$txn->amount : 0;
+
             return [
                 'transaction_time' => $txn->transaction_date ? $txn->transaction_date->format('Y-m-d H:i') : '',
                 'amount' => (float)$txn->amount,
                 'location' => $plazaName,
-                'description' => $plazaName . ' - FASTag',
+                'description' => $plazaName . ($isReturn ? ' (Return)' : ' (One Way)'),
                 'transaction_id' => (string)($txn->transaction_id ?? ''),
-                'one_way' => (float)$txn->amount,
-                'return' => 0,
+                'one_way' => $oneWay,
+                'return' => $return,
+                'is_return' => $isReturn,
+                'journey_type' => $isReturn ? 'Return' : 'One Way',
             ];
         });
 

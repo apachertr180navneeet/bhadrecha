@@ -1129,6 +1129,8 @@
                     if (res.success && res.transactions && res.transactions.length > 0) {
                         $('#fastTagContainer').empty();
                         $.each(res.transactions, function(i, row) {
+                            const badgeOneWay = !row.is_return ? '<span class="badge bg-primary text-white ms-1" style="font-size: 10px;">One Way</span>' : '';
+                            const badgeReturn = row.is_return ? '<span class="badge bg-info text-dark ms-1" style="font-size: 10px;">Return</span>' : '';
                             const html = `<div class="detail-entry border rounded p-3 mb-3 bg-light bg-opacity-25">
                                 <div class="row g-3">
                                     <div class="col-md-3">
@@ -1144,7 +1146,7 @@
                                         <input type="text" name="fast_tag_details[${i}][location]" class="form-control form-control-sm" placeholder="Location" value="${row.location || ''}">
                                     </div>
                                     <div class="col-md-3">
-                                        <label class="form-label small">One Way (₹)</label>
+                                        <label class="form-label small">One Way (₹) ${badgeOneWay}</label>
                                         <input type="number" step="0.01" name="fast_tag_details[${i}][one_way]" class="form-control form-control-sm fast-tag-oneway" value="${row.one_way || 0}">
                                     </div>
                                 </div>
@@ -1158,7 +1160,7 @@
                                         <input type="text" name="fast_tag_details[${i}][transaction_id]" class="form-control form-control-sm" placeholder="Txn ID" value="${row.transaction_id || ''}">
                                     </div>
                                     <div class="col-md-3">
-                                        <label class="form-label small">Return (₹)</label>
+                                        <label class="form-label small">Return (₹) ${badgeReturn}</label>
                                         <input type="number" step="0.01" name="fast_tag_details[${i}][return]" class="form-control form-control-sm fast-tag-return" value="${row['return'] || 0}">
                                     </div>
                                     <div class="col-md-3 d-flex align-items-end justify-content-end">
@@ -1538,8 +1540,23 @@
         $(document).on('input', '.fast-tag-amount', function() {
             const entry = $(this).closest('.detail-entry');
             const amount = parseFloat($(this).val()) || 0;
-            entry.find('.fast-tag-oneway').val((amount / 2).toFixed(2));
-            entry.find('.fast-tag-return').val((amount / 2).toFixed(2));
+            const onewayField = entry.find('.fast-tag-oneway');
+            const returnField = entry.find('.fast-tag-return');
+            const curOneway = parseFloat(onewayField.val()) || 0;
+            const curReturn = parseFloat(returnField.val()) || 0;
+
+            if (curReturn > 0 && curOneway === 0) {
+                returnField.val(amount.toFixed(2));
+            } else if (curOneway > 0 && curReturn === 0) {
+                onewayField.val(amount.toFixed(2));
+            } else if (curOneway > 0 && curReturn > 0) {
+                const total = curOneway + curReturn;
+                onewayField.val(((curOneway / total) * amount).toFixed(2));
+                returnField.val(((curReturn / total) * amount).toFixed(2));
+            } else {
+                onewayField.val(amount.toFixed(2));
+                returnField.val('0.00');
+            }
         });
 
         $(document).on('input', '.fast-tag-oneway, .fast-tag-return', function() {
