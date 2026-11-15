@@ -564,7 +564,25 @@ class BultyController extends Controller
 
         $bulty->pod_document_status = true;
         $bulty->status = 'delivered';
+        if (empty($bulty->delivered_at)) {
+            $now = now();
+            $bulty->delivered_at = $now;
+            if (empty($bulty->delivery_date)) {
+                $bulty->delivery_date = $now->toDateString();
+            }
+            if (empty($bulty->delivery_time)) {
+                $bulty->delivery_time = $now->format('h:i A');
+            }
+        }
         $bulty->save();
+
+        if ($bulty->bultyDetail) {
+            $bulty->bultyDetail->update([
+                'delivered_at' => $bulty->delivered_at,
+                'delivery_date' => $bulty->delivery_date,
+                'delivery_time' => $bulty->delivery_time,
+            ]);
+        }
 
         if ($bulty->trip) {
             $bulty->trip->update(['status' => 'complete']);
@@ -814,6 +832,7 @@ class BultyController extends Controller
             'bilty_commission' => 'nullable|numeric|min:0',
             'order_number' => 'nullable|string|max:255',
             'delivery_number' => 'nullable|string|max:255',
+            'delivered_at' => 'nullable',
             'delivery_date' => "nullable|date|before_or_equal:9999-12-31",
             'delivery_time' => 'nullable|string|max:50',
             'from_no' => 'nullable|string|max:255',
@@ -874,6 +893,27 @@ class BultyController extends Controller
             'depot_name' => 'nullable|string|max:255',
             'billed_qty' => 'nullable|numeric|min:0',
         ], $extraRules));
+
+        if (!empty($validated['delivered_at'])) {
+            $ts = strtotime($validated['delivered_at']);
+            if ($ts !== false) {
+                $validated['delivered_at'] = date('Y-m-d H:i:s', $ts);
+                if (empty($validated['delivery_date'])) {
+                    $validated['delivery_date'] = date('Y-m-d', $ts);
+                }
+                if (empty($validated['delivery_time'])) {
+                    $validated['delivery_time'] = date('h:i A', $ts);
+                }
+            }
+        } elseif (!empty($validated['delivery_date'])) {
+            $time = !empty($validated['delivery_time']) ? $validated['delivery_time'] : '00:00:00';
+            $ts = strtotime($validated['delivery_date'] . ' ' . $time);
+            if ($ts !== false) {
+                $validated['delivered_at'] = date('Y-m-d H:i:s', $ts);
+            }
+        }
+
+        return $validated;
     }
 
     private function syncItems(Bulty $bulty, array $items): void
@@ -932,7 +972,7 @@ class BultyController extends Controller
             'description_services',
             'mn_no', 'bill_no', 'supplier_no', 'material_name', 'material_no',
             'depot_name', 'billed_qty',
-            'delivery_date', 'delivery_time',
+            'delivery_date', 'delivery_time', 'delivered_at',
         ];
 
         $data = [];
@@ -956,6 +996,16 @@ class BultyController extends Controller
                 if ($itemWeight > 0) {
                     $data['qty_mt'] = $itemWeight;
                 }
+            }
+
+            if (!empty($bulty->delivered_at) && empty($data['delivered_at'])) {
+                $data['delivered_at'] = $bulty->delivered_at;
+            }
+            if (!empty($bulty->delivery_date) && empty($data['delivery_date'])) {
+                $data['delivery_date'] = $bulty->delivery_date;
+            }
+            if (!empty($bulty->delivery_time) && empty($data['delivery_time'])) {
+                $data['delivery_time'] = $bulty->delivery_time;
             }
 
             $bulty->bultyDetail()->updateOrCreate(['bulty_id' => $bulty->id], $data);

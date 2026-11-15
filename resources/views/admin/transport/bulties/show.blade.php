@@ -293,11 +293,20 @@
                                     <div class="info-label" style="font-size: 0.6rem;">
                                         {{ $index == 0 ? $bulty->originCity->name ?? 'N/A' : $bulty->destinationCity->name ?? 'N/A' }}
                                     </div>
-                                    @if($index == count($statusSteps) - 1 && ($bulty->delivery_date || $bulty->delivery_time || $bulty->bultyDetail?->delivery_date || $bulty->bultyDetail?->delivery_time))
-                                    <div class="text-success fw-semibold" style="font-size: 0.6rem;">
-                                        <i class="bx bx-check-circle"></i> {{ ($bulty->delivery_date ?? $bulty->bultyDetail?->delivery_date) ? date('d M Y', strtotime($bulty->delivery_date ?? $bulty->bultyDetail->delivery_date)) : '' }}
-                                        {{ $bulty->delivery_time ?? $bulty->bultyDetail?->delivery_time ?? '' }}
-                                    </div>
+                                    @if($index == count($statusSteps) - 1)
+                                        @php
+                                            $delAt = $bulty->delivered_at 
+                                                ?? $bulty->bultyDetail?->delivered_at 
+                                                ?? ($bulty->delivery_date ? ($bulty->delivery_date->format('Y-m-d') . ' ' . ($bulty->delivery_time ?? '')) : null)
+                                                ?? ($bulty->bultyDetail?->delivery_date ? ($bulty->bultyDetail->delivery_date->format('Y-m-d') . ' ' . ($bulty->bultyDetail->delivery_time ?? '')) : null)
+                                                ?? ($bulty->status === 'delivered' ? $bulty->updated_at : null);
+                                        @endphp
+                                        @if($delAt)
+                                        <div class="text-success fw-semibold mt-1" style="font-size: 0.62rem; line-height: 1.2;">
+                                            <div><i class="bx bx-check-circle me-1"></i>{{ date('d M Y', strtotime($delAt)) }}</div>
+                                            <div class="text-muted" style="font-size: 0.58rem;">{{ date('h:i A', strtotime($delAt)) }}</div>
+                                        </div>
+                                        @endif
                                     @endif
                                 </div>
                                 @endif
@@ -404,12 +413,16 @@
                                 <div class="info-value">{{ $bulty->delivery_number ?? '-' }}</div>
                             </div>
                             <div class="col-md-4">
-                                <div class="info-label">Delivery Date</div>
-                                <div class="info-value">{{ $bulty->delivery_date ? date('d M Y', strtotime($bulty->delivery_date)) : ($bulty->bultyDetail?->delivery_date ? date('d M Y', strtotime($bulty->bultyDetail->delivery_date)) : '-') }}</div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="info-label">Delivered Time</div>
-                                <div class="info-value">{{ $bulty->delivery_time ?? $bulty->bultyDetail?->delivery_time ?? '-' }}</div>
+                                <div class="info-label">Delivered Date & Time</div>
+                                <div class="info-value">
+                                    @php
+                                        $displayDelAt = $bulty->delivered_at 
+                                            ?? ($bulty->delivery_date ? ($bulty->delivery_date->format('Y-m-d') . ' ' . ($bulty->delivery_time ?? '')) : null)
+                                            ?? $bulty->bultyDetail?->delivered_at 
+                                            ?? ($bulty->status === 'delivered' ? $bulty->updated_at : null);
+                                    @endphp
+                                    {{ $displayDelAt ? date('d M Y, h:i A', strtotime($displayDelAt)) : '-' }}
+                                </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="info-label">From No.</div>

@@ -271,6 +271,7 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
                     'delivery_number' => $firstRow['delivery_number'] ?? null,
                     'delivery_date' => $this->parseDate($firstRow['delivery_date'] ?? null),
                     'delivery_time' => $firstRow['delivery_time'] ?? null,
+                    'delivered_at' => !empty($firstRow['delivered_at']) ? $this->parseDate($firstRow['delivered_at']) : null,
                     'from_no' => $formNo,
                     'invoice_number' => $firstRow['invoice_number'] ?? null,
                     'invoice_date' => $this->parseDate($firstRow['invoice_date'] ?? null),
@@ -302,6 +303,7 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
                 if (!empty($firstRow['delivery_number'])) $updateData['delivery_number'] = $firstRow['delivery_number'];
                 if (!empty($firstRow['delivery_date'])) $updateData['delivery_date'] = $this->parseDate($firstRow['delivery_date']);
                 if (!empty($firstRow['delivery_time'])) $updateData['delivery_time'] = $firstRow['delivery_time'];
+                if (!empty($firstRow['delivered_at'])) $updateData['delivered_at'] = $this->parseDate($firstRow['delivered_at']);
                 if (!empty($formNo)) $updateData['from_no'] = $formNo;
                 if (!empty($firstRow['invoice_number'])) $updateData['invoice_number'] = $firstRow['invoice_number'];
                 if (!empty($firstRow['invoice_date'])) $updateData['invoice_date'] = $this->parseDate($firstRow['invoice_date']);
@@ -420,6 +422,7 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
                 'final_wgt' => $finalWgt,
                 'delivery_date' => $this->parseDate($firstRow['delivery_date'] ?? null),
                 'delivery_time' => $firstRow['delivery_time'] ?? null,
+                'delivered_at' => !empty($firstRow['delivered_at']) ? $this->parseDate($firstRow['delivered_at']) : null,
             ], fn ($val) => $val !== null && $val !== '');
 
             if (!empty($bultyDetailData)) {
