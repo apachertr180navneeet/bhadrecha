@@ -30,6 +30,8 @@ class BultyDetail extends Model
         'grn_time',
         'recd_qty',
         'arrival_time',
+        'delivery_date',
+        'delivery_time',
         'shortage_grn_no',
         'shortage_grn_date',
         'short_qty',
@@ -56,6 +58,7 @@ class BultyDetail extends Model
     protected $casts = [
         'posting_date' => 'date',
         'gate_out_date' => 'date',
+        'delivery_date' => 'date',
         'invoice_date' => 'date',
         'invoice_time' => 'datetime:H:i',
         'grn_date' => 'date',

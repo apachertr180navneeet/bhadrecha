@@ -814,6 +814,8 @@ class BultyController extends Controller
             'bilty_commission' => 'nullable|numeric|min:0',
             'order_number' => 'nullable|string|max:255',
             'delivery_number' => 'nullable|string|max:255',
+            'delivery_date' => "nullable|date|before_or_equal:9999-12-31",
+            'delivery_time' => 'nullable|string|max:50',
             'from_no' => 'nullable|string|max:255',
             'e_lr_no' => 'nullable|string|max:255',
             'invoice_number' => 'nullable|string|max:255',
@@ -930,6 +932,7 @@ class BultyController extends Controller
             'description_services',
             'mn_no', 'bill_no', 'supplier_no', 'material_name', 'material_no',
             'depot_name', 'billed_qty',
+            'delivery_date', 'delivery_time',
         ];
 
         $data = [];

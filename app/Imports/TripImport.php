@@ -269,6 +269,8 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
                     'to_city' => $destinationCity?->id,
                     'order_number' => $firstRow['order_number'] ?? null,
                     'delivery_number' => $firstRow['delivery_number'] ?? null,
+                    'delivery_date' => $this->parseDate($firstRow['delivery_date'] ?? null),
+                    'delivery_time' => $firstRow['delivery_time'] ?? null,
                     'from_no' => $formNo,
                     'invoice_number' => $firstRow['invoice_number'] ?? null,
                     'invoice_date' => $this->parseDate($firstRow['invoice_date'] ?? null),
@@ -298,6 +300,8 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
                 if ($destinationCity) $updateData['to_city'] = $destinationCity->id;
                 if (!empty($firstRow['order_number'])) $updateData['order_number'] = $firstRow['order_number'];
                 if (!empty($firstRow['delivery_number'])) $updateData['delivery_number'] = $firstRow['delivery_number'];
+                if (!empty($firstRow['delivery_date'])) $updateData['delivery_date'] = $this->parseDate($firstRow['delivery_date']);
+                if (!empty($firstRow['delivery_time'])) $updateData['delivery_time'] = $firstRow['delivery_time'];
                 if (!empty($formNo)) $updateData['from_no'] = $formNo;
                 if (!empty($firstRow['invoice_number'])) $updateData['invoice_number'] = $firstRow['invoice_number'];
                 if (!empty($firstRow['invoice_date'])) $updateData['invoice_date'] = $this->parseDate($firstRow['invoice_date']);
@@ -414,6 +418,8 @@ class TripImport implements ToCollection, WithHeadingRow, WithValidation, SkipsO
                 'material_name' => $materialName,
                 'challan_qty' => $challanQty,
                 'final_wgt' => $finalWgt,
+                'delivery_date' => $this->parseDate($firstRow['delivery_date'] ?? null),
+                'delivery_time' => $firstRow['delivery_time'] ?? null,
             ], fn ($val) => $val !== null && $val !== '');
 
             if (!empty($bultyDetailData)) {

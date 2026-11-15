@@ -305,6 +305,12 @@
                             <tr><td class="lr-label">Driver Ph. No.</td><td class="lr-value">{{ $bulty->driver->phone ? '+91-' . $bulty->driver->phone : '-' }}</td></tr>
                             <tr><td class="lr-label">Order No.</td><td class="lr-value">{{ $bulty->order_number ?? '-' }}</td></tr>
                             <tr><td class="lr-label">Delivery No.</td><td class="lr-value">{{ $bulty->delivery_number ?? '-' }}</td></tr>
+                            @if($bulty->delivery_date || $bulty->bultyDetail?->delivery_date)
+                            <tr><td class="lr-label">Delivery Dt</td><td class="lr-value">{{ date('d M Y', strtotime($bulty->delivery_date ?? $bulty->bultyDetail->delivery_date)) }}</td></tr>
+                            @endif
+                            @if($bulty->delivery_time ?? $bulty->bultyDetail?->delivery_time)
+                            <tr><td class="lr-label">Delivery Time</td><td class="lr-value">{{ $bulty->delivery_time ?? $bulty->bultyDetail?->delivery_time }}</td></tr>
+                            @endif
                             <tr><td class="lr-label">Form no.</td><td class="lr-value">{{ $bulty->from_no ?? '-' }}</td></tr>
                             <tr><td class="lr-label">Invoice No.</td><td class="lr-value">{{ $bulty->invoice_number ?? '-' }}</td></tr>
                             <tr><td class="lr-label">Invoice Dt</td><td class="lr-value">{{ $bulty->invoice_date ? date('d M Y', strtotime($bulty->invoice_date)) : '-' }}</td></tr>

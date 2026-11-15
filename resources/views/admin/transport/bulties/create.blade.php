@@ -6,7 +6,7 @@
         $openParties = old('consignor_id') || old('consignee_id');
         $openItems = old('items');
         $openVehicle = old('vehicle_id') || old('driver_id');
-        $openRef = old('order_number') || old('delivery_number') || old('from_no') || old('invoice_number') || old('eway_bill_no');
+        $openRef = old('order_number') || old('delivery_number') || old('delivery_date') || old('delivery_time') || old('from_no') || old('invoice_number') || old('eway_bill_no');
         $openOther = old('posting_date') || old('po_no') || old('mat_doc') || old('gate_entry_no') || old('challan_no') || old('inv_date') || old('grn_no');
     @endphp
     <!-- Animated Hero Header -->
@@ -508,6 +508,14 @@
                             <div class="col-md-4">
                                 <label class="form-label fw-bold small text-uppercase opacity-75">Delivery Number</label>
                                 <input type="text" name="delivery_number" class="form-control" value="{{ old('delivery_number') }}" placeholder="Delivery ref no.">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold small text-uppercase opacity-75">Delivery Date</label>
+                                <input type="date" max="9999-12-31" name="delivery_date" class="form-control" value="{{ old('delivery_date') }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold small text-uppercase opacity-75">Delivered Time</label>
+                                <input type="time" name="delivery_time" class="form-control" value="{{ old('delivery_time') }}">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label fw-bold small text-uppercase opacity-75">From No.</label>

@@ -6,7 +6,7 @@
         $openParties = $bulty->consignor_id || $bulty->consignee_id || old('consignor_id') || old('consignee_id');
         $openItems = ($bulty->relationLoaded('bultyItems') && $bulty->bultyItems->isNotEmpty()) || old('items');
         $openVehicle = $bulty->vehicle_id || $bulty->driver_id || old('vehicle_id') || old('driver_id');
-        $openReference = $bulty->order_number || $bulty->delivery_number || $bulty->from_no || $bulty->invoice_number || $bulty->eway_bill_no || old('order_number') || old('delivery_number') || old('from_no') || old('invoice_number') || old('eway_bill_no');
+        $openReference = $bulty->order_number || $bulty->delivery_number || $bulty->delivery_date || $bulty->delivery_time || $bulty->from_no || $bulty->invoice_number || $bulty->eway_bill_no || old('order_number') || old('delivery_number') || old('delivery_date') || old('delivery_time') || old('from_no') || old('invoice_number') || old('eway_bill_no');
         $openOther = $bulty->bultyDetail || old('posting_date') || old('po_no') || old('mat_doc') || old('gate_entry_no') || old('challan_no') || old('inv_date') || old('grn_no');
     @endphp
     <!-- Animated Hero Header -->
@@ -586,6 +586,14 @@
                             <div class="col-md-4">
                                 <label class="form-label fw-bold small text-uppercase opacity-75">Delivery Number</label>
                                 <input type="text" name="delivery_number" class="form-control" value="{{ old('delivery_number', $bulty->delivery_number) }}" placeholder="Delivery ref no.">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold small text-uppercase opacity-75">Delivery Date</label>
+                                <input type="date" max="9999-12-31" name="delivery_date" class="form-control" value="{{ old('delivery_date', optional($bulty->delivery_date ?? $bulty->bultyDetail?->delivery_date)->format('Y-m-d')) }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold small text-uppercase opacity-75">Delivered Time</label>
+                                <input type="time" name="delivery_time" class="form-control" value="{{ old('delivery_time', $bulty->delivery_time ?? $bulty->bultyDetail?->delivery_time ?? '') }}">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label fw-bold small text-uppercase opacity-75">From No.</label>

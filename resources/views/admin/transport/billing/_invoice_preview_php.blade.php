@@ -27,6 +27,8 @@
         'bilty_commission' => 'COMMISSION',
         'order_number' => 'ORDER NO.',
         'delivery_number' => 'DELIVERY NO.',
+        'delivery_date' => 'DELIVERY DATE',
+        'delivery_time' => 'DELIVERY TIME',
         'invoice_number' => 'INVOICE NO.',
         'invoice_date' => 'INVOICE DATE',
         'eway_bill_no' => 'E-WAY BILL NO.',
@@ -190,6 +192,14 @@
             $gstRate = $existingInvoice?->gstMaster ? floatval($existingInvoice->gstMaster->percentage) : null;
             $g = $gstRate !== null ? ($f * ($gstRate / 100)) : floatval($bulty->gst_amount);
             return $f + $o + $g;
+        }
+        
+        if ($fieldKey === 'delivery_date') {
+            $val = $bulty->delivery_date ?? $bulty->bultyDetail?->delivery_date;
+            return $val ? date('d-m-Y', strtotime($val)) : '-';
+        }
+        if ($fieldKey === 'delivery_time') {
+            return $bulty->delivery_time ?? $bulty->bultyDetail?->delivery_time ?? '-';
         }
         
         return $bulty->{$fieldKey} ?? '-';

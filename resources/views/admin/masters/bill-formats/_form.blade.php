@@ -33,6 +33,8 @@
         'References & Documents' => [
             'order_number' => 'Order Number',
             'delivery_number' => 'Delivery Number',
+            'delivery_date' => 'Delivery Date',
+            'delivery_time' => 'Delivery Time',
             'from_no' => 'From No.',
             'invoice_number' => 'Invoice Number',
             'invoice_date' => 'Invoice Date',

@@ -293,6 +293,12 @@
                                     <div class="info-label" style="font-size: 0.6rem;">
                                         {{ $index == 0 ? $bulty->originCity->name ?? 'N/A' : $bulty->destinationCity->name ?? 'N/A' }}
                                     </div>
+                                    @if($index == count($statusSteps) - 1 && ($bulty->delivery_date || $bulty->delivery_time || $bulty->bultyDetail?->delivery_date || $bulty->bultyDetail?->delivery_time))
+                                    <div class="text-success fw-semibold" style="font-size: 0.6rem;">
+                                        <i class="bx bx-check-circle"></i> {{ ($bulty->delivery_date ?? $bulty->bultyDetail?->delivery_date) ? date('d M Y', strtotime($bulty->delivery_date ?? $bulty->bultyDetail->delivery_date)) : '' }}
+                                        {{ $bulty->delivery_time ?? $bulty->bultyDetail?->delivery_time ?? '' }}
+                                    </div>
+                                    @endif
                                 </div>
                                 @endif
                             </div>
@@ -396,6 +402,14 @@
                             <div class="col-md-4">
                                 <div class="info-label">Delivery Number</div>
                                 <div class="info-value">{{ $bulty->delivery_number ?? '-' }}</div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="info-label">Delivery Date</div>
+                                <div class="info-value">{{ $bulty->delivery_date ? date('d M Y', strtotime($bulty->delivery_date)) : ($bulty->bultyDetail?->delivery_date ? date('d M Y', strtotime($bulty->bultyDetail->delivery_date)) : '-') }}</div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="info-label">Delivered Time</div>
+                                <div class="info-value">{{ $bulty->delivery_time ?? $bulty->bultyDetail?->delivery_time ?? '-' }}</div>
                             </div>
                             <div class="col-md-4">
                                 <div class="info-label">From No.</div>

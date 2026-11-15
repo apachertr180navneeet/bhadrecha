@@ -893,6 +893,8 @@ document.addEventListener('DOMContentLoaded', function() {
         'bilty_commission': 'COMMISSION',
         'order_number': 'ORDER NO.',
         'delivery_number': 'DILIVERY NO.',
+        'delivery_date': 'DELIVERY DATE',
+        'delivery_time': 'DELIVERY TIME',
         'invoice_number': 'INVOICE NO.',
         'invoice_date': 'INVOICE DATE',
         'eway_bill_no': 'E-WAY BILL NO.',
@@ -1085,6 +1087,21 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (e) {
                 return bulty.lr_date;
             }
+        }
+        
+        if (fieldKey === 'delivery_date') {
+            const raw = bulty.delivery_date || (bulty.bulty_detail ? bulty.bulty_detail.delivery_date : null);
+            if (!raw) return '-';
+            try {
+                const date = new Date(raw);
+                return isNaN(date.getTime()) ? raw : date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-');
+            } catch (e) {
+                return raw;
+            }
+        }
+
+        if (fieldKey === 'delivery_time') {
+            return bulty.delivery_time || (bulty.bulty_detail ? bulty.bulty_detail.delivery_time : '-') || '-';
         }
         
         if (fieldKey === 'remaining_amount') {
