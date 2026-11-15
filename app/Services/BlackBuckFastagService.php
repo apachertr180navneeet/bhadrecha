@@ -29,7 +29,13 @@ class BlackBuckFastagService
         $this->config = $config ?? config('blackbuck', []);
         $this->baseUrl = rtrim((string) ($this->config['base_url'] ?? env('BLACKBUCK_BASE_URL', 'https://api-fms.blackbuck.com')), '/');
         $this->transactionEndpoint = '/' . ltrim((string) ($this->config['transaction_endpoint'] ?? env('BLACKBUCK_TRANSACTION_ENDPOINT', '/fmstoll/api/lfo-transaction-details/transactions')), '/');
-        $this->token = $this->config['token'] ?? env('BLACKBUCK_TOKEN');
+        
+        $rawToken = (string) ($this->config['token'] ?? env('BLACKBUCK_TOKEN'));
+        if (preg_match('/^(?:Token|Bearer)\s+(.*)$/i', trim($rawToken), $m)) {
+            $rawToken = $m[1];
+        }
+        $this->token = trim($rawToken) !== '' ? trim($rawToken) : null;
+
         $this->phoneNumber = (int) ($this->config['phone_number'] ?? env('BLACKBUCK_PHONE_NUMBER', 9829894925));
         $this->timeout = (int) ($this->config['timeout'] ?? env('BLACKBUCK_TIMEOUT', 60));
         $this->retryCount = (int) ($this->config['retry_count'] ?? 3);
@@ -140,6 +146,82 @@ class BlackBuckFastagService
         $fromMs = $this->toMilliseconds($fromTime);
         $toMs = $this->toMilliseconds($toTime);
 
+        // BlackBuck API strictly enforces: "Time difference is more than 6 hours" (21,600,000 ms).
+        // If range is within 6 hours, execute a single direct call.
+        $maxWindowMs = 21500000;
+        if (($toMs - $fromMs) <= $maxWindowMs) {
+            return $this->fetchSingleWindow($cleanTrucks, $fromMs, $toMs);
+        }
+
+        // For ranges > 6 hours, automatically chunk into 5.9-hour consecutive slices to fetch all transactions.
+        $chunkStepMs = 21240000; // 5.9 hours
+        $allRecords = [];
+        $currentStart = $fromMs;
+        $anySuccess = false;
+        $lastError = null;
+        $rawResponses = [];
+
+        while ($currentStart < $toMs) {
+            $currentEnd = min($currentStart + $chunkStepMs, $toMs);
+            $res = $this->fetchSingleWindow($cleanTrucks, $currentStart, $currentEnd);
+
+            if ($res['success']) {
+                $anySuccess = true;
+                $rawResponses[] = $res['raw_response'] ?? null;
+                foreach ($res['data'] as $rec) {
+                    $allRecords[] = $rec;
+                }
+            } else {
+                $lastError = $res['error'] ?? 'API error';
+            }
+
+            $currentStart = $currentEnd;
+        }
+
+        if (!$anySuccess && $lastError) {
+            return [
+                'success' => false,
+                'error' => $lastError,
+                'data' => [],
+                'raw_response' => null,
+            ];
+        }
+
+        // Deduplicate records by unique provider transaction number / ID
+        $uniqueRecords = [];
+        $seen = [];
+        foreach ($allRecords as $r) {
+            $num = $r['transaction_number'] ?? $r['transaction_id'] ?? $r['id'] ?? null;
+            if ($num && isset($seen[$num])) {
+                continue;
+            }
+            if ($num) {
+                $seen[$num] = true;
+            }
+            $uniqueRecords[] = $r;
+        }
+
+        return [
+            'success' => true,
+            'status_code' => 200,
+            'data' => $uniqueRecords,
+            'count' => count($uniqueRecords),
+            'raw_response' => ['chunks' => $rawResponses],
+            'request_payload' => [
+                'phone_number' => $this->phoneNumber,
+                'from_time' => $fromMs,
+                'to_time' => $toMs,
+                'truck_filter' => 'SELECTIVE',
+                'truck_numbers' => $cleanTrucks,
+            ],
+        ];
+    }
+
+    /**
+     * Fetch a single time window (<= 6 hours) from BlackBuck API.
+     */
+    protected function fetchSingleWindow(array $cleanTrucks, int $fromMs, int $toMs): array
+    {
         $url = $this->baseUrl . $this->transactionEndpoint;
 
         $payload = [
@@ -237,8 +319,16 @@ class BlackBuckFastagService
             return [];
         }
 
+        // Actual BlackBuck API wrapper key
+        if (isset($body['requested_transactions']) && is_array($body['requested_transactions'])) {
+            return $body['requested_transactions'];
+        }
+
         // Check if data is wrapped inside data/transactions/records
         if (isset($body['data']) && is_array($body['data'])) {
+            if (isset($body['data']['requested_transactions']) && is_array($body['data']['requested_transactions'])) {
+                return $body['data']['requested_transactions'];
+            }
             if (isset($body['data']['transactions']) && is_array($body['data']['transactions'])) {
                 return $body['data']['transactions'];
             }
@@ -273,8 +363,9 @@ class BlackBuckFastagService
      */
     public function normalizeTransaction(array $item, ?Vehicle $vehicle = null, ?string $fallbackTruck = null): array
     {
-        // Transaction ID variants
-        $transactionId = $item['transaction_id']
+        // Transaction ID variants (BlackBuck uses transaction_number)
+        $transactionId = $item['transaction_number']
+            ?? $item['transaction_id']
             ?? $item['txn_id']
             ?? $item['transactionId']
             ?? $item['id']
@@ -300,16 +391,18 @@ class BlackBuckFastagService
             ?? null;
 
         // Toll Plaza name variants
-        $tollPlazaName = $item['toll_plaza_name']
-            ?? $item['plaza_name']
+        $tollPlazaName = $item['plaza_name']
+            ?? $item['toll_plaza_name']
             ?? $item['toll_name']
             ?? $item['plaza']
             ?? $item['tollPlazaName']
             ?? $item['location']
             ?? 'Unknown Plaza';
+        $tollPlazaName = trim(preg_replace('/\s+/', ' ', (string) $tollPlazaName));
 
-        // Amount variants
-        $rawAmount = $item['amount']
+        // Amount variants (BlackBuck uses transaction_amount)
+        $rawAmount = $item['transaction_amount']
+            ?? $item['amount']
             ?? $item['toll_amount']
             ?? $item['debit_amount']
             ?? $item['txn_amount']
@@ -360,7 +453,7 @@ class BlackBuckFastagService
             'amount' => $amount,
             'transaction_date' => $transactionDate,
             'transaction_status' => $transactionStatus,
-            'lane_code' => $item['lane_code'] ?? $item['lane_no'] ?? $item['lane'] ?? null,
+            'lane_code' => $item['lane_direction'] ?? $item['lane_code'] ?? $item['lane_no'] ?? $item['lane'] ?? null,
             'plaza_code' => $item['plaza_code'] ?? $item['toll_id'] ?? null,
             'raw_response' => $item,
         ];
