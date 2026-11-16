@@ -1129,8 +1129,8 @@
                     if (res.success && res.transactions && res.transactions.length > 0) {
                         $('#fastTagContainer').empty();
                         $.each(res.transactions, function(i, row) {
-                            const badgeOneWay = !row.is_return ? '<span class="badge bg-primary text-white ms-1" style="font-size: 10px;">One Way</span>' : '';
-                            const badgeReturn = row.is_return ? '<span class="badge bg-info text-dark ms-1" style="font-size: 10px;">Return</span>' : '';
+                            const badgeOneWay = (parseFloat(row.one_way) || 0) > 0 ? '<span class="badge bg-primary text-white ms-1" style="font-size: 10px;">One Way</span>' : '';
+                            const badgeReturn = (parseFloat(row['return']) || 0) > 0 ? '<span class="badge bg-info text-dark ms-1" style="font-size: 10px;">Return</span>' : '';
                             const html = `<div class="detail-entry border rounded p-3 mb-3 bg-light bg-opacity-25">
                                 <div class="row g-3">
                                     <div class="col-md-3">

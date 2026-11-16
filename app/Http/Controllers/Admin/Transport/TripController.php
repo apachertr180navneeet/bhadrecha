@@ -235,9 +235,11 @@ class TripController extends Controller
                 ->get();
         }
 
+        $fastTagRows = $this->formatFastTagRows($fastTagTransactions, $deliveryDateTime);
+
         return view('admin.transport.trips.create', compact(
             'builty', 'fuelPumps', 'fuelCompanies', 'adblueCompanies', 'cities',
-            'fastTagTransactions', 'startDateTime', 'endDateTime', 'deliveryDateTime'
+            'fastTagTransactions', 'fastTagRows', 'startDateTime', 'endDateTime', 'deliveryDateTime'
         ));
     }
 
@@ -310,41 +312,77 @@ class TripController extends Controller
             ->orderBy('transaction_date', 'asc')
             ->get();
 
-        $formatted = $transactions->map(function ($txn) use ($deliveryDateTime) {
-            $plazaName = $txn->toll_plaza_name;
-            if (empty($plazaName) || $plazaName === 'Unknown Plaza') {
-                $raw = $txn->raw_response;
-                $plazaName = !empty($raw['entity_id']) ? "FASTag Toll ({$raw['entity_id']})" : 'FASTag Toll';
-            }
-
-            // Option 2: Transactions after delivery_time are Return journey; before delivery are One Way journey
-            $isReturn = $deliveryDateTime && $txn->transaction_date && $txn->transaction_date->gt($deliveryDateTime);
-            $oneWay = $isReturn ? 0 : (float)$txn->amount;
-            $return = $isReturn ? (float)$txn->amount : 0;
-
-            return [
-                'transaction_time' => $txn->transaction_date ? $txn->transaction_date->format('Y-m-d H:i') : '',
-                'amount' => (float)$txn->amount,
-                'location' => $plazaName,
-                'description' => $plazaName . ($isReturn ? ' (Return)' : ' (One Way)'),
-                'transaction_id' => (string)($txn->transaction_id ?? ''),
-                'one_way' => $oneWay,
-                'return' => $return,
-                'is_return' => $isReturn,
-                'journey_type' => $isReturn ? 'Return' : 'One Way',
-            ];
-        });
+        $formatted = $this->formatFastTagRows($transactions, $deliveryDateTime);
+        $totalAmount = collect($formatted)->sum('amount');
 
         return response()->json([
             'success' => true,
             'vehicle_number' => $vehicleNumber,
             'from_time' => $startDateTime->format('d M Y, h:i A'),
             'to_time' => $endDateTime->format('d M Y, h:i A'),
-            'total_amount' => $formatted->sum('amount'),
-            'count' => $formatted->count(),
+            'total_amount' => $totalAmount,
+            'count' => count($formatted),
             'notice' => $notice,
             'transactions' => $formatted,
         ]);
+    }
+
+    /**
+     * Format and pair FASTag toll transactions by location:
+     * - First occurrence of a location is One Way.
+     * - Second occurrence of the SAME location is Return (merged into the same row).
+     */
+    protected function formatFastTagRows($transactions, $deliveryDateTime = null): array
+    {
+        $rows = [];
+        $locationIndexMap = [];
+
+        foreach ($transactions as $txn) {
+            $plazaName = $txn->toll_plaza_name;
+            if (empty($plazaName) || $plazaName === 'Unknown Plaza') {
+                $raw = $txn->raw_response;
+                $plazaName = !empty($raw['entity_id']) ? "FASTag Toll ({$raw['entity_id']})" : 'FASTag Toll';
+            }
+
+            $raw = is_array($txn->raw_response) ? $txn->raw_response : [];
+            $plazaCode = $raw['plaza_code'] ?? null;
+            $normalizedName = strtolower(trim(preg_replace('/[^a-zA-Z0-9]/', '', $plazaName)));
+            $locKey = $plazaCode ? 'code_' . $plazaCode : 'name_' . $normalizedName;
+
+            $isAfterDelivery = $deliveryDateTime && $txn->transaction_date && $txn->transaction_date->gt($deliveryDateTime);
+            $amount = (float)$txn->amount;
+            $txnTime = $txn->transaction_date ? $txn->transaction_date->format('Y-m-d H:i') : '';
+            $txnId = (string)($txn->transaction_id ?? '');
+
+            // Option A: If this same location has already been seen on this trip, pair into the same row as Return!
+            if (isset($locationIndexMap[$locKey])) {
+                $idx = $locationIndexMap[$locKey];
+                $rows[$idx]['return'] = (float)$rows[$idx]['return'] + $amount;
+                $rows[$idx]['amount'] = (float)$rows[$idx]['one_way'] + (float)$rows[$idx]['return'];
+                $rows[$idx]['has_return'] = true;
+                $rows[$idx]['description'] = $rows[$idx]['location'] . ' (Round Trip)';
+                if ($txnId && !str_contains($rows[$idx]['transaction_id'], $txnId)) {
+                    $rows[$idx]['transaction_id'] .= ($rows[$idx]['transaction_id'] ? ', ' : '') . $txnId;
+                }
+            } else {
+                $isReturn = $isAfterDelivery;
+                $row = [
+                    'transaction_time' => $txnTime,
+                    'amount' => $amount,
+                    'location' => $plazaName,
+                    'description' => $plazaName . ($isReturn ? ' (Return)' : ' (One Way)'),
+                    'transaction_id' => $txnId,
+                    'one_way' => $isReturn ? 0.0 : $amount,
+                    'return' => $isReturn ? $amount : 0.0,
+                    'is_return' => $isReturn,
+                    'has_return' => $isReturn,
+                ];
+                $rows[] = $row;
+                $locationIndexMap[$locKey] = count($rows) - 1;
+            }
+        }
+
+        return $rows;
     }
 
     public function store(Request $request)

@@ -121,48 +121,38 @@
                 </div>
                 <input type="file" id="fastTagFileInput" accept=".xlsx,.xls,.csv" style="display:none">
                 <div id="fastTagContainer">
-                    @forelse($fastTagTransactions ?? [] as $i => $txn)
-                    @php
-                        $locName = $txn->toll_plaza_name;
-                        if (empty($locName) || $locName === 'Unknown Plaza') {
-                            $raw = $txn->raw_response;
-                            $locName = !empty($raw['entity_id']) ? "FASTag Toll ({$raw['entity_id']})" : 'FASTag Toll';
-                        }
-                        $isReturn = !empty($deliveryDateTime) && $txn->transaction_date && $txn->transaction_date->gt($deliveryDateTime);
-                        $oneWayVal = $isReturn ? 0 : $txn->amount;
-                        $returnVal = $isReturn ? $txn->amount : 0;
-                    @endphp
+                    @forelse($fastTagRows ?? [] as $i => $row)
                     <div class="detail-entry border rounded p-3 mb-3 bg-light bg-opacity-25">
                         <div class="row g-3">
                             <div class="col-md-3">
                                 <label class="form-label small">Transaction Time</label>
-                                <input type="text" name="fast_tag_details[{{ $i }}][transaction_time]" class="form-control form-control-sm datetime-picker" value="{{ $txn->transaction_date ? $txn->transaction_date->format('Y-m-d H:i') : '' }}" placeholder="DD-Mon-YY hh:mm AM/PM">
+                                <input type="text" name="fast_tag_details[{{ $i }}][transaction_time]" class="form-control form-control-sm datetime-picker" value="{{ $row['transaction_time'] ?? '' }}" placeholder="DD-Mon-YY hh:mm AM/PM">
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label small">Amount (₹)</label>
-                                <input type="number" step="0.01" name="fast_tag_details[{{ $i }}][amount]" class="form-control form-control-sm fast-tag-amount" value="{{ number_format($txn->amount, 2, '.', '') }}">
+                                <input type="number" step="0.01" name="fast_tag_details[{{ $i }}][amount]" class="form-control form-control-sm fast-tag-amount" value="{{ number_format($row['amount'] ?? 0, 2, '.', '') }}">
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label small">Location</label>
-                                <input type="text" name="fast_tag_details[{{ $i }}][location]" class="form-control form-control-sm" value="{{ $locName }}" placeholder="Location">
+                                <input type="text" name="fast_tag_details[{{ $i }}][location]" class="form-control form-control-sm" value="{{ $row['location'] ?? '' }}" placeholder="Location">
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label small">One Way (₹) {!! $isReturn ? '' : '<span class="badge bg-primary text-white ms-1" style="font-size: 10px;">One Way</span>' !!}</label>
-                                <input type="number" step="0.01" name="fast_tag_details[{{ $i }}][one_way]" class="form-control form-control-sm fast-tag-oneway" value="{{ number_format($oneWayVal, 2, '.', '') }}">
+                                <label class="form-label small">One Way (₹) {!! ($row['one_way'] ?? 0) > 0 ? '<span class="badge bg-primary text-white ms-1" style="font-size: 10px;">One Way</span>' : '' !!}</label>
+                                <input type="number" step="0.01" name="fast_tag_details[{{ $i }}][one_way]" class="form-control form-control-sm fast-tag-oneway" value="{{ number_format($row['one_way'] ?? 0, 2, '.', '') }}">
                             </div>
                         </div>
                         <div class="row g-3 mt-1">
                             <div class="col-md-3">
                                 <label class="form-label small">Description</label>
-                                <input type="text" name="fast_tag_details[{{ $i }}][description]" class="form-control form-control-sm" value="{{ $txn->toll_plaza_name && $txn->toll_plaza_name !== 'Unknown Plaza' ? $txn->toll_plaza_name . ($isReturn ? ' (Return)' : ' (One Way)') : 'FASTag Toll Deduction' }}" placeholder="Description">
+                                <input type="text" name="fast_tag_details[{{ $i }}][description]" class="form-control form-control-sm" value="{{ $row['description'] ?? 'FASTag Toll Deduction' }}" placeholder="Description">
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label small">Transaction ID</label>
-                                <input type="text" name="fast_tag_details[{{ $i }}][transaction_id]" class="form-control form-control-sm" value="{{ $txn->transaction_id ?? '' }}" placeholder="Txn ID">
+                                <input type="text" name="fast_tag_details[{{ $i }}][transaction_id]" class="form-control form-control-sm" value="{{ $row['transaction_id'] ?? '' }}" placeholder="Txn ID">
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label small">Return (₹) {!! $isReturn ? '<span class="badge bg-info text-dark ms-1" style="font-size: 10px;">Return</span>' : '' !!}</label>
-                                <input type="number" step="0.01" name="fast_tag_details[{{ $i }}][return]" class="form-control form-control-sm fast-tag-return" value="{{ number_format($returnVal, 2, '.', '') }}">
+                                <label class="form-label small">Return (₹) {!! ($row['return'] ?? 0) > 0 ? '<span class="badge bg-info text-dark ms-1" style="font-size: 10px;">Return</span>' : '' !!}</label>
+                                <input type="number" step="0.01" name="fast_tag_details[{{ $i }}][return]" class="form-control form-control-sm fast-tag-return" value="{{ number_format($row['return'] ?? 0, 2, '.', '') }}">
                             </div>
                             <div class="col-md-3 d-flex align-items-end justify-content-end">
                                 <button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="bx bx-trash me-1"></i> Remove</button>
@@ -1019,8 +1009,8 @@
                     if (res.success && res.transactions && res.transactions.length > 0) {
                         $('#fastTagContainer').empty();
                         $.each(res.transactions, function(i, row) {
-                            const badgeOneWay = !row.is_return ? '<span class="badge bg-primary text-white ms-1" style="font-size: 10px;">One Way</span>' : '';
-                            const badgeReturn = row.is_return ? '<span class="badge bg-info text-dark ms-1" style="font-size: 10px;">Return</span>' : '';
+                            const badgeOneWay = (parseFloat(row.one_way) || 0) > 0 ? '<span class="badge bg-primary text-white ms-1" style="font-size: 10px;">One Way</span>' : '';
+                            const badgeReturn = (parseFloat(row['return']) || 0) > 0 ? '<span class="badge bg-info text-dark ms-1" style="font-size: 10px;">Return</span>' : '';
                             const html = `<div class="detail-entry border rounded p-3 mb-3 bg-light bg-opacity-25">
                                 <div class="row g-3">
                                     <div class="col-md-3">
