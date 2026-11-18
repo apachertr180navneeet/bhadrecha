@@ -19,16 +19,25 @@ use Carbon\Carbon;
 
 class SuperAdminController extends Controller
 {
-    public function dashboard()
+    public function dashboard(Request $request)
     {
         $user = auth()->user();
 
+        // Check if branch was passed via request or session
+        $currentBranchId = $request->input('branch_id', session('current_branch_id'));
+        if ($request->has('branch_id')) {
+            session(['current_branch_id' => $currentBranchId]);
+        }
+
+        $branchFilter = ($currentBranchId && $currentBranchId !== 'all') ? (int)$currentBranchId : null;
+
         if ($user->isSuperAdmin()) {
-            $kpi = $this->getSuperAdminKPIs();
+            $kpi = $this->getSuperAdminKPIs($branchFilter);
         } elseif ($user->isCompanyAdmin()) {
-            $kpi = $this->getCompanyAdminKPIs($user->company_id);
+            $kpi = $this->getCompanyAdminKPIs($user->company_id, $branchFilter);
         } else {
-            $kpi = $this->getBranchManagerKPIs($user->branch_id);
+            $effectiveBranchId = $branchFilter ?: $user->branch_id;
+            $kpi = $this->getBranchManagerKPIs($effectiveBranchId);
         }
 
         $query = ActivityLog::with(['user', 'company', 'branch'])->orderBy('created_at', 'desc')->limit(10);
@@ -46,7 +55,7 @@ class SuperAdminController extends Controller
         return view('admin.dashboard.index', compact('kpi', 'recentActivities', 'todayAttendance'));
     }
 
-    private function getSuperAdminKPIs()
+    private function getSuperAdminKPIs($branchId = null)
     {
         $totalCompanies = Company::count();
         $activeCompanies = Company::where('status', 'active')->count();
@@ -68,18 +77,26 @@ class SuperAdminController extends Controller
             ->limit(10)
             ->get();
 
-        // Transport stats (no company scope for super admin)
-        $totalVehicles = Vehicle::withoutGlobalScopes()->count();
-        $totalDrivers  = Driver::withoutGlobalScopes()->count();
-        $totalBulties  = Bulty::withoutGlobalScopes()->count();
-        $totalTrips    = Trip::count();
+        // Transport stats (filtered by branch if specified)
+        $totalVehicles = Vehicle::withoutGlobalScopes()
+            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
+            ->count();
+        $totalDrivers  = Driver::withoutGlobalScopes()
+            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
+            ->count();
+        $totalBulties  = Bulty::withoutGlobalScopes()
+            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
+            ->count();
+        $totalTrips    = Trip::when($branchId, function($q) use ($branchId) {
+            $q->whereHas('builty', fn($bq) => $bq->withoutGlobalScopes()->where('branch_id', $branchId));
+        })->count();
 
         // Monthly LR trend – last 6 months
-        $monthlyLRs = $this->getMonthlyLRTrend();
+        $monthlyLRs = $this->getMonthlyLRTrend($branchId);
 
         // Monthly P&L trend – last 12 months (for chart)
         $companyId = session('current_company_id');
-        $monthlyPnL = $this->getMonthlyPnLTrend($companyId);
+        $monthlyPnL = $this->getMonthlyPnLTrend($companyId, $branchId);
 
         // Expiring documents
         $expiringDocuments = $this->getExpiringDocuments($companyId);
@@ -105,12 +122,13 @@ class SuperAdminController extends Controller
         ];
     }
 
-    /** Last 6 months LR count (all companies, no scope). */
-    private function getMonthlyLRTrend(): array
+    /** Last 6 months LR count (all companies or branch, no scope). */
+    private function getMonthlyLRTrend($branchId = null): array
     {
         $sixMonthsAgo = Carbon::now()->subMonths(5)->startOfMonth();
         $monthlyCounts = Bulty::withoutGlobalScopes()
             ->select(DB::raw('YEAR(created_at) as y, MONTH(created_at) as m, COUNT(*) as count'))
+            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
             ->where('created_at', '>=', $sixMonthsAgo)
             ->groupBy('y', 'm')
             ->orderBy('y')
@@ -265,21 +283,34 @@ class SuperAdminController extends Controller
         return ['months' => $months, 'income' => $incomeData, 'expense' => $expenseData];
     }
 
-    private function getCompanyAdminKPIs($companyId)
+    private function getCompanyAdminKPIs($companyId, $branchId = null)
     {
         $company = Company::find($companyId);
         $totalBranches = Branch::where('company_id', $companyId)->count();
-        $totalUsers    = User::where('company_id', $companyId)->count();
-        $activeUsers   = User::where('company_id', $companyId)->where('status', 'active')->count();
+        $totalUsers    = User::where('company_id', $companyId)
+            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
+            ->count();
+        $activeUsers   = User::where('company_id', $companyId)
+            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
+            ->where('status', 'active')->count();
 
-        $totalVehicles = Vehicle::withoutGlobalScopes()->count();
-        $totalDrivers  = Driver::withoutGlobalScopes()->count();
-        $totalBulties  = Bulty::withoutGlobalScopes()->where('company_id', $companyId)->count();
-        $totalTrips    = Bulty::withoutGlobalScopes()->where('company_id', $companyId)
+        $totalVehicles = Vehicle::withoutGlobalScopes()
+            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
+            ->count();
+        $totalDrivers  = Driver::withoutGlobalScopes()
+            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
+            ->count();
+        $totalBulties  = Bulty::withoutGlobalScopes()
+            ->where('company_id', $companyId)
+            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
+            ->count();
+        $totalTrips    = Bulty::withoutGlobalScopes()
+            ->where('company_id', $companyId)
+            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
             ->has('trip')->count();
 
-        $monthlyLRs = $this->getCompanyMonthlyLRTrend($companyId);
-        $monthlyPnL = $this->getMonthlyPnLTrend($companyId);
+        $monthlyLRs = $this->getCompanyMonthlyLRTrend($companyId, $branchId);
+        $monthlyPnL = $this->getMonthlyPnLTrend($companyId, $branchId);
 
         return [
             'company'        => $company,
@@ -296,12 +327,13 @@ class SuperAdminController extends Controller
         ];
     }
 
-    private function getCompanyMonthlyLRTrend($companyId): array
+    private function getCompanyMonthlyLRTrend($companyId, $branchId = null): array
     {
         $sixMonthsAgo = Carbon::now()->subMonths(5)->startOfMonth();
         $monthlyCounts = Bulty::withoutGlobalScopes()
             ->select(DB::raw('YEAR(created_at) as y, MONTH(created_at) as m, COUNT(*) as count'))
             ->where('company_id', $companyId)
+            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
             ->where('created_at', '>=', $sixMonthsAgo)
             ->groupBy('y', 'm')
             ->orderBy('y')

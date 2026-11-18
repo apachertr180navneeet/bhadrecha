@@ -12,7 +12,10 @@
                 </ol>
             </nav>
         </div>
-        <div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ route('admin.transport.trips.export-excel', request()->all()) }}" class="btn btn-outline-success">
+                <i class="bx bx-file me-1"></i> Export to Excel
+            </a>
             @canany(['create trips', 'create trip details', 'import trip data'])
             <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#importTripModal"><i class="bx bx-import me-1"></i> Import</button>
             <a href="{{ route('admin.transport.trips.download-template') }}" class="btn btn-outline-secondary"><i class="bx bx-download me-1"></i> Template</a>

@@ -13,6 +13,9 @@
             </nav>
         </div>
         <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ route('admin.transport.bulties.export-excel', request()->all()) }}" class="btn btn-outline-success">
+                <i class="bx bx-file me-1"></i> Export to Excel
+            </a>
             @canany(['create trips', 'create bulties', 'import trip data'])
             <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#importTripModal"><i class="bx bx-import me-1"></i> Import</button>
             <a href="{{ route('admin.transport.trips.download-template') }}" class="btn btn-outline-secondary"><i class="bx bx-download me-1"></i> Template</a>
@@ -135,7 +138,9 @@
                         <th>Consignee</th>
                         <th>From → To</th>
                         <th>Weight</th>
-                        <th>Amount</th>
+                        <th class="text-end">Bill Amount</th>
+                        <th class="text-end">Received</th>
+                        <th class="text-end">Remaining</th>
                         <th>Status</th>
                     </tr>
                 </thead>
@@ -180,7 +185,11 @@
                         <td>{{ $bulty->consignee->name ?? '-' }}</td>
                         <td>{{ $bulty->originCity->name ?? '-' }} <i class="bx bx-chevron-right mx-1 text-muted"></i> {{ $bulty->destinationCity->name ?? '-' }}</td>
                         <td>{{ number_format($bulty->bultyItems->sum('weight'), 2) }} {{ $bulty->bultyItems->first()?->unit ?: 'Ton' }}</td>
-                        <td>₹{{ number_format($bulty->total_amount, 2) }}</td>
+                        <td class="text-end fw-semibold">₹{{ number_format($bulty->total_amount, 2) }}</td>
+                        <td class="text-end text-success">₹{{ number_format($bulty->advance_amount ?? 0, 2) }}</td>
+                        <td class="text-end fw-bold {{ ($bulty->remaining_amount ?? 0) > 0 ? 'text-danger' : 'text-success' }}">
+                            ₹{{ number_format($bulty->remaining_amount ?? 0, 2) }}
+                        </td>
                         <td>
                             @php
                                 $statusColors = [
@@ -196,7 +205,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="12" class="text-center py-4">
+                        <td colspan="14" class="text-center py-4">
                             <p class="text-muted mb-0">No Bilties Found</p>
                         </td>
                     </tr>

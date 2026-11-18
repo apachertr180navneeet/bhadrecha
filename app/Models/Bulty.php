@@ -70,6 +70,12 @@ class Bulty extends Model
             }
         });
 
+        static::saving(function ($bulty) {
+            $billAmount = (float)($bulty->total_amount ?? 0);
+            $received = (float)($bulty->advance_amount ?? 0);
+            $bulty->remaining_amount = max(0, round($billAmount - $received, 2));
+        });
+
         static::deleting(function ($bulty) {
             if ($bulty->isForceDeleting()) {
                 $bulty->bultyItems()->forceDelete();
@@ -280,14 +286,41 @@ class Bulty extends Model
         return (float)($this->freight_charges ?? 0) + (float)($this->gst_amount ?? 0) + (float)($this->other_charges ?? 0);
     }
 
+    public function getReceivedAmountAttribute()
+    {
+        $advSum = $this->relationLoaded('biltyAdvanceDetails') 
+            ? (float)$this->biltyAdvanceDetails->sum('advance_amount') 
+            : null;
+
+        if ($advSum !== null && $advSum > 0) {
+            return $advSum;
+        }
+
+        return (float)($this->advance_amount ?? 0);
+    }
+
     public function getCalculatedRemainingAmountAttribute()
     {
         $total = $this->total_amount !== null ? (float)$this->total_amount : $this->calculated_total_amount;
-        return max(0, $total - (float)($this->advance_amount ?? 0));
+        $received = (float)$this->received_amount;
+        return max(0, round($total - $received, 2));
     }
 
     public function getDueAmountAttribute()
     {
         return $this->calculated_remaining_amount;
+    }
+
+    public function syncRemainingAmount(): void
+    {
+        $totalReceived = (float)$this->biltyAdvanceDetails()->sum('advance_amount');
+        $effectiveReceived = $totalReceived > 0 ? $totalReceived : (float)($this->advance_amount ?? 0);
+        $billAmount = (float)($this->total_amount ?? 0);
+        $remaining = max(0, round($billAmount - $effectiveReceived, 2));
+
+        $this->updateQuietly([
+            'advance_amount' => $effectiveReceived,
+            'remaining_amount' => $remaining,
+        ]);
     }
 }

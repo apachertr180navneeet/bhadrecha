@@ -526,8 +526,9 @@ class BillingController extends Controller
                     return redirect()->route('admin.transport.toll-bills.index')
                         ->with('success', 'Toll Bill ' . $singleInvoice->invoice_no . ' saved successfully for ' . $totalLrs . ' LR(s)');
                 }
-                return redirect()->route('admin.reports.sales-ledger', ['bill_number' => $singleInvoice->bill_number])
-                    ->with('success', 'Bill ' . ($singleInvoice->bill_number ?: $singleInvoice->invoice_no) . ' created successfully for ' . $totalLrs . ' LR(s)');
+                $redirectBillNo = $singleInvoice->bill_number ?: $singleInvoice->invoice_no;
+                return redirect()->to(route('admin.reports.sales-ledger', array_filter(['bill_number' => $redirectBillNo])) . '#sales-ledger')
+                    ->with('success', 'Bill ' . $redirectBillNo . ' created successfully for ' . $totalLrs . ' LR(s)');
             }
             return redirect()->route('admin.transport.invoices.show', $singleInvoice->id)
                 ->with('success', 'Invoice ' . $singleInvoice->invoice_no . ' generated successfully for ' . $totalLrs . ' LR(s)');
@@ -538,7 +539,7 @@ class BillingController extends Controller
                 return redirect()->route('admin.transport.toll-bills.index')
                     ->with('success', $invoiceCount . ' toll invoice(s) saved successfully for ' . $totalLrs . ' LR(s)');
             }
-            return redirect()->route('admin.reports.sales-ledger')
+            return redirect()->to(route('admin.reports.sales-ledger') . '#sales-ledger')
                 ->with('success', $invoiceCount . ' bill(s) created successfully for ' . $totalLrs . ' LR(s)');
         }
 

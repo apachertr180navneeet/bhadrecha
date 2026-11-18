@@ -15,7 +15,7 @@
     $companyHsn = !empty($invoice->custom_hsn_code) ? $invoice->custom_hsn_code : ($comp && $comp->hsn_code ? $comp->hsn_code : '996791');
 
     $partyName = $invoice->consignor_name ?? ($invoice->consignor->name ?? '-');
-    $partyAddress = !empty($invoice->billing_address) ? str_replace("\n", "<br>", $invoice->billing_address) : ($invoice->consignor ? str_replace("\n", "<br>", $invoice->consignor->address ?? '') : '');
+    $partyAddress = !empty($invoice->billing_address) ? $invoice->billing_address : ($invoice->consignor ? ($invoice->consignor->address ?? '') : '');
     $partyGst = !empty($invoice->custom_gstn) ? $invoice->custom_gstn : ($invoice->consignor ? ($invoice->consignor->gst_no ?? '-') : '-');
     $partyState = !empty($invoice->custom_state) ? $invoice->custom_state : ($firstBulty && $firstBulty->destinationCity ? ($firstBulty->destinationCity->state ?? 'RAJASTHAN') : 'RAJASTHAN');
     $partyCity = !empty($invoice->custom_district) ? $invoice->custom_district : ($firstBulty && $firstBulty->destinationCity ? ($firstBulty->destinationCity->name ?? 'AHEMDABAD') : 'AHEMDABAD');
@@ -23,8 +23,6 @@
     $placeOfSupply = !empty($invoice->custom_place_of_supply) ? $invoice->custom_place_of_supply : $partyState;
     $stateCode = !empty($invoice->custom_state_code) ? $invoice->custom_state_code : (substr($partyGst, 0, 2) ?: '');
 
-    $compSigUrl = $comp?->digital_signature_url;
-    $compOwner = $comp && $comp->owner_name ? strtoupper($comp->owner_name) : '';
     $rcmPayableVal = $invoice->rcm_payable ?? 0;
     if ($rcmPayableVal == 1) {
         $compDeclaration = ($comp && !empty($comp->declaration))
@@ -33,7 +31,7 @@
     } else {
         $compDeclaration = ($comp && !empty($comp->declaration))
             ? $comp->declaration
-            : 'Declaration:-I we Have take registration under the CGST Act. 2017 and have excercised the option to pay tax on service of GTA in relation to transport of goods supplied by us during thr Financial Year 2026-2027 under forward charge';
+            : 'Declaration:-I we Have take registration under the CGST Act. 2017 and have exercised the option to pay tax on service of GTA in relation to transport of goods supplied by us during the Financial Year 2026-2027 under forward charge';
     }
 
     // State calculation
@@ -47,7 +45,7 @@
     $useSaved = $invoice->tollDetails->isNotEmpty();
 
     if ($useSaved) {
-        $tollLocations = $invoice->tollDetails->pluck('location')->unique()->values();
+        $tollLocations = $invoice->tollDetails->pluck('location')->filter()->unique()->values();
         $grandTollSum = 0;
         foreach ($invoice->bulties as $bulty) {
             $bultySavedDetails = $invoice->tollDetails->where('builty_id', $bulty->id);
@@ -77,270 +75,253 @@
         }
     }
 
+    $tollCount = max(3, $tollLocations->count());
+    $totalColumns = 8 + ($tollCount * 2) + 3;
+
     $calculatedGst = round($grandTollSum * ($gstRate / 100), 2);
     $grandTotal = $grandTollSum + $calculatedGst;
     $amountInWords = \App\Http\Controllers\Admin\Transport\BillingController::convertNumberToWords($grandTotal);
+
+    $metaCol1 = 2;
+    $metaCol2 = max(4, floor(($totalColumns - 6) / 2));
+    $metaCol3 = 2;
+    $metaCol4 = $totalColumns - ($metaCol1 + $metaCol2 + $metaCol3);
 @endphp
 
-<div style="background: #fff; color: #000; font-family: Arial, Helvetica, sans-serif; font-size: 11px; line-height: 1.4;">
-    <div id="toll-print-sheet" style="border: 1px solid #000; padding: 0;">
-                    
-                    <!-- TAX INVOICE HEADER -->
-                    <div class="text-center fw-bold" style="border-bottom: 1px solid #000; padding: 4px; font-size: 14px; text-transform: uppercase;">
-                        TAX INVOICE
-                    </div>
-                    
-                    <div class="text-center" style="border-bottom: 1px solid #000; padding: 6px;">
-                        <h2 class="m-0 fw-bold" style="font-size: 22px; letter-spacing: 1px; text-transform: uppercase;">{{ $invoice->company_name ?? $companyName }}</h2>
-                        <div style="font-size: 11px; margin-top: 4px; font-weight: bold;">{{ $companyAddress }}</div>
-                        <div style="font-size: 11px; margin-top: 2px; font-weight: bold;">
-                            PAN NO. : {{ $companyPan }} &nbsp;&nbsp; GSTIN : {{ $companyGst }} &nbsp;&nbsp; STATE: RAJASTHAN CODE 08
-                        </div>
-                    </div>
+<table style="width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; font-size: 10px;">
+    <!-- Top Header -->
+    <tr>
+        <th colspan="{{ $totalColumns }}" style="border: 1px solid #000; text-align: center; font-weight: bold; font-size: 13px; padding: 5px;">TAX INVOICE</th>
+    </tr>
+    <tr>
+        <th colspan="{{ $totalColumns }}" style="border: 1px solid #000; text-align: center; font-weight: bold; font-size: 15px; padding: 4px;">{{ $invoice->company_name ?? $companyName }}</th>
+    </tr>
+    <tr>
+        <td colspan="{{ $totalColumns }}" style="border: 1px solid #000; text-align: center; font-weight: bold; padding: 3px;">{{ $companyAddress }}</td>
+    </tr>
+    <tr>
+        <td colspan="{{ $totalColumns }}" style="border: 1px solid #000; text-align: center; font-weight: bold; padding: 3px;">PAN NO. : {{ $companyPan }} &nbsp;&nbsp;&nbsp; GSTIN : {{ $companyGst }} &nbsp;&nbsp;&nbsp; STATE: RAJASTHAN CODE 08</td>
+    </tr>
+    <tr>
+        <td colspan="{{ $totalColumns }}" style="border: 1px solid #000; text-align: center; font-weight: bold; padding: 3px;">WHETHER IS PAYABLE UNDER REVERSE CHARGE MECHANISM: {{ $rcmPayableVal == 1 ? 'YES' : 'NO' }}</td>
+    </tr>
+    <tr>
+        <th colspan="{{ $totalColumns }}" style="border: 1px solid #000; text-align: center; font-weight: bold; font-size: 12px; background-color: #d9d9d9; padding: 5px;">TRANSPORTATION TOLL FREIGHT BILL</th>
+    </tr>
 
-                    <div class="text-center fw-bold" style="border-bottom: 1px solid #000; padding: 4px; font-size: 11px; text-transform: uppercase;">
-                        WHEATHER IS PAYABLE UNDER REVERSE CHARGE MECHANISIM:-{{ $rcmPayableVal == 1 ? 'YES' : 'NO' }}
-                    </div>
+    <!-- Meta Information -->
+    <tr>
+        <td colspan="{{ $metaCol1 }}" style="border: 1px solid #000; font-weight: bold; padding: 3px;">PLACE OF SUPPLY</td>
+        <td colspan="{{ $metaCol2 }}" style="border: 1px solid #000; font-weight: bold; padding: 3px;">{{ strtoupper($placeOfSupply) }}</td>
+        <td colspan="{{ $metaCol3 }}" style="border: 1px solid #000; font-weight: bold; padding: 3px;">HSN/SAC CODE</td>
+        <td colspan="{{ $metaCol4 }}" style="border: 1px solid #000; text-align: center; font-weight: bold; padding: 3px;">{{ $companyHsn }}</td>
+    </tr>
+    <tr>
+        <td colspan="{{ $metaCol1 }}" style="border: 1px solid #000; font-weight: bold; padding: 3px;">COMPANY NAME</td>
+        <td colspan="{{ $metaCol2 }}" style="border: 1px solid #000; font-weight: bold; padding: 3px;">{{ strtoupper($partyName) }}</td>
+        <td colspan="{{ $metaCol3 }}" style="border: 1px solid #000; font-weight: bold; padding: 3px;">DATE</td>
+        <td colspan="{{ $metaCol4 }}" style="border: 1px solid #000; text-align: center; font-weight: bold; padding: 3px;">{{ $invoice->invoice_date ? $invoice->invoice_date->format('d/m/Y') : date('d/m/Y') }}</td>
+    </tr>
+    <tr>
+        <td colspan="{{ $metaCol1 }}" style="border: 1px solid #000; font-weight: bold; padding: 3px;">COMPANY ADDRESS</td>
+        <td colspan="{{ $metaCol2 }}" style="border: 1px solid #000; font-weight: bold; padding: 3px;">{{ preg_replace('/\s+/', ' ', trim($partyAddress)) }}</td>
+        <td colspan="{{ $metaCol3 }}" style="border: 1px solid #000; font-weight: bold; padding: 3px;">STATE VENDOR CODE</td>
+        <td colspan="{{ $metaCol4 }}" style="border: 1px solid #000; text-align: center; font-weight: bold; padding: 3px;">{{ $invoice->state_vendor_code ?? ($invoice->consignor->vendor_code ?? '') }}</td>
+    </tr>
+    <tr>
+        <td colspan="{{ $metaCol1 }}" style="border: 1px solid #000; font-weight: bold; padding: 3px;">GSTIN / PAN</td>
+        <td colspan="{{ $metaCol2 }}" style="border: 1px solid #000; font-weight: bold; padding: 3px;">GSTIN: {{ $partyGst }} &nbsp;|&nbsp; PAN: {{ $partyPan }}</td>
+        <td colspan="{{ $metaCol3 }}" style="border: 1px solid #000; font-weight: bold; padding: 3px;">VENDOR CODE</td>
+        <td colspan="{{ $metaCol4 }}" style="border: 1px solid #000; text-align: center; font-weight: bold; padding: 3px;">{{ $invoice->vendor_code ?? ($invoice->consignor->vendor_code ?? '') }}</td>
+    </tr>
+    <tr>
+        <td colspan="{{ $metaCol1 }}" style="border: 1px solid #000; font-weight: bold; padding: 3px;">VENDOR NAME</td>
+        <td colspan="{{ $metaCol2 }}" style="border: 1px solid #000; font-weight: bold; padding: 3px;">{{ strtoupper($invoice->vendor_name ?? $companyName) }}</td>
+        <td colspan="{{ $metaCol3 }}" style="border: 1px solid #000; font-weight: bold; padding: 3px;">BILL NO.</td>
+        <td colspan="{{ $metaCol4 }}" style="border: 1px solid #000; text-align: center; font-weight: bold; color: #cc0000; padding: 3px;">{{ $invoice->bill_number ?? $invoice->invoice_no }}</td>
+    </tr>
+    <tr>
+        <td colspan="{{ $metaCol1 }}" style="border: 1px solid #000; font-weight: bold; padding: 3px;">NO OF LR</td>
+        <td colspan="{{ $metaCol2 }}" style="border: 1px solid #000; font-weight: bold; padding: 3px;">{{ $invoice->no_of_lrs ?? ($invoice->bulties ? $invoice->bulties->count() : '-') }}</td>
+        <td colspan="{{ $metaCol3 }}" style="border: 1px solid #000; font-weight: bold; padding: 3px;">EPOD STATUS</td>
+        <td colspan="{{ $metaCol4 }}" style="border: 1px solid #000; text-align: center; font-weight: bold; padding: 3px;">{{ $invoice->epod_status ?? 'N' }}</td>
+    </tr>
 
-                    <div class="text-center fw-bold" style="background: #ccc; border-bottom: 1px solid #000; padding: 5px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">
-                        TRANSPORATION TOLL FREIGHT BILL
-                    </div>
+    <!-- Spacer Row -->
+    <tr>
+        <td colspan="{{ $totalColumns }}" style="height: 8px;"></td>
+    </tr>
 
-                    <!-- Supply and Vendor Codes Meta Info -->
-                    <table class="w-100 table-meta" style="border-collapse: collapse; border-bottom: 1px solid #000;">
-                        <tr>
-                            <td style="width: 15%; font-weight: bold; border-right: 1px solid #000; padding: 4px;">PLACE OF SUPPLY</td>
-                            <td style="width: 45%; font-weight: bold; border-right: 1px solid #000; padding: 4px; text-transform: uppercase;">{{ $placeOfSupply }}</td>
-                            <td style="width: 25%; font-weight: bold; border-right: 1px solid #000; padding: 4px;">HSN/SAC CODE-</td>
-                            <td style="width: 15%; font-weight: bold; padding: 4px; text-align: center;">{{ $companyHsn }}</td>
-                        </tr>
-                        <tr>
-                            <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px; vertical-align: top;">COMPANY NAME</td>
-                            <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px; text-transform: uppercase;">{{ $partyName }}</td>
-                            <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">DATE</td>
-                            <td style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center;">{{ $invoice->invoice_date->format('d/m/Y') }}</td>
-                        </tr>
-                        <tr>
-                            <td rowspan="6" style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px; vertical-align: top;">COMPANY ADDRESS</td>
-                            <td rowspan="6" style="border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px; vertical-align: top; font-weight: bold;">
-                                {!! $partyAddress !!}
-                            </td>
-                            <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">STATE VENDOR CODE</td>
-                            <td style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center;">{{ $invoice->state_vendor_code ?? $invoice->consignor->vendor_code ?? '' }}</td>
-                        </tr>
-                        <tr>
-                            <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">VENDOR CODE</td>
-                            <td style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center;">{{ $invoice->vendor_code ?? $invoice->consignor->vendor_code ?? '' }}</td>
-                        </tr>
-                        <tr>
-                            <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">VENDOR NAME</td>
-                            <td style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center; text-transform: uppercase;">{{ $invoice->vendor_name ?? $companyName }}</td>
-                        </tr>
-                        <tr>
-                            <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">BILL NO.</td>
-                            <td style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center; color: #d00; font-size: 12px;">{{ $invoice->bill_number ?? $invoice->invoice_no }}</td>
-                        </tr>
-                        <tr>
-                            <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">NO OF LR</td>
-                            <td style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center;">{{ $invoice->no_of_lrs ?? ($invoice->bulties ? $invoice->bulties->count() : '-') }}</td>
-                        </tr>
-                        <tr>
-                            <td style="font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; padding: 4px;">EPOD Status:-</td>
-                            <td style="font-weight: bold; border-top: 1px solid #000; padding: 4px; text-align: center;">{{ $invoice->epod_status ?? 'N' }}</td>
-                        </tr>
-                    </table>
+    <!-- Table Main Headers -->
+    <tr style="background-color: #e6e6e6;">
+        <th rowspan="2" style="border: 1px solid #000; text-align: center; font-weight: bold; padding: 4px;">SR No.</th>
+        <th rowspan="2" style="border: 1px solid #000; text-align: center; font-weight: bold; padding: 4px;">DI NO</th>
+        <th rowspan="2" style="border: 1px solid #000; text-align: center; font-weight: bold; padding: 4px;">Dispatch Date</th>
+        <th rowspan="2" style="border: 1px solid #000; text-align: center; font-weight: bold; padding: 4px;">Truck No</th>
+        <th rowspan="2" style="border: 1px solid #000; text-align: center; font-weight: bold; padding: 4px;">LR No</th>
+        <th rowspan="2" style="border: 1px solid #000; text-align: center; font-weight: bold; padding: 4px;">Qty</th>
+        <th rowspan="2" style="border: 1px solid #000; text-align: center; font-weight: bold; padding: 4px;">Destination</th>
+        <th rowspan="2" style="border: 1px solid #000; text-align: center; font-weight: bold; padding: 4px;">Dedicated/Nondedicated</th>
+        @foreach($tollLocations as $loc)
+            <th colspan="2" style="border: 1px solid #000; text-align: center; font-weight: bold; font-size: 9px; padding: 4px;">{{ strtoupper($loc) }}</th>
+        @endforeach
+        @for($i = $tollLocations->count(); $i < 3; $i++)
+            <th colspan="2" style="border: 1px solid #000; text-align: center; font-weight: bold; font-size: 9px; padding: 4px;">TOLL PLAZA {{ $i + 1 }}</th>
+        @endfor
+        <th rowspan="2" style="border: 1px solid #000; text-align: center; font-weight: bold; padding: 4px;">TOTAL TOLL AMOUNT</th>
+        <th rowspan="2" style="border: 1px solid #000; text-align: center; font-weight: bold; padding: 4px;">Freight Bill No.</th>
+        <th rowspan="2" style="border: 1px solid #000; text-align: center; font-weight: bold; padding: 4px;">UTCL Billing Location</th>
+    </tr>
+    <tr style="background-color: #e6e6e6;">
+        @foreach($tollLocations as $loc)
+            <th style="border: 1px solid #000; text-align: center; font-weight: bold; font-size: 8px; padding: 3px;">ONE WAY</th>
+            <th style="border: 1px solid #000; text-align: center; font-weight: bold; font-size: 8px; padding: 3px;">RETURN</th>
+        @endforeach
+        @for($i = $tollLocations->count(); $i < 3; $i++)
+            <th style="border: 1px solid #000; text-align: center; font-weight: bold; font-size: 8px; padding: 3px;">ONE WAY</th>
+            <th style="border: 1px solid #000; text-align: center; font-weight: bold; font-size: 8px; padding: 3px;">RETURN</th>
+        @endfor
+    </tr>
 
-                    <!-- MAIN TOLL TABLE -->
-                    <div class="table-responsive">
-                        <table class="table-toll" style="width: 100%; border-collapse: collapse; text-align: center;">
-                            <thead>
-                                <tr style="background: #e6e6e6;">
-                                    <th rowspan="2" style="width: 3%;">SR No.</th>
-                                    <th rowspan="2" style="width: 8%;">DI NO</th>
-                                    <th rowspan="2" style="width: 8%;">Dispatch Date</th>
-                                    <th rowspan="2" style="width: 10%;">Truck No</th>
-                                    <th rowspan="2" style="width: 10%;">LR No</th>
-                                    <th rowspan="2" style="width: 4%;">Qty</th>
-                                    <th rowspan="2" style="width: 10%;">Destination</th>
-                                    <th rowspan="2" style="width: 10%;">Dedicated/Nondedicated</th>
-                                    
-                                    <!-- Dynamic Toll Locations Header -->
-                                    @foreach($tollLocations as $location)
-                                        <th colspan="2" style="border-bottom: 1px solid #000; font-size: 9px; text-transform: uppercase;">{{ $location }}</th>
-                                    @endforeach
-                                    
-                                    <!-- Pad out to at least a few columns if locations are fewer than 3, just for visual width similar to image -->
-                                    @for($i = $tollLocations->count(); $i < 3; $i++)
-                                        <th colspan="2" style="border-bottom: 1px solid #000; font-size: 9px; min-height: 15px;">&nbsp;</th>
-                                    @endfor
-                                    
-                                    <th rowspan="2" style="width: 8%;">TOTAL TOLL AMOUNT</th>
-                                    <th rowspan="2" style="width: 10%;">Freight Bill No.</th>
-                                    <th rowspan="2" style="width: 10%;">UTCL Billing Location</th>
-                                </tr>
-                                <tr style="background: #e6e6e6; font-size: 8px;">
-                                    <!-- Sub-columns for dynamic locations -->
-                                    @foreach($tollLocations as $location)
-                                        <th style="font-size: 8px; font-weight: bold; width: 4%;">ONE WAY</th>
-                                        <th style="font-size: 8px; font-weight: bold; width: 4%;">RETURN</th>
-                                    @endforeach
-                                    
-                                    @for($i = $tollLocations->count(); $i < 3; $i++)
-                                        <th style="font-size: 8px; width: 4%;">ONE WAY</th>
-                                        <th style="font-size: 8px; width: 4%;">RETURN</th>
-                                    @endfor
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($invoice->bulties as $index => $bulty)
-                                    @php
-                                        $bultyTollSum = 0;
-                                        if ($useSaved) {
-                                            $bultySavedDetails = $invoice->tollDetails->where('builty_id', $bulty->id);
-                                        } else {
-                                            $ftDetails = $bulty->trip ? $bulty->trip->fastTagDetails : collect();
-                                        }
-                                    @endphp
-                                    <tr>
-                                        <td>{{ $index + 1 }}</td>
-                                        <td style="font-weight: bold;">{{ $bulty->delivery_number ?? $bulty->order_number ?? '-' }}</td>
-                                        <td>{{ $bulty->lr_date ? $bulty->lr_date->format('d/m/Y') : '-' }}</td>
-                                        <td style="font-weight: bold;">{{ $bulty->vehicle->vehicle_number ?? '-' }}</td>
-                                        <td>{{ $bulty->lr_no ?? '-' }}</td>
-                                        <td>{{ (!empty($bulty->bultyDetail->challan_qty) && floatval($bulty->bultyDetail->challan_qty) > 0) ? floatval($bulty->bultyDetail->challan_qty) : (($bulty->bultyItems && $bulty->bultyItems->sum('weight') > 0) ? floatval($bulty->bultyItems->sum('weight')) : '-') }}</td>
-                                        <td>{{ $bulty->destinationCity->name ?? '-' }}</td>
-                                        <td style="text-transform: uppercase;">{{ $bulty->mode ?? 'DEDICATED' }}</td>
-                                        
-                                        <!-- Render dynamic toll locations values -->
-                                        @foreach($tollLocations as $location)
-                                            @php
-                                                if ($useSaved) {
-                                                    $match = $bultySavedDetails->firstWhere('location', $location);
-                                                    $oneWay = $match && floatval($match->one_way) > 0 ? floatval($match->one_way) : null;
-                                                    $returnVal = $match && floatval($match->return_amount) > 0 ? floatval($match->return_amount) : null;
-                                                } else {
-                                                    $matched = $ftDetails->filter(function($ft) use ($location) {
-                                                        $loc = strtoupper(trim((string)($ft->location ?? '')));
-                                                        if ($location === 'TOLL PLAZA') {
-                                                            return empty($loc) || $loc === 'TOLL PLAZA';
-                                                        }
-                                                        return $loc === $location;
-                                                    });
-                                                    $oneWaySum = (float) $matched->sum('one_way');
-                                                    $returnSum = (float) $matched->sum('return');
-                                                    $amountSum = (float) $matched->sum('amount');
-                                                    if ($oneWaySum <= 0 && $returnSum <= 0 && $amountSum > 0) {
-                                                        $oneWaySum = $amountSum;
-                                                    }
-                                                    $oneWay = $oneWaySum > 0 ? $oneWaySum : null;
-                                                    $returnVal = $returnSum > 0 ? $returnSum : null;
-                                                }
-                                                
-                                                if ($oneWay) $bultyTollSum += $oneWay;
-                                                if ($returnVal) $bultyTollSum += $returnVal;
-                                            @endphp
-                                            <td style="font-weight: bold;">{{ $oneWay ? number_format($oneWay, 0) : '' }}</td>
-                                            <td style="font-weight: bold;">{{ $returnVal ? number_format($returnVal, 0) : '' }}</td>
-                                        @endforeach
-                                        
-                                        <!-- Empty columns to pad -->
-                                        @for($i = $tollLocations->count(); $i < 3; $i++)
-                                            <td></td>
-                                            <td></td>
-                                        @endfor
-                                        
-                                        <td style="font-weight: bold;">{{ number_format($bultyTollSum, 2) }}</td>
-                                        <td style="text-transform: uppercase; font-weight: bold;">{{ $bulty->invoice ? $bulty->invoice->invoice_no : ($bulty->invoice_id ? '' : '-') }}</td>
-                                        <td style="text-transform: uppercase; font-weight: bold;">{{ $partyCity }}</td>
-                                    </tr>
-                                @endforeach
+    <!-- Table Data Rows -->
+    @foreach($invoice->bulties as $index => $bulty)
+        @php
+            $bultyTollSum = 0;
+            if ($useSaved) {
+                $bultySavedDetails = $invoice->tollDetails->where('builty_id', $bulty->id);
+            } else {
+                $ftDetails = $bulty->trip ? $bulty->trip->fastTagDetails : collect();
+            }
 
-                                <!-- Bottom Summary rows embedded inside the table layout matching the Excel design -->
-                                @php
-                                    $colSpanBeforeToll = 8 + (max(3, $tollLocations->count()) * 2);
-                                @endphp
-                                <tr>
-                                    <td colspan="{{ $colSpanBeforeToll - 1 }}" style="border-right: 1px solid #000; border-bottom: none;"></td>
-                                    <td style="font-weight: bold; background: #e6e6e6; border: 1px solid #000;">TOTAL</td>
-                                    <td style="font-weight: bold; border: 1px solid #000; text-align: right; padding-right: 5px;">{{ number_format($grandTollSum, 2) }}</td>
-                                    <td colspan="2" style="border-left: 1px solid #000; border-bottom: none;"></td>
-                                </tr>
-                                
-                                @if($gstType === 'CGST_SGST')
-                                    @php
-                                        $halfGst = $calculatedGst / 2;
-                                        $halfRate = $gstRate / 2;
-                                    @endphp
-                                    <tr>
-                                        <td colspan="{{ $colSpanBeforeToll - 1 }}" style="border-right: 1px solid #000; border-top: none; border-bottom: none;"></td>
-                                        <td style="font-weight: bold; border: 1px solid #000;">C GST {{ str_replace('.0', '', number_format($halfRate, 1)) }}%</td>
-                                        <td style="font-weight: bold; border: 1px solid #000; text-align: right; padding-right: 5px;">{{ number_format($halfGst, 2) }}</td>
-                                        <td colspan="2" style="border-left: 1px solid #000; border-top: none; border-bottom: none;"></td>
-                                    </tr>
-                                    <tr>
-                                        <td colspan="{{ $colSpanBeforeToll - 1 }}" style="border-right: 1px solid #000; border-top: none; border-bottom: none;"></td>
-                                        <td style="font-weight: bold; border: 1px solid #000;">S GST {{ str_replace('.0', '', number_format($halfRate, 1)) }}%</td>
-                                        <td style="font-weight: bold; border: 1px solid #000; text-align: right; padding-right: 5px;">{{ number_format($halfGst, 2) }}</td>
-                                        <td colspan="2" style="border-left: 1px solid #000; border-top: none; border-bottom: none;"></td>
-                                    </tr>
-                                @else
-                                    <tr>
-                                        <td colspan="{{ $colSpanBeforeToll - 1 }}" style="border-right: 1px solid #000; border-top: none; border-bottom: none;"></td>
-                                        <td style="font-weight: bold; border: 1px solid #000;">I GST {{ str_replace('.0', '', number_format($gstRate, 1)) }}%</td>
-                                        <td style="font-weight: bold; border: 1px solid #000; text-align: right; padding-right: 5px;">{{ number_format($calculatedGst, 2) }}</td>
-                                        <td colspan="2" style="border-left: 1px solid #000; border-top: none; border-bottom: none;"></td>
-                                    </tr>
-                                @endif
-                                <tr>
-                                    <td colspan="{{ $colSpanBeforeToll - 1 }}" style="border-right: 1px solid #000; border-top: none; border-bottom: none;"></td>
-                                    <td style="font-weight: bold; border: 1px solid #000;">TOTAL GST</td>
-                                    <td style="font-weight: bold; border: 1px solid #000; text-align: right; padding-right: 5px;">{{ number_format($calculatedGst, 2) }}</td>
-                                    <td colspan="2" style="border-left: 1px solid #000; border-top: none; border-bottom: none;"></td>
-                                </tr>
-                                <tr>
-                                    <td colspan="{{ $colSpanBeforeToll - 1 }}" style="border-right: 1px solid #000; border-top: none;"></td>
-                                    <td style="font-weight: bold; background: #e6e6e6; border: 1px solid #000;">GRAND TOTAL</td>
-                                    <td style="font-weight: bold; border: 1px solid #000; text-align: right; padding-right: 5px;">{{ number_format($grandTollSum + $calculatedGst, 2) }}</td>
-                                    <td colspan="2" style="border-left: 1px solid #000; border-top: none;"></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+            $qtyVal = (!empty($bulty->bultyDetail->challan_qty) && floatval($bulty->bultyDetail->challan_qty) > 0)
+                ? floatval($bulty->bultyDetail->challan_qty)
+                : (($bulty->bultyItems && $bulty->bultyItems->sum('weight') > 0) ? floatval($bulty->bultyItems->sum('weight')) : 0);
+        @endphp
+        <tr>
+            <td style="border: 1px solid #000; text-align: center; padding: 3px;">{{ $index + 1 }}</td>
+            <td style="border: 1px solid #000; text-align: center; font-weight: bold; padding: 3px;">{{ $bulty->delivery_number ?? ($bulty->order_number ?? '-') }}</td>
+            <td style="border: 1px solid #000; text-align: center; padding: 3px;">{{ $bulty->lr_date ? $bulty->lr_date->format('d/m/Y') : '-' }}</td>
+            <td style="border: 1px solid #000; text-align: center; font-weight: bold; padding: 3px;">{{ $bulty->vehicle->vehicle_number ?? '-' }}</td>
+            <td style="border: 1px solid #000; text-align: center; padding: 3px;">{{ $bulty->lr_no ?? '-' }}</td>
+            <td style="border: 1px solid #000; text-align: right; padding: 3px;">{{ $qtyVal > 0 ? number_format($qtyVal, 2, '.', '') : '-' }}</td>
+            <td style="border: 1px solid #000; text-align: left; padding: 3px;">{{ $bulty->destinationCity->name ?? '-' }}</td>
+            <td style="border: 1px solid #000; text-align: center; padding: 3px;">{{ strtoupper($bulty->mode ?? 'DEDICATED') }}</td>
 
-                    <!-- Bottom Terms & Declaration section -->
-                    <div style="border-top: 1px solid #000; padding: 8px; font-weight: bold; font-size: 11px;">
-                        Amount In word- &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #333; text-transform: uppercase;">{{ $amountInWords }}</span>
-                    </div>
+            @foreach($tollLocations as $loc)
+                @php
+                    if ($useSaved) {
+                        $match = $bultySavedDetails->firstWhere('location', $loc);
+                        $oneWay = $match && floatval($match->one_way) > 0 ? floatval($match->one_way) : 0;
+                        $returnVal = $match && floatval($match->return_amount) > 0 ? floatval($match->return_amount) : 0;
+                    } else {
+                        $matched = $ftDetails->filter(function($ft) use ($loc) {
+                            $fLoc = strtoupper(trim((string)($ft->location ?? '')));
+                            if ($loc === 'TOLL PLAZA') {
+                                return empty($fLoc) || $fLoc === 'TOLL PLAZA';
+                            }
+                            return $fLoc === $loc;
+                        });
+                        $oneWaySum = (float) $matched->sum('one_way');
+                        $returnSum = (float) $matched->sum('return');
+                        $amountSum = (float) $matched->sum('amount');
+                        if ($oneWaySum <= 0 && $returnSum <= 0 && $amountSum > 0) {
+                            $oneWaySum = $amountSum;
+                        }
+                        $oneWay = $oneWaySum > 0 ? $oneWaySum : 0;
+                        $returnVal = $returnSum > 0 ? $returnSum : 0;
+                    }
+                    $bultyTollSum += ($oneWay + $returnVal);
+                @endphp
+                <td style="border: 1px solid #000; text-align: right; font-weight: bold; padding: 3px;">{{ $oneWay > 0 ? number_format($oneWay, 2, '.', '') : '' }}</td>
+                <td style="border: 1px solid #000; text-align: right; font-weight: bold; padding: 3px;">{{ $returnVal > 0 ? number_format($returnVal, 2, '.', '') : '' }}</td>
+            @endforeach
 
-                    <div style="border-top: 1px solid #000; padding: 6px; font-weight: bold; font-size: 11px;">
-                        Person Liable to Pay Gst: {{ $companyName }}
-                    </div>
+            @for($i = $tollLocations->count(); $i < 3; $i++)
+                <td style="border: 1px solid #000; text-align: center; padding: 3px;"></td>
+                <td style="border: 1px solid #000; text-align: center; padding: 3px;"></td>
+            @endfor
 
-                    <div class="row g-0" style="border-top: 1px solid #000;">
-                        <div class="col-8 p-2" style="border-right: 1px solid #000; font-size: 11px; font-weight: bold; line-height: 1.5; vertical-align: middle;">
-                            Declaration:-{{ $compDeclaration }}
-                        </div>
-                        <div class="col-4 p-2 text-center d-flex flex-column justify-content-between" style="min-height: 90px;">
-                            <div class="fw-bold" style="font-size: 11px; text-transform: uppercase;">For. {{ $companyName }}</div>
-                            @if(!empty($compSigUrl))
-                                <div class="text-center my-1">
-                                    <img src="{{ $compSigUrl }}" alt="Signature" style="max-height: 45px; max-width: 140px; object-fit: contain;">
-                                </div>
-                            @endif
-                            @if(!empty($compOwner))
-                                <div style="font-size: 8px; color: #333; font-weight: bold; line-height: 1.2;">Digitally signed by {{ $compOwner }}</div>
-                            @endif
-                            <div style="font-size: 8px; color: #555; line-height: 1.2;">Date: {{ date('d-m-Y H:i:s') }} +05'30'</div>
-                            <div class="fw-bold" style="font-size: 11px; border-top: 1px solid #000; width: 80%; margin: 4px auto 0; padding-top: 4px;">Authorized Signatory</div>
-                        </div>
-                    </div>
+            <td style="border: 1px solid #000; text-align: right; font-weight: bold; padding: 3px;">{{ number_format($bultyTollSum, 2, '.', '') }}</td>
+            <td style="border: 1px solid #000; text-align: center; font-weight: bold; padding: 3px;">{{ $bulty->invoice ? $bulty->invoice->invoice_no : '-' }}</td>
+            <td style="border: 1px solid #000; text-align: center; font-weight: bold; padding: 3px;">{{ strtoupper($partyCity) }}</td>
+        </tr>
+    @endforeach
 
-                    <!-- Bottom footer -->
-                    <div class="text-center fw-bold" style="background: #e6e6e6; border-top: 1px solid #000; padding: 5px; font-size: 11px;">
-                        All Disputes are subjected to Jodhpur Jurisdiction only
-                    </div>
+    <!-- Summary Section -->
+    @php
+        $summaryColSpan = 8 + ($tollCount * 2) - 1;
+    @endphp
+    <tr>
+        <td colspan="{{ $summaryColSpan }}" style="border-right: 1px solid #000; border-bottom: 1px solid #000;"></td>
+        <td style="border: 1px solid #000; text-align: right; font-weight: bold; background-color: #e6e6e6; padding: 4px;">TOTAL</td>
+        <td style="border: 1px solid #000; text-align: right; font-weight: bold; padding: 4px;">{{ number_format($grandTollSum, 2, '.', '') }}</td>
+        <td colspan="2" style="border-left: 1px solid #000; border-bottom: 1px solid #000;"></td>
+    </tr>
 
-    </div>
-</div>
+    @if($gstType === 'CGST_SGST')
+        @php
+            $halfGst = round($calculatedGst / 2, 2);
+            $halfRate = $gstRate / 2;
+        @endphp
+        <tr>
+            <td colspan="{{ $summaryColSpan }}" style="border-right: 1px solid #000;"></td>
+            <td style="border: 1px solid #000; text-align: right; font-weight: bold; padding: 4px;">C GST {{ str_replace('.0', '', number_format($halfRate, 1)) }}%</td>
+            <td style="border: 1px solid #000; text-align: right; font-weight: bold; padding: 4px;">{{ number_format($halfGst, 2, '.', '') }}</td>
+            <td colspan="2" style="border-left: 1px solid #000;"></td>
+        </tr>
+        <tr>
+            <td colspan="{{ $summaryColSpan }}" style="border-right: 1px solid #000;"></td>
+            <td style="border: 1px solid #000; text-align: right; font-weight: bold; padding: 4px;">S GST {{ str_replace('.0', '', number_format($halfRate, 1)) }}%</td>
+            <td style="border: 1px solid #000; text-align: right; font-weight: bold; padding: 4px;">{{ number_format($halfGst, 2, '.', '') }}</td>
+            <td colspan="2" style="border-left: 1px solid #000;"></td>
+        </tr>
+    @else
+        <tr>
+            <td colspan="{{ $summaryColSpan }}" style="border-right: 1px solid #000;"></td>
+            <td style="border: 1px solid #000; text-align: right; font-weight: bold; padding: 4px;">I GST {{ str_replace('.0', '', number_format($gstRate, 1)) }}%</td>
+            <td style="border: 1px solid #000; text-align: right; font-weight: bold; padding: 4px;">{{ number_format($calculatedGst, 2, '.', '') }}</td>
+            <td colspan="2" style="border-left: 1px solid #000;"></td>
+        </tr>
+    @endif
+
+    <tr>
+        <td colspan="{{ $summaryColSpan }}" style="border-right: 1px solid #000;"></td>
+        <td style="border: 1px solid #000; text-align: right; font-weight: bold; padding: 4px;">TOTAL GST</td>
+        <td style="border: 1px solid #000; text-align: right; font-weight: bold; padding: 4px;">{{ number_format($calculatedGst, 2, '.', '') }}</td>
+        <td colspan="2" style="border-left: 1px solid #000;"></td>
+    </tr>
+    <tr>
+        <td colspan="{{ $summaryColSpan }}" style="border-right: 1px solid #000; border-bottom: 1px solid #000;"></td>
+        <td style="border: 1px solid #000; text-align: right; font-weight: bold; background-color: #e6e6e6; padding: 4px;">GRAND TOTAL</td>
+        <td style="border: 1px solid #000; text-align: right; font-weight: bold; padding: 4px;">{{ number_format($grandTotal, 2, '.', '') }}</td>
+        <td colspan="2" style="border-left: 1px solid #000; border-bottom: 1px solid #000;"></td>
+    </tr>
+
+    <!-- Footer Information -->
+    <tr>
+        <td colspan="{{ $totalColumns }}" style="border: 1px solid #000; font-weight: bold; padding: 4px;">
+            Amount In Words: <span style="text-transform: uppercase;">{{ $amountInWords }}</span>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="{{ $totalColumns }}" style="border: 1px solid #000; font-weight: bold; padding: 4px;">
+            Person Liable to Pay GST: {{ $companyName }}
+        </td>
+    </tr>
+    <tr>
+        <td colspan="{{ $totalColumns - 4 }}" style="border: 1px solid #000; font-weight: bold; vertical-align: top; padding: 5px;">
+            {{ $compDeclaration }}
+        </td>
+        <td colspan="4" style="border: 1px solid #000; text-align: center; vertical-align: bottom; font-weight: bold; padding: 10px 4px 4px 4px;">
+            For {{ strtoupper($companyName) }}<br><br><br>
+            Authorized Signatory
+        </td>
+    </tr>
+    <tr>
+        <td colspan="{{ $totalColumns }}" style="border: 1px solid #000; text-align: center; font-weight: bold; background-color: #e6e6e6; padding: 4px;">
+            All Disputes are subjected to Jodhpur Jurisdiction only
+        </td>
+    </tr>
+</table>
 </body>
 </html>

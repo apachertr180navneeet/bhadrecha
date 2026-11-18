@@ -92,6 +92,69 @@ class BultyController extends Controller
         return view('admin.transport.bulties.index', compact('bulties', 'statusCounts', 'dateSort'));
     }
 
+    public function exportExcel(Request $request)
+    {
+        if (!auth()->user()->can('view bulties')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $query = Bulty::with(['company', 'branch', 'consignor', 'consignee', 'originCity', 'destinationCity', 'bultyItems', 'vehicle', 'driver']);
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('lr_no', 'like', "%{$search}%")
+                    ->orWhereHas('consignor', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%")
+                            ->orWhere('phone', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('consignee', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%")
+                            ->orWhere('phone', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('vehicle', function ($q) use ($search) {
+                        $q->where('vehicle_number', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('branch_id')) {
+            if (!auth()->user()->canAccessBranch($request->branch_id)) {
+                abort(403, 'Unauthorized access to this branch records.');
+            }
+            $query->where('branch_id', $request->branch_id);
+        }
+
+        if ($request->filled('from_date')) {
+            $query->whereDate('lr_date', '>=', $request->from_date);
+        }
+
+        if ($request->filled('to_date')) {
+            $query->whereDate('lr_date', '<=', $request->to_date);
+        }
+
+        $yearFilter = session('current_year');
+        if ($yearFilter && $yearFilter !== 'all') {
+            $query->whereYear('lr_date', $yearFilter);
+        }
+
+        $dateSort = $request->get('date_sort', 'latest');
+        if ($dateSort === 'oldest') {
+            $query->orderBy('lr_date', 'asc')->orderBy('id', 'asc');
+        } else {
+            $query->orderBy('lr_date', 'desc')->orderBy('id', 'desc');
+        }
+
+        $bulties = $query->get();
+
+        $fileName = 'bilty_records_' . date('Ymd_His') . '.xlsx';
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\BiltyExport($bulties), $fileName);
+    }
+
     public function nextLRNumber($branchId)
     {
         $nextNumber = Bulty::generateLRNumber($branchId);
@@ -187,7 +250,7 @@ class BultyController extends Controller
         }
         $nextBultyNo = $branchId ? Bulty::generateLRNumber($branchId) : Bulty::generateLRNumber();
 
-        return view('admin.transport.bulties.create', compact('branches', 'companies', 'consignors', 'consignees', 'suppliers', 'cities', 'packagings', 'units', 'nextBultyNo'));
+        return view('admin.transport.bulties.create', compact('branches', 'companies', 'consignors', 'consignees', 'suppliers', 'cities', 'packagings', 'units', 'nextBultyNo', 'branchId'));
     }
 
     public function store(Request $request)

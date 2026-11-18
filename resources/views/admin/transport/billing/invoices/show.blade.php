@@ -15,6 +15,9 @@
             </nav>
         </div>
         <div class="d-flex gap-2">
+            <a href="{{ route('admin.reports.sales-ledger', ['bill_number' => $invoice->bill_number ?: $invoice->invoice_no]) }}#sales-ledger" class="btn btn-outline-info">
+                <i class="bx bx-book-open me-1"></i> Sales Ledger
+            </a>
             <a href="{{ route('admin.transport.invoices.index') }}" class="btn btn-outline-secondary">
                 <i class="bx bx-arrow-back me-1"></i> Back
             </a>

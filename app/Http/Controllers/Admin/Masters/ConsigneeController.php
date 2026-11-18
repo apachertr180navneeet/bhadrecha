@@ -276,23 +276,40 @@ class ConsigneeController extends Controller
 
     public function search(Request $request)
     {
-        if (!auth()->user()->can('view consignees') && !auth()->user()->isSuperAdmin()) {
+        if (!auth()->user()->can('view consignees') && !auth()->user()->can('create bulties') && !auth()->user()->isSuperAdmin()) {
             return response()->json([], 403);
         }
 
         $term = $request->term;
-        $consignees = Consignee::where('name', 'like', "%{$term}%")
-            ->orWhere('phone', 'like', "%{$term}%")
-            ->orWhere('gstin', 'like', "%{$term}%")
-            ->limit(10)
-            ->get();
+        $user = auth()->user();
+        $companyId = $user->isSuperAdmin() 
+            ? ($request->input('company_id') ?: (session('current_company_id') ?: null)) 
+            : $user->company_id;
+
+        // When creating bilty from another branch, allow finding consignees belonging to the company
+        // or without branch restriction so cross-branch consignees can be chosen properly
+        $query = Consignee::withoutGlobalScope('company')->where('status', 'active');
+
+        if ($companyId && $companyId !== 'all') {
+            $query->where(function($q) use ($companyId) {
+                $q->where('company_id', $companyId)->orWhereNull('company_id');
+            });
+        }
+
+        $query->where(function($q) use ($term) {
+            $q->where('name', 'like', "%{$term}%")
+              ->orWhere('phone', 'like', "%{$term}%")
+              ->orWhere('gstin', 'like', "%{$term}%");
+        });
+
+        $consignees = $query->limit(15)->get();
 
         return response()->json($consignees);
     }
 
     public function quickStore(Request $request)
     {
-        if (!auth()->user()->can('create consignees') && !auth()->user()->isSuperAdmin()) {
+        if (!auth()->user()->can('create consignees') && !auth()->user()->can('create bulties') && !auth()->user()->isSuperAdmin()) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
         $validated = $request->validate([
@@ -302,9 +319,10 @@ class ConsigneeController extends Controller
             'address' => 'nullable|string',
         ]);
 
-    $validated['company_id'] = $request->input('company_id', auth()->user()->company_id);
-    $validated['branch_id'] = $request->input('branch_id', auth()->user()->branch_id);
-    $validated['status'] = 'active';
+        $sessionBranch = session('current_branch_id');
+        $validated['company_id'] = $request->input('company_id', auth()->user()->company_id);
+        $validated['branch_id'] = $request->input('branch_id') ?: (($sessionBranch && $sessionBranch !== 'all') ? $sessionBranch : auth()->user()->branch_id);
+        $validated['status'] = 'active';
 
         $consignee = Consignee::create($validated);
 

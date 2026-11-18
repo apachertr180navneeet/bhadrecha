@@ -158,11 +158,11 @@ class SalesLedgerController extends Controller
         })->get();
         $consignors = \App\Models\Consignor::where('status', 'active')->get();
 
-        // Get bills for dropdown (only pending/unpaid bills where status != 'paid')
-        $allBills = \App\Models\Invoice::where('status', '!=', 'paid')
+        // Get bills for dropdown (exclude cancelled bills so any bill can be selected)
+        $allBills = \App\Models\Invoice::where('status', '!=', 'cancelled')
             ->when($companyId && $companyId !== 'all', function ($q) use ($companyId) {
                 $q->where('company_id', $companyId);
-            })->orderBy('id', 'desc')->get(['id', 'bill_number', 'invoice_no', 'consignor_name', 'company_id', 'branch_id', 'status']);
+            })->orderBy('id', 'desc')->get(['id', 'bill_number', 'invoice_no', 'consignor_name', 'company_id', 'branch_id', 'status', 'total_amount', 'net_payable_amount', 'receiving_amount']);
 
         // Recent receiving records for payment logs tab
         $recentReceivingsQuery = \App\Models\BillReceiving::with(['invoice.consignor', 'company', 'branch']);
@@ -623,7 +623,10 @@ class SalesLedgerController extends Controller
             $invoice->save();
         });
 
-        return back()->with('success', 'Amount received successfully.');
+        $targetBillNo = $invoice->bill_number ?: $invoice->invoice_no;
+        return redirect()->to(route('admin.reports.sales-ledger', [
+            'bill_number' => $targetBillNo,
+        ]) . '#sales-ledger')->with('success', 'Amount received successfully.');
     }
 
     public function getReceivingDetails($id)
@@ -709,7 +712,7 @@ class SalesLedgerController extends Controller
             }
         });
 
-        return back()->with('success', 'Receiving entry updated successfully.');
+        return redirect()->to(route('admin.reports.sales-ledger') . '#payment-logs')->with('success', 'Receiving entry updated successfully.');
     }
 
     public function deleteReceiving($id)
@@ -740,7 +743,7 @@ class SalesLedgerController extends Controller
             }
         });
 
-        return back()->with('success', 'Receiving entry deleted successfully.');
+        return redirect()->to(route('admin.reports.sales-ledger') . '#payment-logs')->with('success', 'Receiving entry deleted successfully.');
     }
 
     public function getBillDetails($id)
@@ -825,7 +828,10 @@ class SalesLedgerController extends Controller
 
         $invoice->update($updateData);
 
-        return back()->with('success', 'Bill details updated successfully.');
+        $targetBillNo = $invoice->bill_number ?: $invoice->invoice_no;
+        return redirect()->to(route('admin.reports.sales-ledger', [
+            'bill_number' => $targetBillNo,
+        ]) . '#sales-ledger')->with('success', 'Bill details updated successfully.');
     }
 
     public function updateCaseId(Request $request, $id)

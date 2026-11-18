@@ -374,6 +374,15 @@
             </li>
         @endcanany
 
+        @canany(['view cash ledger', 'add cash entry', 'view expenses'])
+            <li class="menu-item {{ request()->is('admin/cash-ledger*') ? 'active' : '' }}">
+                <a href="{{ route('admin.cash-ledger.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-wallet-alt"></i>
+                    <div data-i18n="Cash Ledger">Cash Ledger</div>
+                </a>
+            </li>
+        @endcanany
+
         @canany(['view reports', 'view vehicle report', 'view driver trip report', 'view customer ledger', 'view sales ledger', 'view tds report', 'view trip reports', 'view bilty advance details', 'view fuel report', 'view adblue report', 'view fuel outstanding', 'view adblue outstanding', 'view vehicle utilization', 'view mis report', 'view expense management', 'view vehicle document report', 'view gst tax report', 'view profit loss report'])
             <li class="menu-divider"></li>
             <li class="menu-header small text-uppercase">

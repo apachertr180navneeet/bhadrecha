@@ -67,14 +67,32 @@
                                 <label class="form-label fw-bold">Branch <span class="text-danger">*</span></label>
                                 <select name="branch_id" id="branch_id" class="form-select @error('branch_id') is-invalid @enderror" required>
                                     <option value="">Select Branch</option>
+                                    @foreach($branches ?? [] as $b)
+                                        <option value="{{ $b->id }}" {{ old('branch_id', $branchId ?? '') == $b->id ? 'selected' : '' }}>{{ $b->name }}</option>
+                                    @endforeach
                                 </select>
                                 <div class="invalid-feedback @error('branch_id') d-block @enderror">
                                     @error('branch_id') {{ $message }} @else Branch is required @enderror
                                 </div>
                             </div>
                             @else
-                                <input type="hidden" name="company_id" value="{{ auth()->user()->company_id }}">
-                                <input type="hidden" name="branch_id" value="{{ auth()->user()->branch_id }}">
+                                <input type="hidden" name="company_id" id="company_id" value="{{ auth()->user()->company_id }}">
+                                @if(isset($branches) && count($branches) > 1)
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Branch <span class="text-danger">*</span></label>
+                                    <select name="branch_id" id="branch_id" class="form-select @error('branch_id') is-invalid @enderror" required>
+                                        <option value="">Select Branch</option>
+                                        @foreach($branches as $b)
+                                            <option value="{{ $b->id }}" {{ old('branch_id', $branchId ?? '') == $b->id ? 'selected' : '' }}>{{ $b->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <div class="invalid-feedback @error('branch_id') d-block @enderror">
+                                        @error('branch_id') {{ $message }} @else Branch is required @enderror
+                                    </div>
+                                </div>
+                                @else
+                                <input type="hidden" name="branch_id" id="branch_id" value="{{ old('branch_id', $branchId ?? auth()->user()->branch_id) }}">
+                                @endif
                             @endif
 
                             <div class="col-md-4">
@@ -1107,8 +1125,8 @@
 <script>
     $(document).ready(function() {
         function getCompanyBranchData() {
-            const companyId = $('[name="company_id"]').val();
-            const branchId = $('[name="branch_id"]').val();
+            const companyId = $('[name="company_id"]').val() || '{{ auth()->user()->company_id }}';
+            const branchId = $('#branch_id').val() || $('[name="branch_id"]').val() || '{{ $branchId ?? "" }}';
             if (!companyId) {
                 Swal.fire({ icon: 'error', title: 'Error', text: 'Please select Company and Branch first.', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
                 return null;
@@ -1526,7 +1544,11 @@
                 $.ajax({
                     url: "{{ route('admin.masters.consignees.search') }}",
                     method: 'GET',
-                    data: { term: term },
+                    data: { 
+                        term: term,
+                        company_id: $('[name="company_id"]').val() || '{{ auth()->user()->company_id }}',
+                        branch_id: $('#branch_id').val() || $('[name="branch_id"]').val() || '{{ $branchId ?? "" }}'
+                    },
                     success: function(consignees) {
                         if (consignees.length > 0) {
                             let html = '';
@@ -1725,7 +1747,7 @@
                         $.each(data, function(key, value) {
                             $branchSelect.append('<option value="' + value.id + '">' + value.name + '</option>');
                         });
-                        var oldBranch = '{{ old('branch_id') }}';
+                        var oldBranch = '{{ old('branch_id', $branchId ?? '') }}';
                         if (oldBranch) {
                             $branchSelect.val(oldBranch);
                         }

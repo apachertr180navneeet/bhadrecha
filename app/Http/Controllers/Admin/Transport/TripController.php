@@ -147,6 +147,70 @@ class TripController extends Controller
         return view('admin.transport.trips.index', compact('trips', 'statusCounts', 'totalTrips', 'dateSort'));
     }
 
+    public function exportExcel(Request $request)
+    {
+        $user = auth()->user();
+        if (!$user || (!$user->can('view trips') && !$user->can('view trip details') && !$user->isSuperAdmin())) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $query = Trip::with([
+            'builty.consignor',
+            'builty.consignee',
+            'builty.originCity',
+            'builty.destinationCity',
+            'builty.vehicle',
+            'builty.driver',
+            'builty.branch',
+            'builty.company',
+        ]);
+
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $cleanSearch = str_replace(' ', '', $search);
+            $query->where(function ($q) use ($search, $cleanSearch) {
+                $q->where('trip_no', 'like', "%{$search}%")
+                    ->orWhereHas('builty', function ($bq) use ($search, $cleanSearch) {
+                        $bq->where('lr_no', 'like', "%{$search}%")
+                            ->orWhereHas('consignor', fn($cq) => $cq->where('name', 'like', "%{$search}%"))
+                            ->orWhereHas('consignee', fn($cq) => $cq->where('name', 'like', "%{$search}%"))
+                            ->orWhereHas('vehicle', fn($vq) => $vq->where('vehicle_number', 'like', "%{$search}%")->orWhereRaw("REPLACE(vehicle_number, ' ', '') LIKE ?", ["%{$cleanSearch}%"]))
+                            ->orWhereHas('driver', fn($dq) => $dq->where('name', 'like', "%{$search}%"));
+                    });
+            });
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('branch_id')) {
+            $query->whereHas('builty', function ($bq) use ($request) {
+                $bq->where('branch_id', $request->branch_id);
+            });
+        }
+
+        if ($request->filled('from_date')) {
+            $query->whereHas('builty', fn($bq) => $bq->whereDate('lr_date', '>=', $request->from_date));
+        }
+
+        if ($request->filled('to_date')) {
+            $query->whereHas('builty', fn($bq) => $bq->whereDate('lr_date', '<=', $request->to_date));
+        }
+
+        $dateSort = $request->get('date_sort', 'latest');
+        if ($dateSort === 'oldest') {
+            $query->orderBy('id', 'asc');
+        } else {
+            $query->orderBy('id', 'desc');
+        }
+
+        $trips = $query->get();
+
+        $fileName = 'trip_records_' . date('Ymd_His') . '.xlsx';
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\TripExport($trips), $fileName);
+    }
+
     public function show(Trip $trip)
     {
         $user = auth()->user();

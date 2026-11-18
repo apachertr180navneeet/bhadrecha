@@ -177,6 +177,10 @@ Route::name('admin.')->prefix('admin')->group(function () {
         Route::get('reports/bilty-advance-details/export', [BiltyAdvanceDetailController::class, 'exportExcel'])->name('reports.bilty-advance-details.export');
         Route::get('reports/bilty-advance-details/bulty-info/{id}', [BiltyAdvanceDetailController::class, 'getBultyInfo'])->name('reports.bilty-advance-details.bulty-info');
 
+        // Cash Ledger Module
+        Route::get('cash-ledger/export-excel', [\App\Http\Controllers\Admin\CashLedgerController::class, 'exportExcel'])->name('cash-ledger.export-excel');
+        Route::resource('cash-ledger', \App\Http\Controllers\Admin\CashLedgerController::class);
+
         // Notification Center & Expiry Alerts Routes
         Route::get('notifications', [\App\Http\Controllers\Admin\NotificationController::class, 'index'])->name('notifications.index');
         Route::get('notifications/unread', [\App\Http\Controllers\Admin\NotificationController::class, 'getUnread'])->name('notifications.unread');
@@ -287,6 +291,7 @@ Route::name('admin.')->prefix('admin')->group(function () {
 
         Route::name('transport.')->prefix('transport')->group(function () {
             
+            Route::get('bulties/export-excel', [BultyController::class, 'exportExcel'])->name('bulties.export-excel');
             Route::get('bulties/trashed', [BultyController::class, 'trashed'])->name('bulties.trashed');
             Route::get('bulties/next-lr/{branchId?}', [BultyController::class, 'nextLRNumber'])->name('bulties.next-lr');
             Route::get('bulties/check-lr', [BultyController::class, 'checkLRNumber'])->name('bulties.check-lr');
@@ -303,6 +308,7 @@ Route::name('admin.')->prefix('admin')->group(function () {
             Route::get('bulties/{bulty}/print-bill', [BultyController::class, 'printBill'])->name('bulties.print-bill');
             Route::post('bulties/{bulty}/send-mail', [BultyController::class, 'sendMail'])->name('bulties.send-mail');
 
+            Route::get('trips/export-excel', [TripController::class, 'exportExcel'])->name('trips.export-excel');
             Route::get('trips', [TripController::class, 'index'])->name('trips.index');
             Route::get('trips/download-template', [TripController::class, 'downloadTemplate'])->name('trips.download-template');
             Route::post('trips/import', [TripController::class, 'import'])->name('trips.import');

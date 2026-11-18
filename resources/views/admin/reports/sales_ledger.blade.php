@@ -284,17 +284,20 @@
         </div>
     </div>
 
+    @php
+        $hasInvoiceQuery = request()->filled('bill_number') || request()->filled('case_id') || request()->filled('e_invoice_no') || request()->filled('ee_invoice_no') || request()->filled('bill_to') || request()->filled('status') || request()->filled('receiving_amount_status') || request()->filled('receiving_gst_status') || request()->filled('page');
+    @endphp
     <!-- Tabs Layout -->
     <div class="card shadow-sm border-0">
         <div class="card-header p-0">
             <ul class="nav nav-tabs nav-tabs-custom border-bottom" id="salesLedgerTabs" role="tablist">
                 <li class="nav-item">
-                    <button class="nav-link active" id="branch-overview-tab" data-bs-toggle="tab" data-bs-target="#branch-overview" type="button" role="tab">
+                    <button class="nav-link {{ $hasInvoiceQuery ? '' : 'active' }}" id="branch-overview-tab" data-bs-toggle="tab" data-bs-target="#branch-overview" type="button" role="tab">
                         <i class="bx bx-buildings me-1"></i> Branch Overview (Outstanding Report)
                     </button>
                 </li>
                 <li class="nav-item">
-                    <button class="nav-link" id="sales-ledger-tab" data-bs-toggle="tab" data-bs-target="#sales-ledger" type="button" role="tab">
+                    <button class="nav-link {{ $hasInvoiceQuery ? 'active' : '' }}" id="sales-ledger-tab" data-bs-toggle="tab" data-bs-target="#sales-ledger" type="button" role="tab">
                         <i class="bx bx-book-open me-1"></i> Sales Ledger (Bills & Invoices)
                     </button>
                 </li>
@@ -308,7 +311,7 @@
         <div class="card-body">
             <div class="tab-content p-0">
                 <!-- TAB 1: Branch Overview (Outstanding Report) -->
-                <div class="tab-pane fade show active" id="branch-overview" role="tabpanel">
+                <div class="tab-pane fade {{ $hasInvoiceQuery ? '' : 'show active' }}" id="branch-overview" role="tabpanel">
                     <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-3">
                         <i class="bx bx-info-circle me-2 fs-4"></i>
                         <span>This report provides a branch-wise calculation of total receivable amount, GST, received amounts, and outstanding balances.</span>
@@ -388,7 +391,7 @@
                 </div>
 
                 <!-- TAB 2: Sales Ledger (Bills & Invoices) -->
-                <div class="tab-pane fade" id="sales-ledger" role="tabpanel">
+                <div class="tab-pane fade {{ $hasInvoiceQuery ? 'show active' : '' }}" id="sales-ledger" role="tabpanel">
                     <div class="table-responsive text-nowrap">
                         <table class="table table-hover table-sm align-middle">
                             <thead class="table-light">
@@ -735,8 +738,9 @@
                                 @foreach($allBills as $bill)
                                     @php
                                         $displayBillNo = !empty($bill->bill_number) ? $bill->bill_number : ($bill->invoice_no ?? ('INV-' . $bill->id));
+                                        $statusBadge = ($bill->status === 'paid') ? ' (Paid)' : ($bill->status === 'pending' ? ' (Pending)' : '');
                                     @endphp
-                                    <option value="{{ $bill->id }}">{{ $displayBillNo }} - {{ $bill->consignor_name }}</option>
+                                    <option value="{{ $bill->id }}">{{ $displayBillNo }} - {{ $bill->consignor_name }}{{ $statusBadge }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -884,18 +888,27 @@
 @section('script')
 <script>
     $(document).ready(function() {
-        // Tab preservation from URL hash
+        // Tab preservation from URL hash and session
         var hash = window.location.hash;
         if (hash) {
             var tabBtn = $('button[data-bs-target="' + hash + '"]');
             if (tabBtn.length) {
                 tabBtn.tab('show');
             }
+        } else if (!{{ $hasInvoiceQuery ? 'true' : 'false' }}) {
+            var savedTab = sessionStorage.getItem('activeSalesLedgerTab');
+            if (savedTab) {
+                var tabBtn = $('button[data-bs-target="' + savedTab + '"]');
+                if (tabBtn.length) {
+                    tabBtn.tab('show');
+                }
+            }
         }
 
         $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
             var target = $(e.target).attr('data-bs-target');
             if (target) {
+                sessionStorage.setItem('activeSalesLedgerTab', target);
                 history.replaceState(null, null, target);
             }
         });
