@@ -140,51 +140,6 @@
             </li>
         @endcanany
 
-        <li class="menu-item {{ request()->is('admin/fastag*') ? 'active open' : '' }} has-sub">
-            <a href="javascript:void(0);" class="menu-link menu-toggle">
-                <i class="menu-icon tf-icons bx bx-credit-card-front"></i>
-                <div data-i18n="FASTag Management">FASTag Management</div>
-            </a>
-            <ul class="menu-sub">
-                <li class="menu-item {{ request()->routeIs('admin.fastag.index') || (request()->is('admin/fastag') && !request()->is('admin/fastag/*')) ? 'active' : '' }}">
-                    <a href="{{ route('admin.fastag.index') }}" class="menu-link">
-                        <i class="menu-icon tf-icons bx bx-list-check"></i>
-                        <div data-i18n="FASTag Transactions">FASTag Transactions</div>
-                    </a>
-                </li>
-                <li class="menu-item {{ request()->routeIs('admin.fastag.fetch') ? 'active' : '' }}">
-                    <a href="{{ route('admin.fastag.fetch') }}" class="menu-link">
-                        <i class="menu-icon tf-icons bx bx-cloud-download"></i>
-                        <div data-i18n="Fetch Transactions">Fetch Transactions</div>
-                    </a>
-                </li>
-                <li class="menu-item {{ request()->routeIs('admin.fastag.vehicle-wise') ? 'active' : '' }}">
-                    <a href="{{ route('admin.fastag.vehicle-wise') }}" class="menu-link">
-                        <i class="menu-icon tf-icons bx bx-truck"></i>
-                        <div data-i18n="Vehicle-wise Transactions">Vehicle-wise Transactions</div>
-                    </a>
-                </li>
-                <li class="menu-item {{ request()->routeIs('admin.fastag.reports') ? 'active' : '' }}">
-                    <a href="{{ route('admin.fastag.reports') }}" class="menu-link">
-                        <i class="menu-icon tf-icons bx bx-bar-chart"></i>
-                        <div data-i18n="Transaction Reports">Transaction Reports</div>
-                    </a>
-                </li>
-                <li class="menu-item {{ request()->routeIs('admin.fastag.sync-logs') ? 'active' : '' }}">
-                    <a href="{{ route('admin.fastag.sync-logs') }}" class="menu-link">
-                        <i class="menu-icon tf-icons bx bx-sync"></i>
-                        <div data-i18n="Synchronization History">Synchronization History</div>
-                    </a>
-                </li>
-                <li class="menu-item {{ request()->routeIs('admin.fastag.config') ? 'active' : '' }}">
-                    <a href="{{ route('admin.fastag.config') }}" class="menu-link">
-                        <i class="menu-icon tf-icons bx bx-cog"></i>
-                        <div data-i18n="FASTag API Configuration">FASTag API Configuration</div>
-                    </a>
-                </li>
-            </ul>
-        </li>
-
         @can('view letterheads')
             <li class="menu-item {{ request()->is('admin/letterheads*') ? 'active' : '' }}">
                 <a href="{{ route('admin.letterheads.index') }}" class="menu-link">
