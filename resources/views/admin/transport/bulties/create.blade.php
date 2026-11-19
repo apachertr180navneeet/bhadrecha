@@ -1747,7 +1747,8 @@
                         $branchSelect.prop('disabled', false).empty().append('<option value="">Select Branch</option>');
                         if (Array.isArray(data)) {
                             $.each(data, function(key, value) {
-                                $branchSelect.append('<option value="' + value.id + '">' + value.name + '</option>');
+                                var selected = (targetBranchId && value.id == targetBranchId) ? 'selected' : '';
+                                $branchSelect.append('<option value="' + value.id + '" ' + selected + '>' + value.name + '</option>');
                             });
                         }
                         if (targetBranchId && $branchSelect.find('option[value="' + targetBranchId + '"]').length > 0) {
@@ -1761,7 +1762,7 @@
                         $branchSelect.trigger('change');
                     },
                     error: function() {
-                        $branchSelect.prop('disabled', false).empty().append('<option value="">Select Branch</option>');
+                        $branchSelect.prop('disabled', false);
                     }
                 });
             } else {
@@ -1778,7 +1779,7 @@
         $(document).on('change', '#branch_id', function() {
             const branchId = $(this).val();
             if (branchId) {
-                $.get('{{ url("admin/transport/bulties/next-lr") }}/' + branchId, function(res) {
+                $.get('{{ route("admin.transport.bulties.next-lr") }}/' + branchId, function(res) {
                     if (res.missing && res.missing.length > 0) {
                         let html = '<div class="list-group" style="max-height:300px;overflow-y:auto;">';
                         res.missing.forEach(function(lr) {

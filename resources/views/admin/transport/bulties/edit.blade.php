@@ -60,7 +60,7 @@
                                 <select name="company_id" id="company_id" class="form-select @error('company_id') is-invalid @enderror" required>
                                     <option value="">Select Company</option>
                                     @foreach($companies as $company)
-                                        <option value="{{ $company->id }}" {{ old('company_id', $bulty->company_id) == $company->id ? 'selected' : '' }}>{{ $company->name }}</option>
+                                        <option value="{{ $company->id }}" {{ (string)old('company_id', $bulty->company_id ?: ($bulty->branch?->company_id ?? '')) === (string)$company->id ? 'selected' : '' }}>{{ $company->name }}</option>
                                     @endforeach
                                 </select>
                                 @error('company_id') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
@@ -69,6 +69,9 @@
                                 <label class="form-label fw-bold">Branch <span class="text-danger">*</span></label>
                                 <select name="branch_id" id="branch_id" class="form-select @error('branch_id') is-invalid @enderror" required>
                                     <option value="">Select Branch</option>
+                                    @foreach($branches ?? [] as $b)
+                                        <option value="{{ $b->id }}" {{ (string)old('branch_id', $bulty->branch_id) === (string)$b->id ? 'selected' : '' }}>{{ $b->name }}</option>
+                                    @endforeach
                                 </select>
                                 <div class="invalid-feedback @error('branch_id') d-block @enderror">
                                     @error('branch_id') {{ $message }} @else Branch is required @enderror
@@ -76,7 +79,22 @@
                             </div>
                             @else
                                 <input type="hidden" name="company_id" value="{{ $bulty->company_id ?? auth()->user()->company_id }}">
-                                <input type="hidden" name="branch_id" value="{{ $bulty->branch_id ?? auth()->user()->branch_id }}">
+                                @if(isset($branches) && count($branches) > 1)
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Branch <span class="text-danger">*</span></label>
+                                    <select name="branch_id" id="branch_id" class="form-select @error('branch_id') is-invalid @enderror" required>
+                                        <option value="">Select Branch</option>
+                                        @foreach($branches as $b)
+                                            <option value="{{ $b->id }}" {{ (string)old('branch_id', $bulty->branch_id) === (string)$b->id ? 'selected' : '' }}>{{ $b->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <div class="invalid-feedback @error('branch_id') d-block @enderror">
+                                        @error('branch_id') {{ $message }} @else Branch is required @enderror
+                                    </div>
+                                </div>
+                                @else
+                                <input type="hidden" name="branch_id" value="{{ old('branch_id', $bulty->branch_id ?? auth()->user()->branch_id) }}">
+                                @endif
                             @endif
 
                             <div class="col-md-4">
@@ -1186,6 +1204,9 @@
             return { company_id: companyId, branch_id: branchId || '' };
         }
 
+        const savedBranchId = "{{ old('branch_id', $bulty->branch_id ?? '') }}";
+        const savedCompanyId = "{{ old('company_id', $bulty->company_id ?: ($bulty->branch?->company_id ?? '')) }}";
+
         // Branch Logic
         function syncBranchesForCompany(companyId, targetBranchId) {
             var $branchSelect = $('#branch_id');
@@ -1200,7 +1221,8 @@
                         $branchSelect.prop('disabled', false).empty().append('<option value="">Select Branch</option>');
                         if (Array.isArray(data)) {
                             $.each(data, function(key, value) {
-                                $branchSelect.append('<option value="' + value.id + '">' + value.name + '</option>');
+                                var selected = (targetBranchId && String(value.id) === String(targetBranchId)) ? 'selected' : '';
+                                $branchSelect.append('<option value="' + value.id + '" ' + selected + '>' + value.name + '</option>');
                             });
                         }
                         if (targetBranchId && $branchSelect.find('option[value="' + targetBranchId + '"]').length > 0) {
@@ -1214,7 +1236,7 @@
                         $branchSelect.trigger('change');
                     },
                     error: function() {
-                        $branchSelect.prop('disabled', false).empty().append('<option value="">Select Branch</option>');
+                        $branchSelect.prop('disabled', false);
                     }
                 });
             } else {
@@ -1224,8 +1246,13 @@
 
         $('#company_id').on('change', function() {
             var companyId = $(this).val();
-            syncBranchesForCompany(companyId, null);
+            var targetBranch = (String(companyId) === String(savedCompanyId)) ? savedBranchId : null;
+            syncBranchesForCompany(companyId, targetBranch);
         });
+
+        if ($('#branch_id option').length <= 1 && $('#company_id').val()) {
+            syncBranchesForCompany($('#company_id').val(), savedBranchId);
+        }
 
         // Form Validation
         $('#biltyForm').on('submit', function(e) {

@@ -377,8 +377,10 @@ class BultyController extends Controller
             $companies = Company::where('status', 'active')->get();
         }
 
+        $bulty->load(['consignor', 'consignee', 'vehicle', 'driver', 'bultyItems.item', 'bultyDetail', 'branch']);
+
         $user = auth()->user();
-        $bultyCompanyId = old('company_id', $bulty->company_id ?: ($user->company_id ?: ($companies->first()?->id ?? null)));
+        $bultyCompanyId = old('company_id', $bulty->company_id ?: ($bulty->branch?->company_id ?: ($user->company_id ?: ($companies->first()?->id ?? null))));
 
         if ($user->isSuperAdmin() || $user->isCompanyAdmin()) {
             $branchesQuery = Branch::where('status', 'active');
@@ -394,6 +396,10 @@ class BultyController extends Controller
                 $branches = $branches->where('company_id', $bultyCompanyId);
             }
             $branches = $branches->values();
+        }
+
+        if ($bulty->branch && !$branches->contains('id', $bulty->branch_id)) {
+            $branches->push($bulty->branch);
         }
 
         $consignors = Consignor::where('status', 'active')->get();
