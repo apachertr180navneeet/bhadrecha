@@ -51,15 +51,18 @@
                 $.ajax({
                     url: '{{ url("admin/users/get-branches") }}/' + companyId,
                     type: 'GET',
+                    dataType: 'json',
                     success: function(data) {
                         $('#branch_id').empty();
                         $('#branch_id').append('<option value="">Select Branch</option>');
                         var found = false;
-                        $.each(data, function(key, branch) {
-                            var selected = branch.id == selectedBranchId ? 'selected' : '';
-                            if (selected) found = true;
-                            $('#branch_id').append('<option value="' + branch.id + '" ' + selected + '>' + branch.name + '</option>');
-                        });
+                        if (Array.isArray(data)) {
+                            $.each(data, function(key, branch) {
+                                var selected = branch.id == selectedBranchId ? 'selected' : '';
+                                if (selected) found = true;
+                                $('#branch_id').append('<option value="' + branch.id + '" ' + selected + '>' + branch.name + '</option>');
+                            });
+                        }
                         if (selectedBranchId && !found && selectedBranchName) {
                             $('#branch_id').append('<option value="' + selectedBranchId + '" selected>' + selectedBranchName + '</option>');
                         }

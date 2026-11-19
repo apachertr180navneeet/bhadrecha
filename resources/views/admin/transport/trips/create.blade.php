@@ -532,11 +532,13 @@
             pumpSelect.empty().append('<option value="">Select Pump</option>');
             if (companyId) {
                 $.get(pumpsUrl.replace(':companyId', companyId), function(data) {
-                    $.each(data, function(i, pump) {
-                        pumpSelect.append('<option value="' + pump.id + '" ' + (selectedPumpId && pump.id == selectedPumpId ? 'selected' : '') + '>' + pump.name + '</option>');
-                    });
+                    if (Array.isArray(data)) {
+                        $.each(data, function(i, pump) {
+                            pumpSelect.append('<option value="' + pump.id + '" ' + (selectedPumpId && pump.id == selectedPumpId ? 'selected' : '') + '>' + pump.name + '</option>');
+                        });
+                    }
                     pumpSelect.trigger('change');
-                });
+                }, 'json');
             } else {
                 pumpSelect.trigger('change');
             }
@@ -552,11 +554,13 @@
             pumpSelect.empty().append('<option value="">Select Pump</option>');
             if (companyId) {
                 $.get(pumpsUrl.replace(':companyId', companyId), function(data) {
-                    $.each(data, function(i, pump) {
-                        pumpSelect.append('<option value="' + pump.id + '">' + pump.name + '</option>');
-                    });
+                    if (Array.isArray(data)) {
+                        $.each(data, function(i, pump) {
+                            pumpSelect.append('<option value="' + pump.id + '">' + pump.name + '</option>');
+                        });
+                    }
                     pumpSelect.trigger('change');
-                });
+                }, 'json');
             } else {
                 pumpSelect.trigger('change');
             }
@@ -568,11 +572,13 @@
             pumpSelect.empty().append('<option value="">Select Pump</option>');
             if (companyId) {
                 $.get(pumpsUrl.replace(':companyId', companyId), function(data) {
-                    $.each(data, function(i, pump) {
-                        pumpSelect.append('<option value="' + pump.id + '">' + pump.name + '</option>');
-                    });
+                    if (Array.isArray(data)) {
+                        $.each(data, function(i, pump) {
+                            pumpSelect.append('<option value="' + pump.id + '">' + pump.name + '</option>');
+                        });
+                    }
                     pumpSelect.trigger('change');
-                });
+                }, 'json');
             } else {
                 pumpSelect.trigger('change');
             }

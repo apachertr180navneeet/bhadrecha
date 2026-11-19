@@ -1193,19 +1193,25 @@
             if (companyId) {
                 $branchSelect.prop('disabled', true).html('<option value="">Syncing...</option>');
                 $.ajax({
-                    url: '/admin/users/get-branches/' + companyId,
+                    url: '{{ url("admin/users/get-branches") }}/' + companyId,
                     type: 'GET',
+                    dataType: 'json',
                     success: function(data) {
                         $branchSelect.prop('disabled', false).empty().append('<option value="">Select Branch</option>');
-                        $.each(data, function(key, value) {
-                            $branchSelect.append('<option value="' + value.id + '">' + value.name + '</option>');
-                        });
+                        if (Array.isArray(data)) {
+                            $.each(data, function(key, value) {
+                                $branchSelect.append('<option value="' + value.id + '">' + value.name + '</option>');
+                            });
+                        }
                         // Pre-select the bulty's branch if editing
                         var selectedBranch = '{{ old('branch_id', $bulty->branch_id) }}';
                         if (selectedBranch) {
                             $branchSelect.val(selectedBranch);
                         }
                         $branchSelect.trigger('change');
+                    },
+                    error: function() {
+                        $branchSelect.prop('disabled', false).empty().append('<option value="">Select Branch</option>');
                     }
                 });
             } else {

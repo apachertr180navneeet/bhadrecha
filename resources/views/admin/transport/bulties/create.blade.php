@@ -1740,18 +1740,24 @@
             if (companyId) {
                 $branchSelect.prop('disabled', true).html('<option value="">Syncing...</option>');
                 $.ajax({
-                    url: '/admin/users/get-branches/' + companyId,
+                    url: '{{ url("admin/users/get-branches") }}/' + companyId,
                     type: 'GET',
+                    dataType: 'json',
                     success: function(data) {
                         $branchSelect.prop('disabled', false).empty().append('<option value="">Select Branch</option>');
-                        $.each(data, function(key, value) {
-                            $branchSelect.append('<option value="' + value.id + '">' + value.name + '</option>');
-                        });
+                        if (Array.isArray(data)) {
+                            $.each(data, function(key, value) {
+                                $branchSelect.append('<option value="' + value.id + '">' + value.name + '</option>');
+                            });
+                        }
                         var oldBranch = '{{ old('branch_id', $branchId ?? '') }}';
                         if (oldBranch) {
                             $branchSelect.val(oldBranch);
                         }
                         $branchSelect.trigger('change');
+                    },
+                    error: function() {
+                        $branchSelect.prop('disabled', false).empty().append('<option value="">Select Branch</option>');
                     }
                 });
             } else {

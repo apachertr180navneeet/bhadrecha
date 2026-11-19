@@ -129,12 +129,15 @@
                 $.ajax({
                     url: '{{ url("admin/users/get-branches") }}/' + companyId,
                     type: 'GET',
+                    dataType: 'json',
                     success: function(data) {
                         $('#import_branch_id').empty().append('<option value="">Select Branch</option>');
-                        $.each(data, function(key, branch) {
-                            var selected = branch.id == selectedBranchId ? 'selected' : '';
-                            $('#import_branch_id').append('<option value="' + branch.id + '" ' + selected + '>' + branch.name + '</option>');
-                        });
+                        if (Array.isArray(data)) {
+                            $.each(data, function(key, branch) {
+                                var selected = branch.id == selectedBranchId ? 'selected' : '';
+                                $('#import_branch_id').append('<option value="' + branch.id + '" ' + selected + '>' + branch.name + '</option>');
+                            });
+                        }
                         $('#import_branch_id').trigger('change');
                     }
                 });
