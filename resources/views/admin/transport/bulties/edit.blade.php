@@ -1192,8 +1192,9 @@
             if (companyId) {
                 $branchSelect.prop('disabled', true);
                 $.ajax({
-                    url: '{{ url("admin/users/get-branches") }}/' + companyId,
+                    url: '{{ route("admin.users.get-branches") }}',
                     type: 'GET',
+                    data: { company_id: companyId },
                     dataType: 'json',
                     success: function(data) {
                         $branchSelect.prop('disabled', false).empty().append('<option value="">Select Branch</option>');
