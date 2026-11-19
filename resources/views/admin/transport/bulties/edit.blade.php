@@ -1187,11 +1187,10 @@
         }
 
         // Branch Logic
-        $('#company_id').change(function() {
-            var companyId = $(this).val();
+        function syncBranchesForCompany(companyId, targetBranchId) {
             var $branchSelect = $('#branch_id');
             if (companyId) {
-                $branchSelect.prop('disabled', true).html('<option value="">Syncing...</option>');
+                $branchSelect.prop('disabled', true);
                 $.ajax({
                     url: '{{ url("admin/users/get-branches") }}/' + companyId,
                     type: 'GET',
@@ -1203,10 +1202,13 @@
                                 $branchSelect.append('<option value="' + value.id + '">' + value.name + '</option>');
                             });
                         }
-                        // Pre-select the bulty's branch if editing
-                        var selectedBranch = '{{ old('branch_id', $bulty->branch_id) }}';
-                        if (selectedBranch) {
-                            $branchSelect.val(selectedBranch);
+                        if (targetBranchId && $branchSelect.find('option[value="' + targetBranchId + '"]').length > 0) {
+                            $branchSelect.val(targetBranchId);
+                        } else {
+                            var firstOption = $branchSelect.find('option[value!=""]:first');
+                            if (firstOption.length) {
+                                $branchSelect.val(firstOption.val());
+                            }
                         }
                         $branchSelect.trigger('change');
                     },
@@ -1217,12 +1219,12 @@
             } else {
                 $branchSelect.prop('disabled', false).empty().append('<option value="">Select Branch</option>').trigger('change');
             }
-        });
-
-        // Trigger company change on page load to load branches
-        if ($('#company_id').val()) {
-            $('#company_id').trigger('change');
         }
+
+        $('#company_id').on('change', function() {
+            var companyId = $(this).val();
+            syncBranchesForCompany(companyId, null);
+        });
 
         // Form Validation
         $('#biltyForm').on('submit', function(e) {
