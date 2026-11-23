@@ -225,22 +225,14 @@ class BultyController extends Controller
         }
 
         $user = auth()->user();
-        $defaultCompanyId = old('company_id', $user->company_id ?: ($companies->first()?->id ?? null));
-
         if ($user->isSuperAdmin() || $user->isCompanyAdmin()) {
-            $branchesQuery = Branch::where('status', 'active');
+            $branches = Branch::where('status', 'active');
             if ($user->isCompanyAdmin() && $user->company_id) {
-                $branchesQuery->where('company_id', $user->company_id);
-            } elseif ($defaultCompanyId) {
-                $branchesQuery->where('company_id', $defaultCompanyId);
+                $branches->where('company_id', $user->company_id);
             }
-            $branches = $branchesQuery->get();
+            $branches = $branches->get();
         } else {
-            $branchesQuery = Branch::where('status', 'active')->whereIn('id', $user->assigned_branch_ids ?? []);
-            if ($defaultCompanyId) {
-                $branchesQuery->where('company_id', $defaultCompanyId);
-            }
-            $branches = $branchesQuery->get();
+            $branches = Branch::where('status', 'active')->whereIn('id', $user->assigned_branch_ids)->get();
         }
 
         $consignors = Consignor::where('status', 'active')->get();
@@ -252,16 +244,13 @@ class BultyController extends Controller
 
         $sessionBranch = session('current_branch_id');
         if ($sessionBranch && $sessionBranch !== 'all' && $user->canAccessBranch($sessionBranch)) {
-            $sessionBranchModel = $branches->firstWhere('id', (int) $sessionBranch);
-            $branchId = $sessionBranchModel ? (int) $sessionBranch : $branches->first()?->id;
+            $branchId = (int) $sessionBranch;
         } else {
-            $branchId = ($user->branch_id && $branches->contains('id', $user->branch_id))
-                ? $user->branch_id
-                : ($branches->first()?->id);
+            $branchId = $user->branch_id ?: ($user->assigned_branch_ids[0] ?? ($branches->first()?->id));
         }
         $nextBultyNo = $branchId ? Bulty::generateLRNumber($branchId) : Bulty::generateLRNumber();
 
-        return view('admin.transport.bulties.create', compact('branches', 'companies', 'consignors', 'consignees', 'suppliers', 'cities', 'packagings', 'units', 'nextBultyNo', 'branchId', 'defaultCompanyId'));
+        return view('admin.transport.bulties.create', compact('branches', 'companies', 'consignors', 'consignees', 'suppliers', 'cities', 'packagings', 'units', 'nextBultyNo', 'branchId'));
     }
 
     public function store(Request $request)
@@ -377,29 +366,15 @@ class BultyController extends Controller
             $companies = Company::where('status', 'active')->get();
         }
 
-        $bulty->load(['consignor', 'consignee', 'vehicle', 'driver', 'bultyItems.item', 'bultyDetail', 'branch']);
-
         $user = auth()->user();
-        $bultyCompanyId = old('company_id', $bulty->company_id ?: ($bulty->branch?->company_id ?: ($user->company_id ?: ($companies->first()?->id ?? null))));
-
         if ($user->isSuperAdmin() || $user->isCompanyAdmin()) {
-            $branchesQuery = Branch::where('status', 'active');
+            $branches = Branch::where('status', 'active');
             if ($user->isCompanyAdmin() && $user->company_id) {
-                $branchesQuery->where('company_id', $user->company_id);
-            } elseif ($bultyCompanyId) {
-                $branchesQuery->where('company_id', $bultyCompanyId);
+                $branches->where('company_id', $user->company_id);
             }
-            $branches = $branchesQuery->get();
+            $branches = $branches->get();
         } else {
-            $branchesQuery = Branch::where('status', 'active')->whereIn('id', $user->assigned_branch_ids ?? []);
-            if ($bultyCompanyId) {
-                $branchesQuery->where('company_id', $bultyCompanyId);
-            }
-            $branches = $branchesQuery->get();
-        }
-
-        if ($bulty->branch && !$branches->contains('id', $bulty->branch_id)) {
-            $branches->push($bulty->branch);
+            $branches = Branch::where('status', 'active')->whereIn('id', $user->assigned_branch_ids)->get();
         }
 
         $consignors = Consignor::where('status', 'active')->get();
@@ -768,7 +743,6 @@ class BultyController extends Controller
 
         $pdf = Pdf::loadView('admin.transport.bulties.pdf', compact('bulty'));
         $pdf->setPaper('A4', 'portrait');
-        $pdf->getDomPDF()->getOptions()->set('isRemoteEnabled', true);
 
         return $pdf->download("Bulty-{$bulty->lr_no}.pdf");
     }
