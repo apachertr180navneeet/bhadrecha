@@ -14,6 +14,12 @@ class Kernel extends ConsoleKernel
     {
         $schedule->command('check:expiring-documents')->dailyAt('06:00');
 
+        // Automatically sync BlackBuck FASTag toll transactions daily at 02:00 AM
+        $schedule->command('fastag:sync --queue')
+            ->dailyAt('02:00')
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->appendOutputTo(storage_path('logs/fastag_sync_scheduler.log'));
     }
 
     /**

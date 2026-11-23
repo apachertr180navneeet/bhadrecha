@@ -27,6 +27,7 @@ use App\Models\TripAdvanceDetail;
 use App\Models\Vehicle;
 use App\Models\AdBlueCompanyPayment;
 use App\Models\TripAdBlueDetail;
+use App\Models\FastagTransaction;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -245,13 +246,207 @@ class TripController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        $builty = Bulty::with(['consignor', 'consignee', 'originCity', 'destinationCity', 'bultyItems'])->findOrFail($builtyId);
+        $builty = Bulty::with(['consignor', 'consignee', 'originCity', 'destinationCity', 'bultyItems', 'vehicle', 'bultyDetail'])->findOrFail($builtyId);
         $fuelPumps = FuelPump::with('fuelCompany')->orderBy('name')->get();
         $fuelCompanies = FuelCompany::orderBy('name')->get();
         $adblueCompanies = AdBlueCompany::orderBy('name')->get();
         $cities = \App\Models\City::orderBy('name')->get();
 
-        return view('admin.transport.trips.create', compact('builty', 'fuelPumps', 'fuelCompanies', 'adblueCompanies', 'cities'));
+        // FASTag transactions pre-population for this builty based on lr_date, delivery, and return journey
+        $vehicleNumber = $builty->vehicle?->vehicle_number;
+        $deliveryDateTime = $builty->delivered_at 
+            ?? $builty->bultyDetail?->delivered_at
+            ?? ($builty->delivery_date ? Carbon::parse($builty->delivery_date->format('Y-m-d') . ' ' . ($builty->delivery_time ?: '23:59:59')) : null);
+
+        $startDateTime = $builty->lr_date ? Carbon::parse($builty->lr_date)->startOfDay() : null;
+
+        // Check if there is a next bilty for this truck to cap return journey
+        $nextBuilty = $builty->vehicle_id && $builty->lr_date ? Bulty::where('vehicle_id', $builty->vehicle_id)
+            ->where('id', '!=', $builty->id)
+            ->where('lr_date', '>', $builty->lr_date)
+            ->orderBy('lr_date', 'asc')
+            ->first() : null;
+
+        if ($nextBuilty && $nextBuilty->lr_date) {
+            $endDateTime = Carbon::parse($nextBuilty->lr_date)->startOfDay();
+        } elseif ($deliveryDateTime) {
+            $returnEnd = $deliveryDateTime->copy()->addDays(3);
+            $endDateTime = $returnEnd->gt(now()) ? now() : $returnEnd;
+        } else {
+            $endDateTime = now();
+        }
+
+        $fastTagTransactions = collect();
+        if ($vehicleNumber && $startDateTime) {
+            $thirtyDaysAgo = Carbon::now()->subDays(30)->startOfDay();
+
+            // Only attempt API sync if the bilty range touches the 30-day window
+            if ($endDateTime->gte($thirtyDaysAgo)) {
+                $syncFrom = $startDateTime->lt($thirtyDaysAgo) ? $thirtyDaysAgo : $startDateTime;
+                try {
+                    $service = app(\App\Services\BlackBuckFastagService::class);
+                    $service->syncVehicles([$vehicleNumber], $syncFrom, $endDateTime);
+                } catch (\Exception $e) {
+                    \Log::warning("Auto-sync FASTag error for {$vehicleNumber}: " . $e->getMessage());
+                }
+            }
+
+            // Only fetch DEBIT transactions (toll deductions) from local DB
+            $fastTagTransactions = FastagTransaction::forVehicle($vehicleNumber)
+                ->where('transaction_type', 'DEBIT')
+                ->whereBetween('transaction_date', [$startDateTime, $endDateTime])
+                ->orderBy('transaction_date', 'asc')
+                ->get();
+        }
+
+        $fastTagRows = $this->formatFastTagRows($fastTagTransactions, $deliveryDateTime);
+
+        return view('admin.transport.trips.create', compact(
+            'builty', 'fuelPumps', 'fuelCompanies', 'adblueCompanies', 'cities',
+            'fastTagTransactions', 'fastTagRows', 'startDateTime', 'endDateTime', 'deliveryDateTime'
+        ));
+    }
+
+    public function getBuiltyFastag(Request $request, $builtyId)
+    {
+        $user = auth()->user();
+        if (!$user || (!$user->can('create trips') && !$user->can('create trip details') && !$user->isSuperAdmin())) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+        }
+
+        $builty = Bulty::with(['vehicle', 'bultyDetail'])->findOrFail($builtyId);
+        $vehicleNumber = $builty->vehicle?->vehicle_number;
+
+        if (!$vehicleNumber) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No vehicle attached to this Bilty.',
+                'transactions' => [],
+            ]);
+        }
+
+        $deliveryDateTime = $builty->delivered_at 
+            ?? $builty->bultyDetail?->delivered_at
+            ?? ($builty->delivery_date ? Carbon::parse($builty->delivery_date->format('Y-m-d') . ' ' . ($builty->delivery_time ?: '23:59:59')) : null);
+
+        $startDateTime = $builty->lr_date ? Carbon::parse($builty->lr_date)->startOfDay() : null;
+
+        // Check if there is a next bilty for this truck to cap return journey
+        $nextBuilty = $builty->vehicle_id && $builty->lr_date ? Bulty::where('vehicle_id', $builty->vehicle_id)
+            ->where('id', '!=', $builty->id)
+            ->where('lr_date', '>', $builty->lr_date)
+            ->orderBy('lr_date', 'asc')
+            ->first() : null;
+
+        if ($nextBuilty && $nextBuilty->lr_date) {
+            $endDateTime = Carbon::parse($nextBuilty->lr_date)->startOfDay();
+        } elseif ($deliveryDateTime) {
+            $returnEnd = $deliveryDateTime->copy()->addDays(3);
+            $endDateTime = $returnEnd->gt(now()) ? now() : $returnEnd;
+        } else {
+            $endDateTime = now();
+        }
+
+        if (!$startDateTime) {
+            $startDateTime = now()->subDays(3)->startOfDay();
+        }
+
+        $thirtyDaysAgo = Carbon::now()->subDays(30)->startOfDay();
+        $notice = null;
+
+        if ($endDateTime->lt($thirtyDaysAgo)) {
+            $notice = 'BlackBuck API only retains data for the last 30 days. Showing historical toll records from database for this trip.';
+        } else {
+            $syncFrom = $startDateTime->lt($thirtyDaysAgo) ? $thirtyDaysAgo : $startDateTime;
+            if ($startDateTime->lt($thirtyDaysAgo)) {
+                $notice = 'Note: Trip start date is older than 30 days. Live sync was limited to the last 30 days by BlackBuck API.';
+            }
+            try {
+                $service = app(\App\Services\BlackBuckFastagService::class);
+                $service->syncVehicles([$vehicleNumber], $syncFrom, $endDateTime);
+            } catch (\Exception $e) {
+                \Log::warning("Live FASTag sync error for {$vehicleNumber}: " . $e->getMessage());
+            }
+        }
+
+        // Only fetch DEBIT transactions (toll deductions)
+        $transactions = FastagTransaction::forVehicle($vehicleNumber)
+            ->where('transaction_type', 'DEBIT')
+            ->whereBetween('transaction_date', [$startDateTime, $endDateTime])
+            ->orderBy('transaction_date', 'asc')
+            ->get();
+
+        $formatted = $this->formatFastTagRows($transactions, $deliveryDateTime);
+        $totalAmount = collect($formatted)->sum('amount');
+
+        return response()->json([
+            'success' => true,
+            'vehicle_number' => $vehicleNumber,
+            'from_time' => $startDateTime->format('d M Y, h:i A'),
+            'to_time' => $endDateTime->format('d M Y, h:i A'),
+            'total_amount' => $totalAmount,
+            'count' => count($formatted),
+            'notice' => $notice,
+            'transactions' => $formatted,
+        ]);
+    }
+
+    /**
+     * Format and pair FASTag toll transactions by location:
+     * - First occurrence of a location is One Way.
+     * - Second occurrence of the SAME location is Return (merged into the same row).
+     */
+    protected function formatFastTagRows($transactions, $deliveryDateTime = null): array
+    {
+        $rows = [];
+        $locationIndexMap = [];
+
+        foreach ($transactions as $txn) {
+            $plazaName = $txn->toll_plaza_name;
+            if (empty($plazaName) || $plazaName === 'Unknown Plaza') {
+                $raw = $txn->raw_response;
+                $plazaName = !empty($raw['entity_id']) ? "FASTag Toll ({$raw['entity_id']})" : 'FASTag Toll';
+            }
+
+            $raw = is_array($txn->raw_response) ? $txn->raw_response : [];
+            $plazaCode = $raw['plaza_code'] ?? null;
+            $normalizedName = strtolower(trim(preg_replace('/[^a-zA-Z0-9]/', '', $plazaName)));
+            $locKey = $plazaCode ? 'code_' . $plazaCode : 'name_' . $normalizedName;
+
+            $isAfterDelivery = $deliveryDateTime && $txn->transaction_date && $txn->transaction_date->gt($deliveryDateTime);
+            $amount = (float)$txn->amount;
+            $txnTime = $txn->transaction_date ? $txn->transaction_date->format('Y-m-d H:i') : '';
+            $txnId = (string)($txn->transaction_id ?? '');
+
+            // Option A: If this same location has already been seen on this trip, pair into the same row as Return!
+            if (isset($locationIndexMap[$locKey])) {
+                $idx = $locationIndexMap[$locKey];
+                $rows[$idx]['return'] = (float)$rows[$idx]['return'] + $amount;
+                $rows[$idx]['amount'] = (float)$rows[$idx]['one_way'] + (float)$rows[$idx]['return'];
+                $rows[$idx]['has_return'] = true;
+                $rows[$idx]['description'] = $rows[$idx]['location'] . ' (Round Trip)';
+                if ($txnId && !str_contains($rows[$idx]['transaction_id'], $txnId)) {
+                    $rows[$idx]['transaction_id'] .= ($rows[$idx]['transaction_id'] ? ', ' : '') . $txnId;
+                }
+            } else {
+                $isReturn = $isAfterDelivery;
+                $row = [
+                    'transaction_time' => $txnTime,
+                    'amount' => $amount,
+                    'location' => $plazaName,
+                    'description' => $plazaName . ($isReturn ? ' (Return)' : ' (One Way)'),
+                    'transaction_id' => $txnId,
+                    'one_way' => $isReturn ? 0.0 : $amount,
+                    'return' => $isReturn ? $amount : 0.0,
+                    'is_return' => $isReturn,
+                    'has_return' => $isReturn,
+                ];
+                $rows[] = $row;
+                $locationIndexMap[$locKey] = count($rows) - 1;
+            }
+        }
+
+        return $rows;
     }
 
     public function store(Request $request)

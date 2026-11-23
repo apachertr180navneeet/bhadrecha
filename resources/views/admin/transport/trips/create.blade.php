@@ -95,9 +95,25 @@
 
         <div class="card shadow-sm border-0 mb-4">
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="fw-bold mb-0">Fast Tag Details</h6>
-                    <div class="d-flex gap-2">
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                    <div>
+                        <h6 class="fw-bold mb-0">Fast Tag Details</h6>
+                        @if(!empty($builty->vehicle) && !empty($startDateTime))
+                        <small class="text-muted">
+                            <i class="bx bx-truck me-1"></i><strong>{{ $builty->vehicle->vehicle_number }}</strong> &bull;
+                            <i class="bx bx-time-five me-1"></i>Range: {{ $startDateTime->format('d M Y') }} &rarr; {{ $endDateTime->format('d M Y, h:i A') }}
+                            @if(!empty($deliveryDateTime))
+                            &bull; <span class="text-success"><i class="bx bx-check-circle me-1"></i>Delivered: {{ $deliveryDateTime->format('d M, h:i A') }}</span>
+                            @endif
+                        </small>
+                        @endif
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap">
+                        @if(!empty($builty->vehicle))
+                        <button type="button" class="btn btn-sm btn-outline-success" id="syncBultyFastagBtn" title="Sync live toll from BlackBuck API">
+                            <i class="bx bx-refresh me-1"></i> Sync FASTag
+                        </button>
+                        @endif
                         <a href="{{ route('admin.transport.trips.fast-tag.download-template') }}" class="btn btn-sm btn-outline-secondary"><i class="bx bx-download me-1"></i> Template</a>
                         <button type="button" class="btn btn-sm btn-outline-info" id="importFastTagBtn"><i class="bx bx-import me-1"></i> Import</button>
                         <button type="button" class="btn btn-sm btn-outline-primary" id="addFastTagRow"><i class="bx bx-plus me-1"></i> Add Row</button>
@@ -105,6 +121,45 @@
                 </div>
                 <input type="file" id="fastTagFileInput" accept=".xlsx,.xls,.csv" style="display:none">
                 <div id="fastTagContainer">
+                    @forelse($fastTagRows ?? [] as $i => $row)
+                    <div class="detail-entry border rounded p-3 mb-3 bg-light bg-opacity-25">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label small">Transaction Time</label>
+                                <input type="text" name="fast_tag_details[{{ $i }}][transaction_time]" class="form-control form-control-sm datetime-picker" value="{{ $row['transaction_time'] ?? '' }}" placeholder="DD-Mon-YY hh:mm AM/PM">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small">Amount (₹)</label>
+                                <input type="number" step="0.01" name="fast_tag_details[{{ $i }}][amount]" class="form-control form-control-sm fast-tag-amount" value="{{ number_format($row['amount'] ?? 0, 2, '.', '') }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small">Location</label>
+                                <input type="text" name="fast_tag_details[{{ $i }}][location]" class="form-control form-control-sm" value="{{ $row['location'] ?? '' }}" placeholder="Location">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small">One Way (₹) {!! ($row['one_way'] ?? 0) > 0 ? '<span class="badge bg-primary text-white ms-1" style="font-size: 10px;">One Way</span>' : '' !!}</label>
+                                <input type="number" step="0.01" name="fast_tag_details[{{ $i }}][one_way]" class="form-control form-control-sm fast-tag-oneway" value="{{ number_format($row['one_way'] ?? 0, 2, '.', '') }}">
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-1">
+                            <div class="col-md-3">
+                                <label class="form-label small">Description</label>
+                                <input type="text" name="fast_tag_details[{{ $i }}][description]" class="form-control form-control-sm" value="{{ $row['description'] ?? 'FASTag Toll Deduction' }}" placeholder="Description">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small">Transaction ID</label>
+                                <input type="text" name="fast_tag_details[{{ $i }}][transaction_id]" class="form-control form-control-sm" value="{{ $row['transaction_id'] ?? '' }}" placeholder="Txn ID">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small">Return (₹) {!! ($row['return'] ?? 0) > 0 ? '<span class="badge bg-info text-dark ms-1" style="font-size: 10px;">Return</span>' : '' !!}</label>
+                                <input type="number" step="0.01" name="fast_tag_details[{{ $i }}][return]" class="form-control form-control-sm fast-tag-return" value="{{ number_format($row['return'] ?? 0, 2, '.', '') }}">
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end justify-content-end">
+                                <button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="bx bx-trash me-1"></i> Remove</button>
+                            </div>
+                        </div>
+                    </div>
+                    @empty
                     <div class="detail-entry border rounded p-3 mb-3">
                         <div class="row g-3">
                             <div class="col-md-3">
@@ -142,6 +197,7 @@
                             </div>
                         </div>
                     </div>
+                    @endforelse
                 </div>
             </div>
         </div>
@@ -939,6 +995,109 @@
             });
         });
 
+
+        $('#syncBultyFastagBtn').click(function() {
+            const btn = $(this);
+            const originalHtml = btn.html();
+            btn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-1"></i> Syncing...');
+
+            $.ajax({
+                url: '{{ route("admin.transport.trips.builty-fastag", $builty->id) }}',
+                method: 'GET',
+                data: { sync: 1 },
+                success: function(res) {
+                    btn.prop('disabled', false).html(originalHtml);
+                    if (res.success && res.transactions && res.transactions.length > 0) {
+                        $('#fastTagContainer').empty();
+                        $.each(res.transactions, function(i, row) {
+                            const badgeOneWay = (parseFloat(row.one_way) || 0) > 0 ? '<span class="badge bg-primary text-white ms-1" style="font-size: 10px;">One Way</span>' : '';
+                            const badgeReturn = (parseFloat(row['return']) || 0) > 0 ? '<span class="badge bg-info text-dark ms-1" style="font-size: 10px;">Return</span>' : '';
+                            const html = `<div class="detail-entry border rounded p-3 mb-3 bg-light bg-opacity-25">
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label small">Transaction Time</label>
+                                        <input type="text" name="fast_tag_details[${i}][transaction_time]" class="form-control form-control-sm datetime-picker" placeholder="DD-Mon-YY hh:mm AM/PM" value="${row.transaction_time || ''}">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small">Amount (₹)</label>
+                                        <input type="number" step="0.01" name="fast_tag_details[${i}][amount]" class="form-control form-control-sm fast-tag-amount" value="${row.amount || 0}">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small">Location</label>
+                                        <input type="text" name="fast_tag_details[${i}][location]" class="form-control form-control-sm" placeholder="Location" value="${row.location || ''}">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small">One Way (₹) ${badgeOneWay}</label>
+                                        <input type="number" step="0.01" name="fast_tag_details[${i}][one_way]" class="form-control form-control-sm fast-tag-oneway" value="${row.one_way || 0}">
+                                    </div>
+                                </div>
+                                <div class="row g-3 mt-1">
+                                    <div class="col-md-3">
+                                        <label class="form-label small">Description</label>
+                                        <input type="text" name="fast_tag_details[${i}][description]" class="form-control form-control-sm" placeholder="Description" value="${row.description || ''}">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small">Transaction ID</label>
+                                        <input type="text" name="fast_tag_details[${i}][transaction_id]" class="form-control form-control-sm" placeholder="Txn ID" value="${row.transaction_id || ''}">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small">Return (₹) ${badgeReturn}</label>
+                                        <input type="number" step="0.01" name="fast_tag_details[${i}][return]" class="form-control form-control-sm fast-tag-return" value="${row['return'] || 0}">
+                                    </div>
+                                    <div class="col-md-3 d-flex align-items-end justify-content-end">
+                                        <button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="bx bx-trash me-1"></i> Remove</button>
+                                    </div>
+                                </div>
+                            </div>`;
+                            $('#fastTagContainer').append(html);
+                        });
+                        initDateTimePickers();
+                        recalcTotals();
+                        if (typeof Swal !== 'undefined') {
+                            let msg = `Loaded ${res.count} transactions totaling ₹${parseFloat(res.total_amount).toFixed(2)} between ${res.from_time} and ${res.to_time}.`;
+                            if (res.notice) {
+                                msg += `\n(${res.notice})`;
+                            }
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'FASTag Synced',
+                                text: msg,
+                                toast: true,
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                timer: 4500
+                            });
+                        }
+                    } else {
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                icon: 'info',
+                                title: 'No Toll Deductions',
+                                text: res.notice || res.message || 'No FASTag transactions found for this vehicle in this date/time range.',
+                                toast: true,
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                timer: 4000
+                            });
+                        }
+                    }
+                },
+                error: function(xhr) {
+                    btn.prop('disabled', false).html(originalHtml);
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Sync Failed',
+                            text: xhr.responseJSON?.message || 'Error syncing FASTag transactions.',
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 3500
+                        });
+                    }
+                }
+            });
+        });
 
         $('#addFuelRow').click(function() {
             const idx = getIndex('#fuelContainer');
