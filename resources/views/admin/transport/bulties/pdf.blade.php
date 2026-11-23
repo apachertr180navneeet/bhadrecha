@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Bilty - {{ $bulty->lr_no ?? 'LR-NO' }}</title>
+    <title>Bilty - {{ $bulty->lr_no ?? ($bulty->bulty_no ?? 'LR-NO') }}</title>
     <style>
         @page {
             size: A4;
@@ -75,14 +75,14 @@
             font-weight: 700;
             font-size: 9px;
             text-align: center;
-            padding: 4px 2px;
+            padding: 4px 3px;
             border-bottom: 1px solid #000;
             border-right: 1px solid #000;
         }
         .item-table td {
             font-size: 9px;
             text-align: center;
-            padding: 4px 2px;
+            padding: 4px 3px;
             border-bottom: none;
             border-right: 1px solid #000;
         }
@@ -90,13 +90,13 @@
         .item-table tr > td:last-child {
             border-right: none;
         }
-        
+
         .lr-table {
             width: 100%;
         }
         .lr-table td {
             font-size: 9px;
-            padding: 3px 4px;
+            padding: 4px 6px;
             border-bottom: 1px solid #000;
         }
         .lr-table tr:last-child td {
@@ -104,11 +104,13 @@
         }
         .lr-label {
             font-weight: 700;
-            width: 44%;
+            width: 38%;
             border-right: 1px solid #000;
+            white-space: nowrap;
         }
         .lr-value {
-            width: 56%;
+            width: 62%;
+            padding-left: 6px;
         }
         .footer-note {
             font-size: 8px;
@@ -118,20 +120,64 @@
 </head>
 <body>
 
-<?php 
+@php
     $company = $bulty->company ?? null; 
-    $sigPath = null;
-    if ($company && !empty($company->digital_signature)) {
-        $cleanSig = ltrim($company->digital_signature, '/');
-        if (file_exists(public_path($cleanSig))) {
-            $sigPath = public_path($cleanSig);
-        } elseif (file_exists(public_path('uploads/' . $cleanSig))) {
-            $sigPath = public_path('uploads/' . $cleanSig);
-        } elseif (\Illuminate\Support\Str::startsWith($cleanSig, ['http://', 'https://'])) {
-            $sigPath = $cleanSig;
+    
+    // Logo detection
+    $logoPath = null;
+    $possibleLogos = [
+        public_path('assets/admin/img/logo.png'),
+        base_path('public/assets/admin/img/logo.png'),
+        'C:/laragon/www/laravel_project/bhadrecha/public/assets/admin/img/logo.png',
+    ];
+    if ($company && !empty($company->logo)) {
+        array_unshift($possibleLogos, public_path(ltrim($company->logo, '/\\')));
+        array_unshift($possibleLogos, base_path('public/' . ltrim($company->logo, '/\\')));
+    }
+    foreach ($possibleLogos as $p) {
+        if (file_exists($p)) {
+            $logoPath = $p;
+            break;
         }
     }
-?>
+    $logoBase64 = null;
+    if ($logoPath && file_exists($logoPath)) {
+        $lType = pathinfo($logoPath, PATHINFO_EXTENSION);
+        $logoBase64 = 'data:image/' . ($lType === 'svg' ? 'svg+xml' : $lType) . ';base64,' . base64_encode(file_get_contents($logoPath));
+    }
+
+    // Signature detection
+    $sigPath = null;
+    if ($company && !empty($company->digital_signature)) {
+        $cleanSig = ltrim($company->digital_signature, '/\\');
+        $possibleSigPaths = [
+            public_path($cleanSig),
+            public_path('uploads/' . $cleanSig),
+            base_path('public/' . $cleanSig),
+            base_path('public/uploads/' . $cleanSig),
+            'C:/laragon/www/laravel_project/bhadrecha/public/' . $cleanSig,
+        ];
+        foreach ($possibleSigPaths as $p) {
+            if (file_exists($p)) {
+                $sigPath = $p;
+                break;
+            }
+        }
+    }
+    $sigBase64 = null;
+    if ($sigPath && file_exists($sigPath)) {
+        $sType = pathinfo($sigPath, PATHINFO_EXTENSION);
+        $sigBase64 = 'data:image/' . ($sType === 'svg' ? 'svg+xml' : $sType) . ';base64,' . base64_encode(file_get_contents($sigPath));
+    }
+
+    // Dynamic spacer height calculation to eliminate white space under Expiry Dt
+    $lrCount = 14;
+    if (!empty($bulty->delivery_date) || !empty($bulty->bultyDetail?->delivery_date)) $lrCount++;
+    if (!empty($bulty->delivery_time) || !empty($bulty->bultyDetail?->delivery_time)) $lrCount++;
+    $items = $bulty->bultyItems ?? collect();
+    $itemCount = max(1, $items->count());
+    $spacerHeightMm = max(10, 48 + (($lrCount - 14) * 5.3) - (($itemCount - 1) * 5.5));
+@endphp
 
 <!-- MASTER WRAPPER TABLE -->
 <table class="bilty-wrapper">
@@ -149,29 +195,27 @@
         <td style="padding: 0; vertical-align: top;">
             <table style="width: 100%;">
                 <tr>
-                    <td style="width: 15%; text-align: center; padding: 5px;">
-                        <img src="{{ $company && $company->logo && file_exists(public_path($company->logo)) ? public_path($company->logo) : public_path('assets/admin/img/logo.png') }}" alt="Logo" class="logo-img">
-                    </td>
-                    <td style="width: 55%; text-align: center; padding: 5px; vertical-align: middle;">
-                        <div class="company-name">{{ strtoupper($company->name ?? '') }}</div>
-                    </td>
-                    <td style="width: 30%; text-align: right; padding: 5px 10px 5px 5px; vertical-align: top;" class="contact-text">
-                        @if($company)
-                            @if($company->phone) <strong>{{ $company->phone }}</strong><br> @endif
-                            @if($company->email) Email id : {{ $company->email }}<br> @endif
-                            @if($company->gst_number) GSTIN : {{ $company->gst_number }}<br> @endif
-                            @if($company->pan_number) PAN No. : {{ $company->pan_number }} @endif
+                    <td style="width: 25%; text-align: left; padding: 5px 0 5px 8px; vertical-align: middle;">
+                        @if($logoBase64)
+                            <img src="{{ $logoBase64 }}" alt="Logo" class="logo-img">
+                        @else
+                            <img src="{{ public_path('assets/admin/img/logo.png') }}" alt="Logo" class="logo-img">
                         @endif
-                        <br>
-                        Vendor Code : 2122109<br>
-                        2805688
                     </td>
-                </tr>
-                <tr>
-                    <td colspan="3" class="address-text" style="text-align: center; padding-bottom: 8px;">
-                        <strong>HEAD OFFICE:</strong> {{ $company->address ?? '' }}
-                        <br>
-                        <strong>BRANCH OFFICE:</strong> {{ $company->branch_address ?? '' }}
+                    <td style="width: 50%; text-align: center; padding: 5px 2px; vertical-align: middle;">
+                        <div class="company-name">{{ strtoupper($company->name ?? 'BHADRECHA LOGISTICS') }}</div>
+                        <div class="address-text" style="margin-top: 4px;">
+                            HEAD OFFICE: {{ strtoupper($company->address ?? '23/B/121 C.H.B BEHIND ASHOK UDHYAN PAL ROAD, JODHPUR - 342001 (RAJASTHAN)') }}<br>
+                            BRANCH OFFICE: {{ strtoupper($bulty->branch?->address ?: ($company->branch_address ?? 'NEAR SARLANAGAR BYPASS ROAD, HARANAMPUR, MAIHAR(M.P)-485772')) }}
+                        </div>
+                    </td>
+                    <td style="width: 25%; text-align: right; padding: 5px 8px 5px 0; vertical-align: top;" class="contact-text">
+                        <strong>MR. Harish Suthar : 9829894925</strong><br>
+                        <strong>MR. Dinesh Suthar : 9314194925</strong><br>
+                        Email id : {{ $company->email ?? 'bhadrechalogistics@gmail.com' }}<br>
+                        GSTIN : {{ $company->gst_number ?? '08HBIPS8626G1Z0' }}<br>
+                        PAN No. : {{ $company->pan_number ?? 'HBIPS8626G' }}<br>
+                        Vendor Code. : {{ $bulty->consignor?->vendor_code ?: '2904324' }}
                     </td>
                 </tr>
             </table>
@@ -183,11 +227,11 @@
         <td style="border-top: 1px solid #000; padding: 0; vertical-align: top;">
             <table style="width: 100%;">
                 <tr>
-                    <td style="width: 50%; padding: 4px 8px; border-right: 1px solid #000;">
-                        <span class="section-label">FROM :</span> {{ $bulty->originCity->name ?? '-' }}{{ isset($bulty->originCity->state) ? ', ' . $bulty->originCity->state : '' }}
+                    <td style="width: 50%; padding: 4px 8px; border-right: 1px solid #000; font-size: 10px;">
+                        <span class="section-label">FROM :</span> {{ $bulty->originCity->name ?? ($bulty->from_place ?? '-') }}{{ isset($bulty->originCity->state) ? ', ' . $bulty->originCity->state : '' }}
                     </td>
-                    <td style="width: 50%; padding: 4px 8px;">
-                        <span class="section-label">TO :</span> {{ $bulty->destinationCity->name ?? '-' }}{{ isset($bulty->destinationCity->state) ? ', ' . $bulty->destinationCity->state : '' }}
+                    <td style="width: 50%; padding: 4px 8px; font-size: 10px;">
+                        <span class="section-label">TO :</span> {{ $bulty->destinationCity->name ?? ($bulty->to_place ?? '-') }}{{ isset($bulty->destinationCity->state) ? ', ' . $bulty->destinationCity->state : '' }}
                     </td>
                 </tr>
             </table>
@@ -202,28 +246,29 @@
                     <td style="width: 50%; padding: 4px 8px; border-right: 1px solid #000; vertical-align: top;" class="party-details">
                         <div class="section-label">CONSIGNOR :</div>
                         <div class="party-name">{{ strtoupper($bulty->consignor->name ?? '-') }}</div>
-                        <div>{{ $bulty->consignor->address ?? '-' }}</div>
+                        <div>{!! nl2br(e($bulty->consignor->address ?? '-')) !!}</div>
                         @if(!empty($bulty->consignor->phone)) <div>Phone: {{ $bulty->consignor->phone }}</div> @endif
-                        @if(!empty($bulty->consignor->gstin)) <div>GSTIN: {{ $bulty->consignor->gstin }}</div> @elseif(!empty($bulty->consignor->gst_no)) <div>GSTIN: {{ $bulty->consignor->gst_no }}</div> @endif
+                        <div>GSTIN: {{ $bulty->consignor->gstin ?? ($bulty->consignor->gst_no ?? '-') }}</div>
                     </td>
                     <td style="width: 50%; padding: 4px 8px; vertical-align: top;" class="party-details">
                         <div class="section-label">CONSIGNEE :</div>
                         <div class="party-name">{{ strtoupper($bulty->consignee->name ?? '-') }}</div>
-                        <div>{{ $bulty->consignee->address ?? '-' }}</div>
+                        <div>{!! nl2br(e($bulty->consignee->address ?? '-')) !!}</div>
                         @if(!empty($bulty->consignee->phone)) <div>Phone: {{ $bulty->consignee->phone }}</div> @endif
-                        @if(!empty($bulty->consignee->gstin)) <div>GSTIN: {{ $bulty->consignee->gstin }}</div> @elseif(!empty($bulty->consignee->gst_no)) <div>GSTIN: {{ $bulty->consignee->gst_no }}</div> @endif
+                        <div>GSTIN: {{ $bulty->consignee->gstin ?? ($bulty->consignee->gst_no ?? '-') }}</div>
                     </td>
                 </tr>
             </table>
         </td>
     </tr>
 
-    <!-- 5. ITEMS & LR DETAILS -->
+    <!-- 5. ITEMS & LR DETAILS (ORIGINAL 2-COLUMN UI) -->
     <tr>
         <td style="border-top: 1px solid #000; padding: 0; vertical-align: top;">
             <table style="width: 100%;">
                 <tr>
-                    <td style="width: 58%; padding: 0; vertical-align: top; border-right: 1px solid #000;">
+                    <!-- LEFT COLUMN (55%): ITEMS TABLE -->
+                    <td style="width: 55%; padding: 0; vertical-align: top; border-right: 1px solid #000;">
                         <table class="item-table">
                             <thead>
                                 <tr>
@@ -236,7 +281,6 @@
                             </thead>
                             <tbody>
                                 @php
-                                    $items = $bulty->bultyItems ?? collect();
                                     $totalArticles = 0;
                                     $totalWeight = 0;
                                     $totalFreight = 0;
@@ -250,9 +294,9 @@
                                     <tr>
                                         <td>{{ strtoupper($item->item_name ?? '-') }}</td>
                                         <td>{{ $item->articles ?? '-' }}</td>
-                                        <td>{{ $item->weight ? number_format($item->weight, 2) : '-' }} {{ $item->unit ?? '' }}</td>
-                                        <td>{{ $item->freight_per_mt ? number_format($item->freight_per_mt, 2) : '-' }}</td>
-                                        <td>{{ $item->amount ? number_format($item->amount, 2) : '-' }}</td>
+                                        <td>{{ $item->weight ? number_format($item->weight, fmod($item->weight, 1) !== 0.0 ? 2 : 0, '.', '') : '-' }} {{ $item->unit ?? '' }}</td>
+                                        <td>{{ $item->freight_per_mt ? number_format($item->freight_per_mt, fmod($item->freight_per_mt, 1) !== 0.0 ? 2 : 0, '.', '') : '-' }}</td>
+                                        <td>{{ $item->amount ? number_format($item->amount, fmod($item->amount, 1) !== 0.0 ? 2 : 0, '.', '') : '-' }}</td>
                                     </tr>
                                 @empty
                                     <tr>
@@ -264,9 +308,9 @@
                                     </tr>
                                 @endforelse
                                 
-                                {{-- Fixed-height spacer row ensures vertical column lines are drawn and pushes footer down --}}
+                                {{-- Dynamically calculated spacer row: eliminates white space below Expiry Dt --}}
                                 <tr>
-                                    <td style="height: 100mm;"></td>
+                                    <td style="height: {{ $spacerHeightMm }}mm;"></td>
                                     <td></td>
                                     <td></td>
                                     <td></td>
@@ -279,42 +323,44 @@
                                         <strong>Remarks :</strong> {{ strtoupper($bulty->remark ?? '-') }}
                                     </td>
                                     <td style="text-align: left; padding: 2px 4px; font-weight: bold; border-top: 1px solid #000; border-bottom: 1px solid #000;">Total Freight</td>
-                                    <td style="text-align: left; padding: 2px 4px; border-top: 1px solid #000; border-bottom: 1px solid #000;">{{ $totalFreight ? number_format($totalFreight, 2) : '0' }}</td>
+                                    <td style="text-align: left; padding: 2px 4px; border-top: 1px solid #000; border-bottom: 1px solid #000;">{{ $totalFreight ? number_format($totalFreight, fmod($totalFreight, 1) !== 0.0 ? 2 : 0, '.', '') : '0' }}</td>
                                 </tr>
                                 <tr>
                                     <td style="text-align: left; padding: 2px 4px; font-weight: bold; border-bottom: 1px solid #000;">Advance</td>
-                                    <td style="text-align: left; padding: 2px 4px; border-bottom: 1px solid #000;">{{ $bulty->advance ?? '0' }}</td>
+                                    <td style="text-align: left; padding: 2px 4px; border-bottom: 1px solid #000;">{{ (float)($bulty->advance ?? ($bulty->advance_amount ?? 0)) ? number_format($bulty->advance ?? $bulty->advance_amount, fmod($bulty->advance ?? $bulty->advance_amount, 1) !== 0.0 ? 2 : 0, '.', '') : '0' }}</td>
                                 </tr>
                                 <tr>
                                     <td colspan="3" style="text-align: left; padding: 4px; vertical-align: bottom; border-top: 1px solid #000;">
-                                        <strong>Bilty Commission:</strong> {{ $bulty->bilty_commission ?? '0' }}
+                                        <strong>Bilty Commission:</strong> {{ $bulty->bilty_commission ? number_format($bulty->bilty_commission, fmod($bulty->bilty_commission, 1) !== 0.0 ? 2 : 0, '.', '') : '1680' }}
                                     </td>
                                     <td style="text-align: left; padding: 2px 4px; font-weight: bold;">Remaining</td>
-                                    <td style="text-align: left; padding: 2px 4px;">{{ ($totalFreight ?? 0) - ($bulty->advance ?? 0) }}</td>
+                                    <td style="text-align: left; padding: 2px 4px;">{{ max(0, $totalFreight - (float)($bulty->advance ?? ($bulty->advance_amount ?? 0))) ? number_format(max(0, $totalFreight - (float)($bulty->advance ?? ($bulty->advance_amount ?? 0))), fmod(max(0, $totalFreight - (float)($bulty->advance ?? ($bulty->advance_amount ?? 0))), 1) !== 0.0 ? 2 : 0, '.', '') : '0' }}</td>
                                 </tr>
                             </tfoot>
                         </table>
                     </td>
-                    <td style="width: 42%; padding: 0; vertical-align: top;">
+
+                    <!-- RIGHT COLUMN (45%): LR DETAILS TABLE -->
+                    <td style="width: 45%; padding: 0; vertical-align: top;">
                         <table class="lr-table">
-                            <tr><td class="lr-label">LR. No.</td><td class="lr-value">{{ $bulty->lr_no ?? '-' }}</td></tr>
-                            <tr><td class="lr-label">Date</td><td class="lr-value">{{ $bulty->lr_date ? date('d M Y', strtotime($bulty->lr_date)) : '-' }}</td></tr>
-                            <tr><td class="lr-label">Truck No.</td><td class="lr-value">{{ $bulty->vehicle->vehicle_number ?? '-' }}</td></tr>
-                            <tr><td class="lr-label">Fleet Owner</td><td class="lr-value">{{ strtoupper($company->name ?? '-') }}</td></tr>
-                            <tr><td class="lr-label">Driver Name</td><td class="lr-value text-uppercase">{{ $bulty->driver->name ?? '-' }}</td></tr>
-                            <tr><td class="lr-label">Driver Ph. No.</td><td class="lr-value">{{ $bulty->driver->phone ? '+91-' . $bulty->driver->phone : '-' }}</td></tr>
-                            <tr><td class="lr-label">Order No.</td><td class="lr-value">{{ $bulty->order_number ?? '-' }}</td></tr>
-                            <tr><td class="lr-label">Delivery No.</td><td class="lr-value">{{ $bulty->delivery_number ?? '-' }}</td></tr>
-                            @if($bulty->delivery_date || $bulty->bultyDetail?->delivery_date)
+                            <tr><td class="lr-label">LR. No.</td><td class="lr-value">{{ $bulty->lr_no ?? ($bulty->bulty_no ?? '-') }}</td></tr>
+                            <tr><td class="lr-label">Date</td><td class="lr-value">{{ ($bulty->lr_date ?? $bulty->date) ? date('d M Y', strtotime($bulty->lr_date ?? $bulty->date)) : '-' }}</td></tr>
+                            <tr><td class="lr-label">Truck No.</td><td class="lr-value">{{ $bulty->vehicle?->vehicle_number ?? ($bulty->truck_no ?? '-') }}</td></tr>
+                            <tr><td class="lr-label">Fleet Owner</td><td class="lr-value">{{ strtoupper($bulty->fleet_owner ?? ($company->name ?? 'BHADRECHA LOGISTICS')) }}</td></tr>
+                            <tr><td class="lr-label">Driver Name</td><td class="lr-value text-uppercase">{{ $bulty->driver?->name ?? ($bulty->driver_name ?? '-') }}</td></tr>
+                            <tr><td class="lr-label">Driver Ph. No.</td><td class="lr-value">{{ !empty($bulty->driver?->phone) ? '+91-' . $bulty->driver->phone : (!empty($bulty->driver_number) ? $bulty->driver_number : '-') }}</td></tr>
+                            <tr><td class="lr-label">Order No.</td><td class="lr-value">{{ !empty(trim($bulty->order_number ?? ($bulty->order_no ?? ''), ' :-')) ? ($bulty->order_number ?? $bulty->order_no) : '-' }}</td></tr>
+                            <tr><td class="lr-label">Delivery No.</td><td class="lr-value">{{ !empty(trim($bulty->delivery_number ?? ($bulty->delivery_no ?? ''), ' :-')) ? ($bulty->delivery_number ?? $bulty->delivery_no) : '-' }}</td></tr>
+                            @if(!empty($bulty->delivery_date) || !empty($bulty->bultyDetail?->delivery_date))
                             <tr><td class="lr-label">Delivery Dt</td><td class="lr-value">{{ date('d M Y', strtotime($bulty->delivery_date ?? $bulty->bultyDetail->delivery_date)) }}</td></tr>
                             @endif
-                            @if($bulty->delivery_time ?? $bulty->bultyDetail?->delivery_time)
-                            <tr><td class="lr-label">Delivery Time</td><td class="lr-value">{{ $bulty->delivery_time ?? $bulty->bultyDetail?->delivery_time }}</td></tr>
+                            @if(!empty($bulty->delivery_time) || !empty($bulty->bultyDetail?->delivery_time))
+                            <tr><td class="lr-label">Delivery Time</td><td class="lr-value">{{ $bulty->delivery_time ?? $bulty->bultyDetail->delivery_time }}</td></tr>
                             @endif
-                            <tr><td class="lr-label">Form no.</td><td class="lr-value">{{ $bulty->from_no ?? '-' }}</td></tr>
-                            <tr><td class="lr-label">Invoice No.</td><td class="lr-value">{{ $bulty->invoice_number ?? '-' }}</td></tr>
+                            <tr><td class="lr-label">Form no.</td><td class="lr-value">{{ !empty(trim($bulty->from_no ?? '', ' :-')) ? $bulty->from_no : '---' }}</td></tr>
+                            <tr><td class="lr-label">Invoice No.</td><td class="lr-value">{{ !empty(trim($bulty->invoice_number ?? '', ' :-')) ? $bulty->invoice_number : '-' }}</td></tr>
                             <tr><td class="lr-label">Invoice Dt</td><td class="lr-value">{{ $bulty->invoice_date ? date('d M Y', strtotime($bulty->invoice_date)) : '-' }}</td></tr>
-                            <tr><td class="lr-label">E-Way Bill No.</td><td class="lr-value">{{ $bulty->eway_bill_no ?? '-' }}</td></tr>
+                            <tr><td class="lr-label">E-Way Bill No.</td><td class="lr-value">{{ !empty(trim($bulty->eway_bill_no ?? '', ' :-')) ? $bulty->eway_bill_no : '--' }}</td></tr>
                             <tr><td class="lr-label">Generation Dt</td><td class="lr-value">{{ $bulty->generation_date ? date('d M Y', strtotime($bulty->generation_date)) : '-' }}</td></tr>
                             <tr><td class="lr-label">Expiry Dt</td><td class="lr-value">{{ $bulty->expiry_date ? date('d M Y', strtotime($bulty->expiry_date)) : '-' }}</td></tr>
                         </table>
@@ -349,19 +395,21 @@
                         <div style="font-size:8px; margin-top: 40px;">Receiving Date, Signature and Rubber Stamp.</div>
                     </td>
                     <td style="width: 50%; padding: 8px; vertical-align: top; text-align: right;">
-                        <div>For <strong>{{ strtoupper($company->name ?? '') }}</strong></div>
+                        <div>For <strong>{{ strtoupper($company->name ?? 'BHADRECHA LOGISTICS') }}</strong></div>
                         
                         <table style="width: 100%; margin-top: 10px; border: none;">
                             <tr>
                                 <td style="text-align: right; vertical-align: middle; border: none; font-weight: 800; font-size: 11px; padding-right: 10px;">
-                                    @if($sigPath)
-                                        <img src="{{ $sigPath }}" alt="Digital Signature" style="max-height: 45px; max-width: 140px; object-fit: contain;">
+                                    @if($sigBase64)
+                                        <img src="{{ $sigBase64 }}" alt="Digital Signature" style="max-height: 45px; max-width: 140px; object-fit: contain;">
+                                    @else
+                                        HARISH SUTHAR
                                     @endif
                                 </td>
                                 <td style="text-align: right; vertical-align: middle; border: none; font-size: 7.5px; width: 80px;">
                                     signed by<br>
-                                    Date: {{ $bulty->created_at ? date('d/m/Y', strtotime($bulty->created_at)) : '-' }}<br>
-                                    {{ $bulty->created_at ? date('H:i:s', strtotime($bulty->created_at)) . ' +05\'30\'' : '-' }}
+                                    Date: {{ $bulty->created_at ? date('d/m/Y', strtotime($bulty->created_at)) : date('d/m/Y') }}<br>
+                                    {{ $bulty->created_at ? date('H:i:s', strtotime($bulty->created_at)) : date('H:i:s') }}
                                 </td>
                             </tr>
                         </table>

@@ -77,7 +77,15 @@ class UserController extends Controller
     public function getBranchesByCompany(Request $request, $companyId = null)
     {
         $companyId = $companyId ?? $request->input('company_id');
-        $branches = Branch::where('company_id', $companyId)->where('status', 'active')->get();
+        $query = Branch::where('status', 'active');
+        if ($companyId) {
+            $query->where('company_id', $companyId);
+        }
+        $user = auth()->user();
+        if ($user && !$user->isSuperAdmin() && !$user->isCompanyAdmin() && !empty($user->assigned_branch_ids)) {
+            $query->whereIn('id', $user->assigned_branch_ids);
+        }
+        $branches = $query->orderBy('name')->get();
         return response()->json($branches);
     }
 
