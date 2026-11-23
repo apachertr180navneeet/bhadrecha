@@ -236,11 +236,11 @@ class BultyController extends Controller
             }
             $branches = $branchesQuery->get();
         } else {
-            $branches = Branch::where('status', 'active')->whereIn('id', $user->assigned_branch_ids ?? []);
+            $branchesQuery = Branch::where('status', 'active')->whereIn('id', $user->assigned_branch_ids ?? []);
             if ($defaultCompanyId) {
-                $branches = $branches->where('company_id', $defaultCompanyId);
+                $branchesQuery->where('company_id', $defaultCompanyId);
             }
-            $branches = $branches->values();
+            $branches = $branchesQuery->get();
         }
 
         $consignors = Consignor::where('status', 'active')->get();
@@ -391,11 +391,11 @@ class BultyController extends Controller
             }
             $branches = $branchesQuery->get();
         } else {
-            $branches = Branch::where('status', 'active')->whereIn('id', $user->assigned_branch_ids ?? []);
+            $branchesQuery = Branch::where('status', 'active')->whereIn('id', $user->assigned_branch_ids ?? []);
             if ($bultyCompanyId) {
-                $branches = $branches->where('company_id', $bultyCompanyId);
+                $branchesQuery->where('company_id', $bultyCompanyId);
             }
-            $branches = $branches->values();
+            $branches = $branchesQuery->get();
         }
 
         if ($bulty->branch && !$branches->contains('id', $bulty->branch_id)) {
@@ -768,6 +768,7 @@ class BultyController extends Controller
 
         $pdf = Pdf::loadView('admin.transport.bulties.pdf', compact('bulty'));
         $pdf->setPaper('A4', 'portrait');
+        $pdf->getDomPDF()->getOptions()->set('isRemoteEnabled', true);
 
         return $pdf->download("Bulty-{$bulty->lr_no}.pdf");
     }

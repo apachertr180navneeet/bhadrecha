@@ -162,7 +162,7 @@ class SalesLedgerController extends Controller
         $allBills = \App\Models\Invoice::where('status', '!=', 'cancelled')
             ->when($companyId && $companyId !== 'all', function ($q) use ($companyId) {
                 $q->where('company_id', $companyId);
-            })->orderBy('id', 'desc')->get(['id', 'bill_number', 'invoice_no', 'consignor_name', 'company_id', 'branch_id', 'status', 'total_amount', 'net_payable_amount', 'receiving_amount']);
+            })->orderBy('id', 'desc')->get(['id', 'bill_number', 'invoice_no', 'consignor_name', 'company_id', 'branch_id', 'status', 'total_amount', 'total_freight', 'total_other', 'total_gst', 'tds', 'deduction', 'receiving_amount', 'receiving_gst']);
 
         // Recent receiving records for payment logs tab
         $recentReceivingsQuery = \App\Models\BillReceiving::with(['invoice.consignor', 'company', 'branch']);

@@ -2,176 +2,191 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Bilty - {{ $bulty->lr_no ?? 'LR-NO' }}</title>
     <style>
         @page {
-            size: A4;
-            margin: 8mm;
+            size: A4 portrait;
+            margin: 8mm 6mm;
         }
-        * { box-sizing: border-box; }
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 10px;
-            color: #000;
-            background: #fff;
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 8.5pt;
+            color: #000;
+            background: #fff;
+            line-height: 1.2;
+            -webkit-print-color-adjust: exact;
+        }
         table {
             border-collapse: collapse;
+            width: 100%;
         }
         .bilty-wrapper {
-            border: 2px solid #000;
+            border: 1.5px solid #000;
             width: 100%;
-            max-width: 210mm;
             margin: 0 auto;
             table-layout: fixed;
         }
-        .dispute-note {
-            font-size: 8px;
-            font-style: italic;
-            text-align: center;
-            letter-spacing: 0.3px;
-            padding: 3px 0;
-        }
-        .company-name {
-            font-size: 24px;
-            font-weight: 700;
-            letter-spacing: 2.5px;
-            text-transform: uppercase;
-        }
-        .address-text {
-            font-size: 7.5px;
-            line-height: 1.4;
-            text-transform: uppercase;
-        }
-        .contact-text {
-            font-size: 8px;
-            line-height: 1.3;
-        }
-        .logo-img {
-            width: 80px;
-            height: auto;
-        }
-        .section-label {
-            font-weight: 700;
-            font-size: 10px;
-        }
-        .party-name {
-            font-weight: 700;
-            text-transform: uppercase;
-            font-size: 10px;
-            margin-top: 2px;
-        }
-        .party-details {
-            font-size: 9px;
-            line-height: 1.4;
-        }
-        .item-table {
+        .grid-table {
             width: 100%;
-        }
-        .item-table th {
-            font-weight: 700;
-            font-size: 9px;
-            text-align: center;
-            padding: 4px 2px;
-            border-bottom: 1px solid #000;
-            border-right: 1px solid #000;
-        }
-        .item-table td {
-            font-size: 9px;
-            text-align: center;
-            padding: 4px 2px;
-            border-bottom: none;
-            border-right: 1px solid #000;
-        }
-        .item-table tr > th:last-child,
-        .item-table tr > td:last-child {
-            border-right: none;
-        }
-        
-        .lr-table {
-            width: 100%;
-        }
-        .lr-table td {
-            font-size: 9px;
-            padding: 3px 4px;
-            border-bottom: 1px solid #000;
-        }
-        .lr-table tr:last-child td {
-            border-bottom: none;
-        }
-        .lr-label {
-            font-weight: 700;
-            width: 44%;
-            border-right: 1px solid #000;
-        }
-        .lr-value {
-            width: 56%;
-        }
-        .footer-note {
-            font-size: 8px;
-            line-height: 1.4;
+            border-collapse: collapse;
+            table-layout: fixed;
         }
     </style>
 </head>
 <body>
 
-<?php 
-    $company = $bulty->company ?? null; 
+@php
+    $company = $bulty->company ?? null;
     $sigPath = null;
+    $sigBase64 = null;
     if ($company && !empty($company->digital_signature)) {
-        $cleanSig = ltrim($company->digital_signature, '/');
-        if (file_exists(public_path($cleanSig))) {
-            $sigPath = public_path($cleanSig);
-        } elseif (file_exists(public_path('uploads/' . $cleanSig))) {
-            $sigPath = public_path('uploads/' . $cleanSig);
-        } elseif (\Illuminate\Support\Str::startsWith($cleanSig, ['http://', 'https://'])) {
-            $sigPath = $cleanSig;
+        $cleanSig = ltrim($company->digital_signature, '/\\');
+        $possibleSigPaths = [
+            public_path($cleanSig),
+            public_path('uploads/' . $cleanSig),
+            base_path('public/' . $cleanSig),
+            base_path('public/uploads/' . $cleanSig),
+            'c:/laragon/www/laravel_project/bhadrecha/public/' . $cleanSig,
+        ];
+        foreach ($possibleSigPaths as $p) {
+            if (file_exists($p)) {
+                $sigPath = $p;
+                break;
+            }
+        }
+        if ($sigPath && file_exists($sigPath)) {
+            $sType = pathinfo($sigPath, PATHINFO_EXTENSION);
+            $sigBase64 = 'data:image/' . ($sType === 'svg' ? 'svg+xml' : $sType) . ';base64,' . base64_encode(file_get_contents($sigPath));
         }
     }
-?>
+
+    $logoPath = null;
+    $logoBase64 = null;
+    if ($company && !empty($company->logo)) {
+        $cleanLogo = ltrim($company->logo, '/\\');
+        $possiblePaths = [
+            public_path($cleanLogo),
+            public_path('uploads/' . $cleanLogo),
+            base_path('public/' . $cleanLogo),
+            base_path('public/uploads/' . $cleanLogo),
+            'c:/laragon/www/laravel_project/bhadrecha/public/' . $cleanLogo,
+        ];
+        foreach ($possiblePaths as $p) {
+            if (file_exists($p)) {
+                $logoPath = $p;
+                break;
+            }
+        }
+    }
+    if (!$logoPath) {
+        $fallbackLogos = [
+            public_path('assets/admin/img/logo.png'),
+            base_path('public/assets/admin/img/logo.png'),
+            'c:/laragon/www/laravel_project/bhadrecha/public/assets/admin/img/logo.png',
+        ];
+        foreach ($fallbackLogos as $p) {
+            if (file_exists($p)) {
+                $logoPath = $p;
+                break;
+            }
+        }
+    }
+    if ($logoPath && file_exists($logoPath)) {
+        $lType = pathinfo($logoPath, PATHINFO_EXTENSION);
+        $logoBase64 = 'data:image/' . ($lType === 'svg' ? 'svg+xml' : $lType) . ';base64,' . base64_encode(file_get_contents($logoPath));
+    }
+
+    // Build LR Details rows for right side of middle table
+    $lrRows = [
+        ['label' => 'LR. No.', 'value' => $bulty->lr_no ?? '-'],
+        ['label' => 'Date', 'value' => $bulty->lr_date ? date('d M Y', strtotime($bulty->lr_date)) : '-'],
+        ['label' => 'Truck No.', 'value' => $bulty->vehicle->vehicle_number ?? '-'],
+        ['label' => 'Fleet Owner', 'value' => strtoupper($company->name ?? 'BHADRECHA LOGISTICS')],
+        ['label' => 'Driver Name', 'value' => strtoupper($bulty->driver->name ?? '-')],
+        ['label' => 'Driver Ph. No.', 'value' => $bulty->driver->phone ? '+91-' . $bulty->driver->phone : '-'],
+        ['label' => 'Order No.', 'value' => !empty(trim($bulty->order_number ?? '', ' :-')) ? $bulty->order_number : '-'],
+        ['label' => 'Delivery No.', 'value' => !empty(trim($bulty->delivery_number ?? '', ' :-')) ? $bulty->delivery_number : '-'],
+    ];
+
+    if (!empty($bulty->delivery_date) || !empty($bulty->bultyDetail?->delivery_date)) {
+        $lrRows[] = ['label' => 'Delivery Dt', 'value' => date('d M Y', strtotime($bulty->delivery_date ?? $bulty->bultyDetail->delivery_date))];
+    }
+    if (!empty($bulty->delivery_time) || !empty($bulty->bultyDetail?->delivery_time)) {
+        $lrRows[] = ['label' => 'Delivery Time', 'value' => $bulty->delivery_time ?? $bulty->bultyDetail->delivery_time];
+    }
+
+    $formNo = !empty(trim($bulty->from_no ?? '', ' :-')) ? $bulty->from_no : '---';
+    $invNo = !empty(trim($bulty->invoice_number ?? '', ' :-')) ? $bulty->invoice_number : '-';
+    $invDt = $bulty->invoice_date ? date('d M Y', strtotime($bulty->invoice_date)) : '-';
+    $ewayNo = !empty(trim($bulty->eway_bill_no ?? '', ' :-')) ? $bulty->eway_bill_no : '--';
+    $genDt = $bulty->generation_date ? date('d M Y', strtotime($bulty->generation_date)) : '-';
+    $expDt = $bulty->expiry_date ? date('d M Y', strtotime($bulty->expiry_date)) : '-';
+
+    $lrRows[] = ['label' => 'Form no.', 'value' => $formNo];
+    $lrRows[] = ['label' => 'Invoice No.', 'value' => $invNo];
+    $lrRows[] = ['label' => 'Invoice Dt', 'value' => $invDt];
+    $lrRows[] = ['label' => 'E-Way Bill No.', 'value' => $ewayNo];
+    $lrRows[] = ['label' => 'Generation Dt', 'value' => $genDt];
+    $lrRows[] = ['label' => 'Expiry Dt', 'value' => $expDt];
+
+    $items = $bulty->bultyItems ?? collect();
+    $totalArticles = 0;
+    $totalWeight = 0;
+    $totalFreight = 0;
+    foreach ($items as $it) {
+        $totalArticles += $it->articles ?? 0;
+        $totalWeight += $it->weight ?? 0;
+        $totalFreight += $it->amount ?? 0;
+    }
+
+    $advance = (float)($bulty->advance ?? ($bulty->advance_amount ?? 0));
+    $remaining = max(0, $totalFreight - $advance);
+    $biltyCommission = $bulty->bilty_commission ? number_format($bulty->bilty_commission, fmod($bulty->bilty_commission, 1) !== 0.0 ? 2 : 0, '.', '') : '1680';
+
+    $totalLrRows = count($lrRows);
+    $bodyRowCount = $totalLrRows - 4; // Rows between header and 3 totals rows
+@endphp
 
 <!-- MASTER WRAPPER TABLE -->
 <table class="bilty-wrapper">
     <!-- 1. DISPUTE NOTE -->
     <tr>
-        <td style="border-bottom: 2px solid #000; padding: 0; vertical-align: top;">
-            <div class="dispute-note">
-                Disputes are subject to Jodhpur Jurisdiction only
-            </div>
+        <td style="border-bottom: 1px solid #000; padding: 2px 0; text-align: center; font-size: 7.5pt;">
+            Disputes are subject to Jodhpur Jurisdiction only
         </td>
     </tr>
 
     <!-- 2. HEADER -->
     <tr>
-        <td style="padding: 0; vertical-align: top;">
+        <td style="padding: 4px 6px 6px 6px; vertical-align: top;">
             <table style="width: 100%;">
                 <tr>
-                    <td style="width: 15%; text-align: center; padding: 5px;">
-                        <img src="{{ $company && $company->logo && file_exists(public_path($company->logo)) ? public_path($company->logo) : public_path('assets/admin/img/logo.png') }}" alt="Logo" class="logo-img">
-                    </td>
-                    <td style="width: 55%; text-align: center; padding: 5px; vertical-align: middle;">
-                        <div class="company-name">{{ strtoupper($company->name ?? '') }}</div>
-                    </td>
-                    <td style="width: 30%; text-align: right; padding: 5px 10px 5px 5px; vertical-align: top;" class="contact-text">
-                        @if($company)
-                            @if($company->phone) <strong>{{ $company->phone }}</strong><br> @endif
-                            @if($company->email) Email id : {{ $company->email }}<br> @endif
-                            @if($company->gst_number) GSTIN : {{ $company->gst_number }}<br> @endif
-                            @if($company->pan_number) PAN No. : {{ $company->pan_number }} @endif
+                    <td style="width: 15%; text-align: left; vertical-align: middle; padding: 2px;">
+                        @if($logoBase64)
+                            <img src="{{ $logoBase64 }}" style="max-width: 80px; max-height: 65px; height: auto;" alt="Logo">
                         @endif
-                        <br>
-                        Vendor Code : 2122109<br>
-                        2805688
                     </td>
-                </tr>
-                <tr>
-                    <td colspan="3" class="address-text" style="text-align: center; padding-bottom: 8px;">
-                        <strong>HEAD OFFICE:</strong> {{ $company->address ?? '' }}
-                        <br>
-                        <strong>BRANCH OFFICE:</strong> {{ $company->branch_address ?? '' }}
+                    <td style="width: 55%; text-align: center; vertical-align: middle; padding: 0 4px;">
+                        <div style="font-size: 20pt; font-weight: bold; letter-spacing: 0.5px; text-transform: uppercase; line-height: 1.1;">
+                            {{ $company->name ?? 'BHADRECHA LOGISTICS' }}
+                        </div>
+                        <div style="font-size: 6.8pt; font-weight: bold; line-height: 1.35; margin-top: 5px; text-transform: uppercase;">
+                            HEAD OFFICE: {{ $company->address ?? '23/B/121 C.H.B BEHIND ASHOK UDHYAN PAL ROAD, JODHPUR - 342001 (RAJASTHAN)' }}<br>
+                            BRANCH OFFICE: {{ $bulty->branch?->address ?: ($company->branch_address ?? 'NEAR SARLANAGAR BYPASS ROAD, HARANAMPUR, MAIHAR(M.P)-485772') }}
+                        </div>
+                    </td>
+                    <td style="width: 30%; text-align: right; vertical-align: top; font-size: 7.5pt; line-height: 1.35; padding: 0;">
+                        <strong>MR. Harish Suthar : 9829894925</strong><br>
+                        <strong>MR. Dinesh Suthar : 9314194925</strong><br>
+                        Email id : {{ $company->email ?? 'bhadrechalogistics@gmail.com' }}<br>
+                        GSTIN : {{ $company->gst_number ?? '08HBIPS8626G1Z0' }}<br>
+                        PAN No. : {{ $company->pan_number ?? 'HBIPS8626G' }}<br>
+                        Vendor Code : {{ $bulty->consignor?->vendor_code ?: '2904324' }}
                     </td>
                 </tr>
             </table>
@@ -180,14 +195,14 @@
 
     <!-- 3. FROM / TO -->
     <tr>
-        <td style="border-top: 1px solid #000; padding: 0; vertical-align: top;">
+        <td style="border-top: 1px solid #000; padding: 0;">
             <table style="width: 100%;">
                 <tr>
-                    <td style="width: 50%; padding: 4px 8px; border-right: 1px solid #000;">
-                        <span class="section-label">FROM :</span> {{ $bulty->originCity->name ?? '-' }}{{ isset($bulty->originCity->state) ? ', ' . $bulty->originCity->state : '' }}
+                    <td style="width: 50%; padding: 3px 6px; border-right: 1px solid #000; font-size: 8.5pt;">
+                        <strong>FROM :</strong> {{ $bulty->originCity->name ?? '-' }}{{ isset($bulty->originCity->state) ? ', ' . $bulty->originCity->state : '' }}
                     </td>
-                    <td style="width: 50%; padding: 4px 8px;">
-                        <span class="section-label">TO :</span> {{ $bulty->destinationCity->name ?? '-' }}{{ isset($bulty->destinationCity->state) ? ', ' . $bulty->destinationCity->state : '' }}
+                    <td style="width: 50%; padding: 3px 6px; font-size: 8.5pt;">
+                        <strong>TO :</strong> {{ $bulty->destinationCity->name ?? '-' }}{{ isset($bulty->destinationCity->state) ? ', ' . $bulty->destinationCity->state : '' }}
                     </td>
                 </tr>
             </table>
@@ -196,129 +211,125 @@
 
     <!-- 4. CONSIGNOR / CONSIGNEE -->
     <tr>
-        <td style="border-top: 1px solid #000; padding: 0; vertical-align: top;">
+        <td style="border-top: 1px solid #000; padding: 0;">
             <table style="width: 100%;">
                 <tr>
-                    <td style="width: 50%; padding: 4px 8px; border-right: 1px solid #000; vertical-align: top;" class="party-details">
-                        <div class="section-label">CONSIGNOR :</div>
-                        <div class="party-name">{{ strtoupper($bulty->consignor->name ?? '-') }}</div>
-                        <div>{{ $bulty->consignor->address ?? '-' }}</div>
+                    <td style="width: 50%; padding: 4px 6px; border-right: 1px solid #000; vertical-align: top; font-size: 8pt; line-height: 1.3;">
+                        <div style="font-weight: bold;">CONSIGNOR :</div>
+                        <div style="font-weight: bold; text-transform: uppercase;">{{ $bulty->consignor->name ?? '-' }}</div>
+                        <div>{!! nl2br(e($bulty->consignor->address ?? '-')) !!}</div>
                         @if(!empty($bulty->consignor->phone)) <div>Phone: {{ $bulty->consignor->phone }}</div> @endif
-                        @if(!empty($bulty->consignor->gstin)) <div>GSTIN: {{ $bulty->consignor->gstin }}</div> @elseif(!empty($bulty->consignor->gst_no)) <div>GSTIN: {{ $bulty->consignor->gst_no }}</div> @endif
+                        <div>GSTIN: {{ $bulty->consignor->gstin ?? ($bulty->consignor->gst_no ?? '-') }}</div>
                     </td>
-                    <td style="width: 50%; padding: 4px 8px; vertical-align: top;" class="party-details">
-                        <div class="section-label">CONSIGNEE :</div>
-                        <div class="party-name">{{ strtoupper($bulty->consignee->name ?? '-') }}</div>
-                        <div>{{ $bulty->consignee->address ?? '-' }}</div>
+                    <td style="width: 50%; padding: 4px 6px; vertical-align: top; font-size: 8pt; line-height: 1.3;">
+                        <div style="font-weight: bold;">CONSIGNEE :</div>
+                        <div style="font-weight: bold; text-transform: uppercase;">{{ $bulty->consignee->name ?? '-' }}</div>
+                        <div>{!! nl2br(e($bulty->consignee->address ?? '-')) !!}</div>
                         @if(!empty($bulty->consignee->phone)) <div>Phone: {{ $bulty->consignee->phone }}</div> @endif
-                        @if(!empty($bulty->consignee->gstin)) <div>GSTIN: {{ $bulty->consignee->gstin }}</div> @elseif(!empty($bulty->consignee->gst_no)) <div>GSTIN: {{ $bulty->consignee->gst_no }}</div> @endif
+                        <div>GSTIN: {{ $bulty->consignee->gstin ?? ($bulty->consignee->gst_no ?? '-') }}</div>
                     </td>
                 </tr>
             </table>
         </td>
     </tr>
 
-    <!-- 5. ITEMS & LR DETAILS -->
+    <!-- 5. UNIFIED ITEMS & LR DETAILS GRID -->
     <tr>
         <td style="border-top: 1px solid #000; padding: 0; vertical-align: top;">
-            <table style="width: 100%;">
-                <tr>
-                    <td style="width: 58%; padding: 0; vertical-align: top; border-right: 1px solid #000;">
-                        <table class="item-table">
-                            <thead>
-                                <tr>
-                                    <th style="width:20%;">ITEM</th>
-                                    <th style="width:20%;">NO. OF<br>ARTICLES</th>
-                                    <th style="width:20%;">TOTAL<br>WEIGHT</th>
-                                    <th style="width:20%;">RATE</th>
-                                    <th style="width:20%;">TOTAL FREIGHT</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @php
-                                    $items = $bulty->bultyItems ?? collect();
-                                    $totalArticles = 0;
-                                    $totalWeight = 0;
-                                    $totalFreight = 0;
-                                @endphp
-                                @forelse($items as $item)
-                                    @php
-                                        $totalArticles += $item->articles ?? 0;
-                                        $totalWeight += $item->weight ?? 0;
-                                        $totalFreight += $item->amount ?? 0;
-                                    @endphp
-                                    <tr>
-                                        <td>{{ strtoupper($item->item_name ?? '-') }}</td>
-                                        <td>{{ $item->articles ?? '-' }}</td>
-                                        <td>{{ $item->weight ? number_format($item->weight, 2) : '-' }} {{ $item->unit ?? '' }}</td>
-                                        <td>{{ $item->freight_per_mt ? number_format($item->freight_per_mt, 2) : '-' }}</td>
-                                        <td>{{ $item->amount ? number_format($item->amount, 2) : '-' }}</td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td>-</td>
-                                        <td>-</td>
-                                        <td>-</td>
-                                        <td>-</td>
-                                        <td>-</td>
-                                    </tr>
-                                @endforelse
-                                
-                                {{-- Fixed-height spacer row ensures vertical column lines are drawn and pushes footer down --}}
-                                <tr>
-                                    <td style="height: 100mm;"></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                </tr>
-                            </tbody>
-                            <tfoot>
-                                <tr>
-                                    <td colspan="3" rowspan="2" style="text-align: left; padding: 4px; vertical-align: top; border-top: 1px solid #000;">
-                                        <strong>Remarks :</strong> {{ strtoupper($bulty->remark ?? '-') }}
-                                    </td>
-                                    <td style="text-align: left; padding: 2px 4px; font-weight: bold; border-top: 1px solid #000; border-bottom: 1px solid #000;">Total Freight</td>
-                                    <td style="text-align: left; padding: 2px 4px; border-top: 1px solid #000; border-bottom: 1px solid #000;">{{ $totalFreight ? number_format($totalFreight, 2) : '0' }}</td>
-                                </tr>
-                                <tr>
-                                    <td style="text-align: left; padding: 2px 4px; font-weight: bold; border-bottom: 1px solid #000;">Advance</td>
-                                    <td style="text-align: left; padding: 2px 4px; border-bottom: 1px solid #000;">{{ $bulty->advance ?? '0' }}</td>
-                                </tr>
-                                <tr>
-                                    <td colspan="3" style="text-align: left; padding: 4px; vertical-align: bottom; border-top: 1px solid #000;">
-                                        <strong>Bilty Commission:</strong> {{ $bulty->bilty_commission ?? '0' }}
-                                    </td>
-                                    <td style="text-align: left; padding: 2px 4px; font-weight: bold;">Remaining</td>
-                                    <td style="text-align: left; padding: 2px 4px;">{{ ($totalFreight ?? 0) - ($bulty->advance ?? 0) }}</td>
-                                </tr>
-                            </tfoot>
-                        </table>
+            <table class="grid-table">
+                <colgroup>
+                    <col style="width: 13%;">
+                    <col style="width: 9%;">
+                    <col style="width: 9%;">
+                    <col style="width: 9%;">
+                    <col style="width: 12%;">
+                    <col style="width: 15%;">
+                    <col style="width: 33%;">
+                </colgroup>
+                
+                <!-- Row 0: Table Header -->
+                <tr style="height: 23px;">
+                    <th style="font-size: 8pt; font-weight: bold; text-align: center; border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 3px 2px;">ITEM</th>
+                    <th style="font-size: 8pt; font-weight: bold; text-align: center; border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 3px 2px;">NO. OF<br>ARTICLES</th>
+                    <th style="font-size: 8pt; font-weight: bold; text-align: center; border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 3px 2px;">TOTAL<br>WEIGHT</th>
+                    <th style="font-size: 8pt; font-weight: bold; text-align: center; border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 3px 2px;">RATE</th>
+                    <th style="font-size: 8pt; font-weight: bold; text-align: center; border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 3px 2px;">TOTAL FREIGHT</th>
+                    <td style="font-size: 8pt; font-weight: bold; padding: 2px 5px; border-right: 1px solid #000; border-bottom: 1px solid #000; white-space: nowrap;">{{ $lrRows[0]['label'] }}</td>
+                    <td style="font-size: 8pt; padding: 2px 5px; border-bottom: 1px solid #000; white-space: nowrap;">{{ $lrRows[0]['value'] }}</td>
+                </tr>
+
+                <!-- Rows 1 to N-4: Items & Spacer Rows -->
+                @for($r = 1; $r <= $bodyRowCount; $r++)
+                    @php
+                        $itemIdx = $r - 1;
+                        $currItem = $items->get($itemIdx);
+                        $lr = $lrRows[$r];
+                    @endphp
+                    <tr style="height: 22px;">
+                        @if($currItem)
+                            <td style="font-size: 8pt; text-align: center; border-right: 1px solid #000; padding: 2px;">{{ strtoupper($currItem->item_name ?? '-') }}</td>
+                            <td style="font-size: 8pt; text-align: center; border-right: 1px solid #000; padding: 2px;">{{ $currItem->articles ?? '-' }}</td>
+                            <td style="font-size: 8pt; text-align: center; border-right: 1px solid #000; padding: 2px;">{{ $currItem->weight ? number_format($currItem->weight, fmod($currItem->weight, 1) !== 0.0 ? 2 : 0, '.', '') : '-' }}{{ $currItem->unit ?? '' }}</td>
+                            <td style="font-size: 8pt; text-align: center; border-right: 1px solid #000; padding: 2px;">{{ $currItem->freight_per_mt ? number_format($currItem->freight_per_mt, fmod($currItem->freight_per_mt, 1) !== 0.0 ? 2 : 0, '.', '') : '-' }}</td>
+                            <td style="font-size: 8pt; text-align: center; border-right: 1px solid #000; padding: 2px;">{{ $currItem->amount ? number_format($currItem->amount, fmod($currItem->amount, 1) !== 0.0 ? 2 : 0, '.', '') : '-' }}</td>
+                        @else
+                            <td style="border-right: 1px solid #000;"></td>
+                            <td style="border-right: 1px solid #000;"></td>
+                            <td style="border-right: 1px solid #000;"></td>
+                            <td style="border-right: 1px solid #000;"></td>
+                            <td style="border-right: 1px solid #000;"></td>
+                        @endif
+                        <td style="font-size: 8pt; font-weight: bold; padding: 2px 5px; border-right: 1px solid #000; border-bottom: 1px solid #000; white-space: nowrap;">{{ $lr['label'] }}</td>
+                        <td style="font-size: 8pt; padding: 2px 5px; border-bottom: 1px solid #000; white-space: nowrap;">{{ $lr['value'] }}</td>
+                    </tr>
+                @endfor
+
+                @php
+                    $lr11 = $lrRows[$totalLrRows - 3]; // E-Way Bill No.
+                    $lr12 = $lrRows[$totalLrRows - 2]; // Generation Dt
+                    $lr13 = $lrRows[$totalLrRows - 1]; // Expiry Dt
+                @endphp
+
+                <!-- Row 12: Remarks + Total Freight -->
+                <tr style="height: 22px;">
+                    <td colspan="3" rowspan="2" style="font-size: 8pt; border-top: 1px solid #000; border-right: 1px solid #000; padding: 3px 5px; vertical-align: top;">
+                        <strong>Remarks :</strong>{{ strtoupper($bulty->remark ?? '-') }}
                     </td>
-                    <td style="width: 42%; padding: 0; vertical-align: top;">
-                        <table class="lr-table">
-                            <tr><td class="lr-label">LR. No.</td><td class="lr-value">{{ $bulty->lr_no ?? '-' }}</td></tr>
-                            <tr><td class="lr-label">Date</td><td class="lr-value">{{ $bulty->lr_date ? date('d M Y', strtotime($bulty->lr_date)) : '-' }}</td></tr>
-                            <tr><td class="lr-label">Truck No.</td><td class="lr-value">{{ $bulty->vehicle->vehicle_number ?? '-' }}</td></tr>
-                            <tr><td class="lr-label">Fleet Owner</td><td class="lr-value">{{ strtoupper($company->name ?? '-') }}</td></tr>
-                            <tr><td class="lr-label">Driver Name</td><td class="lr-value text-uppercase">{{ $bulty->driver->name ?? '-' }}</td></tr>
-                            <tr><td class="lr-label">Driver Ph. No.</td><td class="lr-value">{{ $bulty->driver->phone ? '+91-' . $bulty->driver->phone : '-' }}</td></tr>
-                            <tr><td class="lr-label">Order No.</td><td class="lr-value">{{ $bulty->order_number ?? '-' }}</td></tr>
-                            <tr><td class="lr-label">Delivery No.</td><td class="lr-value">{{ $bulty->delivery_number ?? '-' }}</td></tr>
-                            @if($bulty->delivery_date || $bulty->bultyDetail?->delivery_date)
-                            <tr><td class="lr-label">Delivery Dt</td><td class="lr-value">{{ date('d M Y', strtotime($bulty->delivery_date ?? $bulty->bultyDetail->delivery_date)) }}</td></tr>
-                            @endif
-                            @if($bulty->delivery_time ?? $bulty->bultyDetail?->delivery_time)
-                            <tr><td class="lr-label">Delivery Time</td><td class="lr-value">{{ $bulty->delivery_time ?? $bulty->bultyDetail?->delivery_time }}</td></tr>
-                            @endif
-                            <tr><td class="lr-label">Form no.</td><td class="lr-value">{{ $bulty->from_no ?? '-' }}</td></tr>
-                            <tr><td class="lr-label">Invoice No.</td><td class="lr-value">{{ $bulty->invoice_number ?? '-' }}</td></tr>
-                            <tr><td class="lr-label">Invoice Dt</td><td class="lr-value">{{ $bulty->invoice_date ? date('d M Y', strtotime($bulty->invoice_date)) : '-' }}</td></tr>
-                            <tr><td class="lr-label">E-Way Bill No.</td><td class="lr-value">{{ $bulty->eway_bill_no ?? '-' }}</td></tr>
-                            <tr><td class="lr-label">Generation Dt</td><td class="lr-value">{{ $bulty->generation_date ? date('d M Y', strtotime($bulty->generation_date)) : '-' }}</td></tr>
-                            <tr><td class="lr-label">Expiry Dt</td><td class="lr-value">{{ $bulty->expiry_date ? date('d M Y', strtotime($bulty->expiry_date)) : '-' }}</td></tr>
-                        </table>
+                    <td style="font-size: 8pt; font-weight: bold; border-top: 1px solid #000; border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 2px 4px; text-align: left;">
+                        Total Freight
                     </td>
+                    <td style="font-size: 8pt; border-top: 1px solid #000; border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 2px 4px; text-align: left;">
+                        {{ $totalFreight ? number_format($totalFreight, fmod($totalFreight, 1) !== 0.0 ? 2 : 0, '.', '') : '0' }}
+                    </td>
+                    <td style="font-size: 8pt; font-weight: bold; padding: 2px 5px; border-right: 1px solid #000; border-bottom: 1px solid #000; white-space: nowrap;">{{ $lr11['label'] }}</td>
+                    <td style="font-size: 8pt; padding: 2px 5px; border-bottom: 1px solid #000; white-space: nowrap;">{{ $lr11['value'] }}</td>
+                </tr>
+
+                <!-- Row 13: Advance -->
+                <tr style="height: 22px;">
+                    <td style="font-size: 8pt; font-weight: bold; border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 2px 4px; text-align: left;">
+                        Advance
+                    </td>
+                    <td style="font-size: 8pt; border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 2px 4px; text-align: left;">
+                        {{ $advance ? number_format($advance, fmod($advance, 1) !== 0.0 ? 2 : 0, '.', '') : '0' }}
+                    </td>
+                    <td style="font-size: 8pt; font-weight: bold; padding: 2px 5px; border-right: 1px solid #000; border-bottom: 1px solid #000; white-space: nowrap;">{{ $lr12['label'] }}</td>
+                    <td style="font-size: 8pt; padding: 2px 5px; border-bottom: 1px solid #000; white-space: nowrap;">{{ $lr12['value'] }}</td>
+                </tr>
+
+                <!-- Row 14: Commission + Remaining -->
+                <tr style="height: 22px;">
+                    <td colspan="3" style="font-size: 8pt; border-top: 1px solid #000; border-right: 1px solid #000; padding: 3px 5px; vertical-align: middle;">
+                        <strong>Bilty Commission:</strong>{{ $biltyCommission }}
+                    </td>
+                    <td style="font-size: 8pt; font-weight: bold; border-right: 1px solid #000; padding: 2px 4px; text-align: left;">
+                        Remaining
+                    </td>
+                    <td style="font-size: 8pt; border-right: 1px solid #000; padding: 2px 4px; text-align: left;">
+                        {{ $remaining ? number_format($remaining, fmod($remaining, 1) !== 0.0 ? 2 : 0, '.', '') : '0' }}
+                    </td>
+                    <td style="font-size: 8pt; font-weight: bold; padding: 2px 5px; border-right: 1px solid #000; white-space: nowrap;">{{ $lr13['label'] }}</td>
+                    <td style="font-size: 8pt; padding: 2px 5px; white-space: nowrap;">{{ $lr13['value'] }}</td>
                 </tr>
             </table>
         </td>
@@ -326,47 +337,44 @@
 
     <!-- 6. FOOTER NOTE -->
     <tr>
-        <td style="border-top: 1px solid #000; padding: 0; vertical-align: top;">
-            <table style="width: 100%;">
-                <tr>
-                    <td class="footer-note" style="padding: 4px 8px;">
-                        <strong>GST Applicable as per rules</strong><br>
-                        KINDLY RETURN THE BILTY WITH SEAL &amp; SIGN.<br>
-                        NOTE : FREIGHT WILL BE PAID ONLY IF THE GOODS RECEIVING RECEIPT SUBMITTED TO OFFICE WITHIN 15 DAYS.
-                    </td>
-                </tr>
-            </table>
+        <td style="border-top: 1px solid #000; padding: 4px 6px; font-size: 7.5pt; line-height: 1.35;">
+            <strong>GST Applicable as per rules</strong><br>
+            KINDLY RETURN THE BILTY WITH SEAL &amp; SIGN.<br>
+            NOTE : FREIGHT WILL BE PAID ONLY IF THE GOODS RECEIVING RECEIPT SUBMITTED TO OFFICE WITHIN 15 DAYS.
         </td>
     </tr>
 
-    <!-- 7. SIGNATURE SECTION -->
+    <!-- 7. SIGNATURE & STAMP SECTION -->
     <tr>
-        <td style="border-top: 1px solid #000; padding: 0; vertical-align: bottom;">
+        <td style="border-top: 1px solid #000; padding: 0;">
             <table style="width: 100%;">
                 <tr>
-                    <td style="width: 50%; padding: 8px; border-right: 1px solid #000; vertical-align: top;">
-                        <strong>Material Received :</strong><br>
-                        <div style="font-size:8px; margin-top: 40px;">Receiving Date, Signature and Rubber Stamp.</div>
+                    <td style="width: 50%; padding: 6px 8px; border-right: 1px solid #000; vertical-align: top;">
+                        <div style="font-size: 8pt; font-weight: bold;">Material Received :</div>
+                        <div style="height: 48px;"></div>
+                        <div style="font-size: 7.5pt;">Receiving Date, Signature and Rubber Stamp.</div>
                     </td>
-                    <td style="width: 50%; padding: 8px; vertical-align: top; text-align: right;">
-                        <div>For <strong>{{ strtoupper($company->name ?? '') }}</strong></div>
-                        
-                        <table style="width: 100%; margin-top: 10px; border: none;">
+                    <td style="width: 50%; padding: 6px 8px; vertical-align: top; text-align: right;">
+                        <div style="font-size: 8pt;">For <strong>{{ strtoupper($company->name ?? 'BHADRECHA LOGISTICS') }}</strong></div>
+                        <table style="width: 100%; margin-top: 14px; border: none;">
                             <tr>
-                                <td style="text-align: right; vertical-align: middle; border: none; font-weight: 800; font-size: 11px; padding-right: 10px;">
-                                    @if($sigPath)
-                                        <img src="{{ $sigPath }}" alt="Digital Signature" style="max-height: 45px; max-width: 140px; object-fit: contain;">
+                                <td style="text-align: right; vertical-align: middle; border: none; padding-right: 12px;">
+                                    @if($sigBase64)
+                                        <img src="{{ $sigBase64 }}" alt="Digital Signature" style="max-height: 40px; max-width: 130px; object-fit: contain;">
+                                    @else
+                                        <div style="font-size: 10pt; font-weight: bold; text-transform: uppercase; line-height: 1.1;">
+                                            {{ $company->owner_name ?? 'HARISH SUTHAR' }}
+                                        </div>
                                     @endif
                                 </td>
-                                <td style="text-align: right; vertical-align: middle; border: none; font-size: 7.5px; width: 80px;">
+                                <td style="text-align: right; vertical-align: middle; border: none; font-size: 7pt; width: 75px; line-height: 1.3;">
                                     signed by<br>
-                                    Date: {{ $bulty->created_at ? date('d/m/Y', strtotime($bulty->created_at)) : '-' }}<br>
-                                    {{ $bulty->created_at ? date('H:i:s', strtotime($bulty->created_at)) . ' +05\'30\'' : '-' }}
+                                    Date: {{ $bulty->created_at ? date('d/m/Y', strtotime($bulty->created_at)) : date('d/m/Y') }}<br>
+                                    {{ $bulty->created_at ? date('H:i:s', strtotime($bulty->created_at)) : date('H:i:s') }}
                                 </td>
                             </tr>
                         </table>
-                        
-                        <div style="font-size:9px; margin-top: 5px;">Signature Of Booking Clerk</div>
+                        <div style="font-size: 8pt; margin-top: 6px;">Signature Of Booking Clerk</div>
                     </td>
                 </tr>
             </table>
