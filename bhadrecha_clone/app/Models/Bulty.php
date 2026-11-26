@@ -1,0 +1,326 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\CompanyScope;
+
+class Bulty extends Model
+{
+    use HasFactory, SoftDeletes, CompanyScope;
+
+    protected $table = 'bulties';
+
+    protected $fillable = [
+        'company_id', 'branch_id', 'lr_no', 'e_lr_no', 'lr_date',
+        'from_city', 'to_city',
+        'consignor_id', 'consignee_id',
+        'declared_value', 'freight_charges', 'gst_type', 'gst_amount', 'gst_master_id', 'other_charges',
+        'damage_amount', 'shortage_amount',
+        'total_amount', 'payment_type', 'mode', 'status', 'share_token',
+        'material_document', 'material_document_status',
+        'consignor_pod', 'consignee_pod',
+        'pod_document', 'pod_document_status',
+        'vehicle_id', 'driver_id',
+        'remark', 'bilty_commission',
+        'order_number', 'delivery_number', 'delivery_date', 'delivery_time', 'delivered_at', 'from_no',
+        'invoice_number', 'invoice_date',
+        'eway_bill_no', 'generation_date', 'expiry_date',
+        'advance_amount',
+        'remaining_amount',
+        'bill_status',
+        'invoice_id',
+        'toll_invoice_id',
+    ];
+
+    protected $casts = [
+        'declared_value' => 'decimal:2',
+        'freight_charges' => 'decimal:2',
+        'gst_amount' => 'decimal:2',
+        'other_charges' => 'decimal:2',
+        'damage_amount' => 'decimal:2',
+        'shortage_amount' => 'decimal:2',
+        'total_amount' => 'decimal:2',
+        'bilty_commission' => 'decimal:2',
+        'advance_amount' => 'decimal:2',
+        'remaining_amount' => 'decimal:2',
+        'material_document_status' => 'boolean',
+        'pod_document_status' => 'boolean',
+        'lr_date' => 'date',
+        'delivery_date' => 'date',
+        'delivered_at' => 'datetime',
+        'invoice_date' => 'date',
+        'generation_date' => 'date',
+        'expiry_date' => 'date',
+        'bill_status' => 'string',
+    ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($bulty) {
+            if (!$bulty->lr_no) {
+                $bulty->lr_no = static::generateLRNumber($bulty->branch_id);
+            }
+            if (!$bulty->share_token) {
+                $bulty->share_token = (string) \Illuminate\Support\Str::uuid();
+            }
+        });
+
+        static::saving(function ($bulty) {
+            $billAmount = (float)($bulty->total_amount ?? 0);
+            $received = (float)($bulty->advance_amount ?? 0);
+            $bulty->remaining_amount = max(0, round($billAmount - $received, 2));
+        });
+
+        static::deleting(function ($bulty) {
+            if ($bulty->isForceDeleting()) {
+                $bulty->bultyItems()->forceDelete();
+                $bulty->bultyDetail()->forceDelete();
+                if ($bulty->trip) {
+                    $bulty->trip->fastTagDetails()->delete();
+                    $bulty->trip->fuelDetails()->delete();
+                    $bulty->trip->otherAmountDetails()->delete();
+                    $bulty->trip->adblueDetails()->delete();
+                    $bulty->trip->delete();
+                }
+            }
+        });
+    }
+
+    public static function generateLRNumber($branchId = null)
+    {
+        $year = date('Y');
+        $prefix = 'LR';
+
+        if ($branchId) {
+            $branch = \App\Models\Branch::find($branchId);
+            if ($branch && !empty($branch->name)) {
+                $prefix = strtoupper(substr(trim($branch->name), 0, 1));
+            }
+        }
+
+        try {
+            // Fetch existing LR numbers matching this prefix and year
+            $pattern = "{$prefix}-{$year}-%";
+            $existingLrs = static::withTrashed()
+                ->where('lr_no', 'like', $pattern)
+                ->pluck('lr_no')
+                ->toArray();
+
+            $maxSeq = 0;
+            if (!empty($existingLrs)) {
+                foreach ($existingLrs as $lr) {
+                    if (preg_match('/(\d+)$/', trim($lr), $matches)) {
+                        $num = (int)$matches[1];
+                        if ($num > $maxSeq) {
+                            $maxSeq = $num;
+                        }
+                    }
+                }
+            } else {
+                // Check general pattern for this prefix
+                $fallbackLrs = static::withTrashed()
+                    ->where('lr_no', 'like', "{$prefix}-%")
+                    ->pluck('lr_no')
+                    ->toArray();
+                foreach ($fallbackLrs as $lr) {
+                    if (preg_match('/(\d+)$/', trim($lr), $matches)) {
+                        $num = (int)$matches[1];
+                        if ($num > $maxSeq) {
+                            $maxSeq = $num;
+                        }
+                    }
+                }
+            }
+
+            $nextSeq = $maxSeq + 1;
+            $suggested = $prefix . '-' . $year . '-' . str_pad($nextSeq, 4, '0', STR_PAD_LEFT);
+
+            // Ensure collision-free unique sequence
+            while (static::withTrashed()->where('lr_no', $suggested)->exists()) {
+                $nextSeq++;
+                $suggested = $prefix . '-' . $year . '-' . str_pad($nextSeq, 4, '0', STR_PAD_LEFT);
+            }
+
+            return $suggested;
+        } catch (\Throwable $e) {
+            return $prefix . '-' . $year . '-0001';
+        }
+    }
+
+    public function consignor()
+    {
+        return $this->belongsTo(Consignor::class);
+    }
+
+    public function consignee()
+    {
+        return $this->belongsTo(Consignee::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    public function vehicle()
+    {
+        return $this->belongsTo(Vehicle::class);
+    }
+
+    public function driver()
+    {
+        return $this->belongsTo(Driver::class);
+    }
+
+    public function originCity()
+    {
+        return $this->belongsTo(City::class, 'from_city');
+    }
+
+    public function destinationCity()
+    {
+        return $this->belongsTo(City::class, 'to_city');
+    }
+
+    public function bultyItems()
+    {
+        return $this->hasMany(BultyItem::class);
+    }
+
+    public function bultyDetail()
+    {
+        return $this->hasOne(BultyDetail::class);
+    }
+
+    public function biltyDetail()
+    {
+        return $this->bultyDetail();
+    }
+
+    public function biltyAdvanceDetails()
+    {
+        return $this->hasMany(BiltyAdvanceDetail::class, 'bulty_id');
+    }
+
+    public function trip()
+    {
+        return $this->hasOne(Trip::class, 'builty_id');
+    }
+
+    public function gstMaster()
+    {
+        return $this->belongsTo(GstMaster::class, 'gst_master_id');
+    }
+
+    public function getMaterialDocumentsListAttribute()
+    {
+        if (!$this->material_document) {
+            return [];
+        }
+        $decoded = json_decode($this->material_document, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            return $decoded;
+        }
+        return [$this->material_document];
+    }
+
+    public function getPodDocumentsListAttribute()
+    {
+        if (!$this->pod_document) {
+            return [];
+        }
+        $decoded = json_decode($this->pod_document, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            return $decoded;
+        }
+        return [$this->pod_document];
+    }
+
+    public static function deleteStoredDocumentFiles($fieldValue)
+    {
+        if (!$fieldValue) {
+            return;
+        }
+        $urls = is_array($fieldValue) ? $fieldValue : (json_decode($fieldValue, true) ?: [$fieldValue]);
+        foreach ($urls as $url) {
+            if (!is_string($url) || empty($url)) {
+                continue;
+            }
+            $relativePath = str_replace(asset('uploads/'), '', $url);
+            $relativePath = ltrim(str_replace('/uploads/', '', parse_url($relativePath, PHP_URL_PATH) ?? $relativePath), '/');
+            \Illuminate\Support\Facades\Storage::disk('uploads')->delete($relativePath);
+            $fullPath = public_path('uploads/' . $relativePath);
+            if (file_exists($fullPath) && is_file($fullPath)) {
+                @unlink($fullPath);
+            }
+        }
+    }
+
+    public function getBultyCommissionAttribute()
+    {
+        return $this->bilty_commission;
+    }
+
+    public function setBultyCommissionAttribute($value)
+    {
+        $this->bilty_commission = $value;
+    }
+
+    public function invoice()
+    {
+        return $this->belongsTo(Invoice::class, 'invoice_id');
+    }
+
+    public function tollInvoice()
+    {
+        return $this->belongsTo(Invoice::class, 'toll_invoice_id');
+    }
+
+    public function getCalculatedTotalAmountAttribute()
+    {
+        return (float)($this->freight_charges ?? 0) + (float)($this->gst_amount ?? 0) + (float)($this->other_charges ?? 0);
+    }
+
+    public function getReceivedAmountAttribute()
+    {
+        $advSum = $this->relationLoaded('biltyAdvanceDetails') 
+            ? (float)$this->biltyAdvanceDetails->sum('advance_amount') 
+            : null;
+
+        if ($advSum !== null && $advSum > 0) {
+            return $advSum;
+        }
+
+        return (float)($this->advance_amount ?? 0);
+    }
+
+    public function getCalculatedRemainingAmountAttribute()
+    {
+        $total = $this->total_amount !== null ? (float)$this->total_amount : $this->calculated_total_amount;
+        $received = (float)$this->received_amount;
+        return max(0, round($total - $received, 2));
+    }
+
+    public function getDueAmountAttribute()
+    {
+        return $this->calculated_remaining_amount;
+    }
+
+    public function syncRemainingAmount(): void
+    {
+        $totalReceived = (float)$this->biltyAdvanceDetails()->sum('advance_amount');
+        $effectiveReceived = $totalReceived > 0 ? $totalReceived : (float)($this->advance_amount ?? 0);
+        $billAmount = (float)($this->total_amount ?? 0);
+        $remaining = max(0, round($billAmount - $effectiveReceived, 2));
+
+        $this->updateQuietly([
+            'advance_amount' => $effectiveReceived,
+            'remaining_amount' => $remaining,
+        ]);
+    }
+}

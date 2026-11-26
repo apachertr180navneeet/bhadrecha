@@ -1,0 +1,278 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+use Tymon\JWTAuth\Contracts\JWTSubject;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Carbon\Carbon;
+use Spatie\Permission\Traits\HasRoles;
+
+class User extends Authenticatable implements JWTSubject
+{
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes, HasRoles;
+
+    protected $fillable = [
+        'first_name',
+        'last_name',
+        'slug',
+        'email',
+        'phone',
+        'password',
+        'role',
+        'status',
+        'address',
+        'area',
+        'city',
+        'state',
+        'country',
+        'country_code',
+        'zipcode',
+        'latitude',
+        'longitude',
+        'timezone',
+        'avatar',
+        'bio',
+        'device_token',
+        'device_type',
+        'company_id',
+        'branch_id',
+        'email_verified_at',
+        'phone_verified_at',
+    ];
+
+    protected $attributes = [
+        'avatar' => '',
+        'bio' => '',
+    ];
+
+    protected $appends = ['avatar_full_path'];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'phone_verified_at' => 'datetime',
+    ];
+
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
+    
+    public function getJWTCustomClaims()
+    {
+        return [];
+    }
+
+    public function getAvatarFullPathAttribute()
+    {
+        if($this->avatar != ''){
+            return asset($this->avatar);
+        }else{
+            return "";
+        }
+    }
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    public function accessibleCompanies()
+    {
+        return $this->belongsToMany(Company::class, 'user_companies');
+    }
+
+    public function accessibleBranches()
+    {
+        return $this->belongsToMany(Branch::class, 'user_branches');
+    }
+
+    public function mailConfiguration()
+    {
+        return $this->hasOne(UserMailConfiguration::class, 'user_id');
+    }
+
+    public function getAssignedBranchIdsAttribute()
+    {
+        $ids = [];
+        if (!empty($this->branch_id)) {
+            $ids[] = (int) $this->branch_id;
+        }
+        if ($this->relationLoaded('accessibleBranches')) {
+            $pivotIds = $this->accessibleBranches->pluck('id')->all();
+        } else {
+            try {
+                $pivotIds = $this->accessibleBranches()->pluck('branches.id')->all();
+            } catch (\Throwable $e) {
+                $pivotIds = [];
+            }
+        }
+        foreach ($pivotIds as $pid) {
+            $ids[] = (int) $pid;
+        }
+        return array_values(array_unique($ids));
+    }
+
+    public function salary()
+    {
+        return $this->hasOne(EmployeeSalary::class, 'user_id');
+    }
+
+    public function salaryRevisions()
+    {
+        return $this->hasMany(SalaryRevision::class, 'user_id');
+    }
+
+    public function incentives()
+    {
+        return $this->hasMany(EmployeeIncentive::class, 'user_id');
+    }
+
+    public function salaryPayments()
+    {
+        return $this->hasMany(SalaryPayment::class, 'user_id');
+    }
+
+    public function attendances()
+    {
+        return $this->hasMany(Attendance::class, 'user_id');
+    }
+
+    public function leaves()
+    {
+        return $this->hasMany(EmployeeLeave::class, 'user_id');
+    }
+
+    public function advances()
+    {
+        return $this->hasMany(EmployeeAdvance::class, 'user_id');
+    }
+
+    public function isSuperAdmin()
+    {
+        if (in_array(strtolower(trim($this->role ?? '')), ['super admin', 'super_admin', 'superadmin'])) {
+            return true;
+        }
+
+        try {
+            return $this->hasRole('Super Admin');
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    public function isCompanyAdmin()
+    {
+        if (in_array(strtolower(trim($this->role ?? '')), ['company admin', 'company_admin', 'admin'])) {
+            return true;
+        }
+
+        try {
+            return $this->hasRole('Company Admin');
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    public function isBranchManager()
+    {
+        if (in_array(strtolower(trim($this->role ?? '')), ['branch manager', 'branch_manager'])) {
+            return true;
+        }
+
+        try {
+            return $this->hasRole('Branch Manager');
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    public function isAdmin()
+    {
+        return $this->isSuperAdmin() || $this->isCompanyAdmin() || $this->isBranchManager();
+    }
+
+    public function canAccessCompany($companyId)
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        if ($this->company_id == $companyId) {
+            return true;
+        }
+
+        return $this->accessibleCompanies()->where('companies.id', $companyId)->exists();
+    }
+
+    public function canAccessBranch($branchId)
+    {
+        if (empty($branchId)) {
+            return false;
+        }
+
+        if ($branchId === 'all') {
+            return $this->isSuperAdmin() || $this->isCompanyAdmin() || count($this->assigned_branch_ids) > 1;
+        }
+
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        if ($this->isCompanyAdmin()) {
+            if (empty($this->company_id)) {
+                return true;
+            }
+            $targetBranch = Branch::find($branchId);
+            return $targetBranch ? ((int) $targetBranch->company_id === (int) $this->company_id) : true;
+        }
+
+        return in_array((int) $branchId, $this->assigned_branch_ids, true);
+    }
+
+    public function getFullNameAttribute()
+    {
+        return trim("{$this->first_name} {$this->last_name}");
+    }
+
+    public function isActive()
+    {
+        return $this->status === 'active';
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    public function scopeByRole($query, $role)
+    {
+        return $query->whereHas('roles', function($q) use ($role) {
+            $q->where('name', $role);
+        });
+    }
+
+    public function scopeByCompany($query, $companyId)
+    {
+        return $query->where(function($q) use ($companyId) {
+            $q->where('company_id', $companyId)
+              ->orWhereHas('roles', function($r) {
+                  $r->where('name', 'Super Admin');
+              });
+        });
+    }
+}
