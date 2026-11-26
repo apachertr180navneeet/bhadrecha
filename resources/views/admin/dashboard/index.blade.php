@@ -51,11 +51,6 @@
                             <a href="{{ route('admin.profile') }}" class="btn btn-outline-primary btn-sm">
                                 <i class="bx bx-user me-1"></i>Profile
                             </a>
-                            @if(!$isSuperAdmin && !$isCompanyAdmin)
-                            <a href="{{ route('admin.leaves.create') }}" class="btn btn-warning btn-sm text-white">
-                                <i class="bx bx-exit me-1"></i>Apply Leave
-                            </a>
-                            @endif
                             @canany(['create trips', 'create bulties', 'import trip data'])
                             <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#importTripModal">
                                 <i class="bx bx-import me-1"></i>Import
@@ -196,7 +191,6 @@
             <div class="card">
                 <div class="card-header d-flex align-items-center justify-content-between">
                     <h5 class="mb-0"><i class="bx bx-trending-up me-1"></i>Profit & Loss Trend</h5>
-                    <a href="{{ route('admin.reports.profit-loss') }}" class="btn btn-sm btn-outline-primary">View Full Report</a>
                 </div>
                 <div class="card-body">
                     <div id="profitLossChart"></div>

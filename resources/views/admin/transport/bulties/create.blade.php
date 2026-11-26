@@ -58,7 +58,7 @@
                                 <select name="company_id" id="company_id" class="form-select @error('company_id') is-invalid @enderror" required>
                                     <option value="">Select Company</option>
                                     @foreach($companies as $company)
-                                        <option value="{{ $company->id }}" {{ old('company_id', auth()->user()->company_id) == $company->id ? 'selected' : '' }}>{{ $company->name }}</option>
+                                        <option value="{{ $company->id }}" {{ old('company_id', $defaultCompanyId ?? auth()->user()->company_id) == $company->id ? 'selected' : '' }}>{{ $company->name }}</option>
                                     @endforeach
                                 </select>
                                 @error('company_id') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
@@ -1734,41 +1734,52 @@
         runCalculations();
 
         // Branch Logic
-        $('#company_id').change(function() {
-            var companyId = $(this).val();
+        function syncBranchesForCompany(companyId, targetBranchId) {
             var $branchSelect = $('#branch_id');
             if (companyId) {
-                $branchSelect.prop('disabled', true).html('<option value="">Syncing...</option>');
+                $branchSelect.prop('disabled', true);
                 $.ajax({
-                    url: '/admin/users/get-branches/' + companyId,
+                    url: '{{ route("admin.users.get-branches") }}',
                     type: 'GET',
+                    data: { company_id: companyId },
+                    dataType: 'json',
                     success: function(data) {
                         $branchSelect.prop('disabled', false).empty().append('<option value="">Select Branch</option>');
-                        $.each(data, function(key, value) {
-                            $branchSelect.append('<option value="' + value.id + '">' + value.name + '</option>');
-                        });
-                        var oldBranch = '{{ old('branch_id', $branchId ?? '') }}';
-                        if (oldBranch) {
-                            $branchSelect.val(oldBranch);
+                        if (Array.isArray(data)) {
+                            $.each(data, function(key, value) {
+                                var selected = (targetBranchId && value.id == targetBranchId) ? 'selected' : '';
+                                $branchSelect.append('<option value="' + value.id + '" ' + selected + '>' + value.name + '</option>');
+                            });
+                        }
+                        if (targetBranchId && $branchSelect.find('option[value="' + targetBranchId + '"]').length > 0) {
+                            $branchSelect.val(targetBranchId);
+                        } else {
+                            var firstOption = $branchSelect.find('option[value!=""]:first');
+                            if (firstOption.length) {
+                                $branchSelect.val(firstOption.val());
+                            }
                         }
                         $branchSelect.trigger('change');
+                    },
+                    error: function() {
+                        $branchSelect.prop('disabled', false);
                     }
                 });
             } else {
                 $branchSelect.prop('disabled', false).empty().append('<option value="">Select Branch</option>').trigger('change');
             }
-        });
-
-        // Trigger company change on page load if company_id is selected
-        if ($('#company_id').val()) {
-            $('#company_id').trigger('change');
         }
+
+        $('#company_id').on('change', function() {
+            var companyId = $(this).val();
+            syncBranchesForCompany(companyId, null);
+        });
 
         // Update LR number on branch change
         $(document).on('change', '#branch_id', function() {
             const branchId = $(this).val();
             if (branchId) {
-                $.get('{{ url("admin/transport/bulties/next-lr") }}/' + branchId, function(res) {
+                $.get('{{ route("admin.transport.bulties.next-lr") }}/' + branchId, function(res) {
                     if (res.missing && res.missing.length > 0) {
                         let html = '<div class="list-group" style="max-height:300px;overflow-y:auto;">';
                         res.missing.forEach(function(lr) {

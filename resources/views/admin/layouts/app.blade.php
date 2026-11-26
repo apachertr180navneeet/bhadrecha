@@ -91,6 +91,40 @@
                 </div>
         
                 <script src="{{asset('assets/admin/vendor/libs/jquery/jquery.js')}}"></script>
+                <script>
+                    // Safe guard for $.each to prevent errors when non-objects/HTML strings are passed
+                    if (typeof $ !== 'undefined' && $.each) {
+                        var _origEach = $.each;
+                        $.each = function(obj, callback) {
+                            if (typeof obj === 'string') {
+                                try {
+                                    obj = JSON.parse(obj);
+                                } catch (e) {
+                                    return obj;
+                                }
+                            }
+                            if (!obj || (typeof obj !== 'object' && !Array.isArray(obj))) {
+                                return obj;
+                            }
+                            return _origEach.call(this, obj, callback);
+                        };
+                    }
+
+                    // Global AJAX Setup: CSRF, Ajax headers & session handling
+                    $.ajaxSetup({
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json, text/javascript, */*; q=0.01'
+                        }
+                    });
+
+                    $(document).ajaxError(function(event, jqXHR, settings, thrownError) {
+                        if (jqXHR.status === 401) {
+                            window.location.href = "{{ route('admin.login') }}";
+                        }
+                    });
+                </script>
                 <script src="{{asset('assets/admin/vendor/libs/popper/popper.js')}}"></script>
                 <script src="{{asset('assets/admin/vendor/js/bootstrap.js')}}"></script>
                 <script src="{{asset('assets/admin/vendor/libs/perfect-scrollbar/perfect-scrollbar.js')}}"></script>

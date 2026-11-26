@@ -121,9 +121,11 @@
     $(document).ready(function() {
         function loadBranches(companyId) {
             if (companyId) {
-                $.ajax({ url: '{{ url("admin/users/get-branches") }}/' + companyId, type: 'GET', success: function(data) {
+                $.ajax({ url: '{{ url("admin/users/get-branches") }}/' + companyId, type: 'GET', dataType: 'json', success: function(data) {
                     $('#import_branch_id').empty().append('<option value="">Select Branch</option>');
-                    $.each(data, function(k, b) { $('#import_branch_id').append('<option value="' + b.id + '">' + b.name + '</option>'); });
+                    if (Array.isArray(data)) {
+                        $.each(data, function(k, b) { $('#import_branch_id').append('<option value="' + b.id + '">' + b.name + '</option>'); });
+                    }
                     $('#import_branch_id').trigger('change');
                 }});
             } else { $('#import_branch_id').empty().append('<option value="">Select Branch</option>').trigger('change'); }
