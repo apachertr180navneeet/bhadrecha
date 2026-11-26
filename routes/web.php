@@ -310,6 +310,7 @@ Route::name('admin.')->prefix('admin')->group(function () {
             Route::get('bulties/trashed', [BultyController::class, 'trashed'])->name('bulties.trashed');
             Route::get('bulties/next-lr/{branchId?}', [BultyController::class, 'nextLRNumber'])->name('bulties.next-lr');
             Route::get('bulties/check-lr', [BultyController::class, 'checkLRNumber'])->name('bulties.check-lr');
+            Route::post('bulties/parse-document', [BultyController::class, 'parseDocument'])->name('bulties.parse-document');
             Route::post('bulties/{bulty}/reject', [BultyController::class, 'reject'])->name('bulties.reject');
             Route::put('bulties/{bulty}/restore', [BultyController::class, 'restore'])->name('bulties.restore');
             Route::delete('bulties/{bulty}/force-delete', [BultyController::class, 'forceDelete'])->name('bulties.force-delete');

@@ -38,6 +38,62 @@
         <div class="row g-4">
             <!-- Main Form Content -->
             <div class="col-xl-10 col-lg-12 mx-auto">
+                <!-- Smart Bilty PDF / Image Upload & OCR Auto-Fill -->
+                <div id="section-smart-ocr" class="card shadow-sm border-0 mb-4 section-card" style="border-left: 4px solid #696cff !important;">
+                    <div class="card-body p-4">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="section-icon" style="background: rgba(105, 108, 255, 0.12); color: #696cff;">
+                                    <i class="bx bx-scan"></i>
+                                </div>
+                                <div>
+                                    <h5 class="section-title mb-0">Smart Bilty Upload (PDF / Image OCR)</h5>
+                                    <p class="section-subtitle mb-0">Upload a Bilty PDF or photo to auto-extract details &amp; map Consignor, Consignee &amp; Item masters</p>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary d-none" id="ocrResetBtn">
+                                <i class="bx bx-refresh me-1"></i> Clear Upload
+                            </button>
+                        </div>
+
+                        <div id="ocrDropZone" class="border border-2 border-dashed rounded-3 p-4 text-center position-relative" style="border-color: #cbd5e1; background: #f8fafc; cursor: pointer; transition: all 0.2s ease;">
+                            <input type="file" id="ocrDocumentInput" accept=".pdf,image/*" class="d-none">
+                            <div id="ocrIdleState">
+                                <i class="bx bx-cloud-upload fs-1 text-primary mb-2 d-block"></i>
+                                <h6 class="fw-bold mb-1">Drop Bilty PDF or Image here, or <span class="text-primary text-decoration-underline">browse</span></h6>
+                                <p class="text-muted small mb-0">Supports PDF, JPG, PNG, WEBP • Automatically fills fields &amp; creates missing Masters without saving the Bilty</p>
+                            </div>
+                            <div id="ocrProgressState" class="d-none">
+                                <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+                                    <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                                    <span class="fw-semibold text-primary" id="ocrStatusText">Reading document...</span>
+                                </div>
+                                <div class="progress mx-auto" style="height: 8px; max-width: 420px;">
+                                    <div id="ocrProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 10%;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="ocrResultPanel" class="d-none mt-3">
+                            <div class="alert alert-success border-0 shadow-sm mb-2 py-2 px-3 d-flex flex-wrap justify-content-between align-items-center gap-2" id="ocrResultAlert">
+                                <div>
+                                    <i class="bx bx-check-circle me-1"></i>
+                                    <strong id="ocrSummaryHeadline">Document processed!</strong>
+                                    <span class="small ms-1" id="ocrSummaryDetails"></span>
+                                </div>
+                                <button type="button" class="btn btn-xs btn-outline-dark" data-bs-toggle="collapse" data-bs-target="#ocrRawTextCollapse">
+                                    <i class="bx bx-file-find me-1"></i> View Extracted Text
+                                </button>
+                            </div>
+                            <div id="ocrMasterBadges" class="d-flex flex-wrap gap-2 mb-2"></div>
+                            <div class="collapse" id="ocrRawTextCollapse">
+                                <textarea id="ocrRawTextPreview" class="form-control form-control-sm font-monospace" rows="5" readonly style="font-size: 0.78rem; background: #f1f5f9;"></textarea>
+                            </div>
+                        </div>
+                        <div id="ocrErrorAlert" class="alert alert-warning d-none mt-3 mb-0 py-2 px-3 small"></div>
+                    </div>
+                </div>
+
                 <!-- Section 1: Basic Information -->
                 <div id="section-basic" class="card shadow-sm border-0 mb-4 section-card">
                     <div class="card-body p-4">
@@ -2216,5 +2272,370 @@
             }
         });
     });
+</script>
+
+<!-- Smart Bilty OCR Libraries (Create Page Only) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script>
+    (function () {
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+
+        const $dropZone = $('#ocrDropZone');
+        const $fileInput = $('#ocrDocumentInput');
+        const $idleState = $('#ocrIdleState');
+        const $progressState = $('#ocrProgressState');
+        const $statusText = $('#ocrStatusText');
+        const $progressBar = $('#ocrProgressBar');
+        const $resultPanel = $('#ocrResultPanel');
+        const $errorAlert = $('#ocrErrorAlert');
+        const $resetBtn = $('#ocrResetBtn');
+
+        // Track manually edited fields so OCR never overwrites user input
+        $(document).on('input change', '#biltyForm input, #biltyForm select, #biltyForm textarea', function (e) {
+            if (e.originalEvent) {
+                $(this).attr('data-user-edited', 'true');
+            }
+        });
+
+        function setProgress(pct, label) {
+            $idleState.addClass('d-none');
+            $progressState.removeClass('d-none');
+            $progressBar.css('width', Math.min(100, Math.max(5, pct)) + '%');
+            $statusText.text(label);
+        }
+
+        function resetUploadUI() {
+            $fileInput.val('');
+            $progressState.addClass('d-none');
+            $idleState.removeClass('d-none');
+            $resultPanel.addClass('d-none');
+            $errorAlert.addClass('d-none').text('');
+            $resetBtn.addClass('d-none');
+            $('#ocrMasterBadges').empty();
+            $('#ocrRawTextPreview').val('');
+        }
+
+        $resetBtn.on('click', resetUploadUI);
+
+        $dropZone.on('click', function (e) {
+            if ($(e.target).closest('button').length) return;
+            $fileInput[0].click();
+        });
+
+        $dropZone.on('dragover', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $dropZone.css({ 'border-color': '#696cff', 'background': '#eef2ff' });
+        });
+
+        $dropZone.on('dragleave drop', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $dropZone.css({ 'border-color': '#cbd5e1', 'background': '#f8fafc' });
+        });
+
+        $dropZone.on('drop', function (e) {
+            const files = e.originalEvent.dataTransfer?.files;
+            if (files && files.length > 0) {
+                handleUploadedFile(files[0]);
+            }
+        });
+
+        $fileInput.on('change', function () {
+            if (this.files && this.files.length > 0) {
+                handleUploadedFile(this.files[0]);
+            }
+        });
+
+        async function handleUploadedFile(file) {
+            $errorAlert.addClass('d-none').text('');
+            $resultPanel.addClass('d-none');
+            $resetBtn.removeClass('d-none');
+
+            try {
+                let rawText = '';
+                const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+
+                if (isPdf) {
+                    rawText = await extractTextFromPdf(file);
+                } else if (file.type.startsWith('image/')) {
+                    rawText = await runOcrOnImage(file, 'Running OCR on image...');
+                } else {
+                    throw new Error('Unsupported file format. Please upload a PDF or image (JPG, PNG, WEBP).');
+                }
+
+                if (!rawText || rawText.trim().length < 5) {
+                    throw new Error('Could not extract readable text from this document. Please try a clearer image/PDF or enter details manually.');
+                }
+
+                $('#ocrRawTextPreview').val(rawText);
+                setProgress(88, 'Matching & creating Consignor, Consignee & Item masters...');
+
+                const response = await $.ajax({
+                    url: "{{ route('admin.transport.bulties.parse-document') }}",
+                    method: 'POST',
+                    data: {
+                        _token: "{{ csrf_token() }}",
+                        raw_text: rawText,
+                        company_id: $('#company_id').val() || $('[name="company_id"]').val() || '',
+                        branch_id: $('#branch_id').val() || $('[name="branch_id"]').val() || '',
+                    },
+                });
+
+                if (response && response.success && response.data) {
+                    const stats = populateFormFromParsed(response.data);
+                    showSuccessSummary(stats, response.data.masters);
+                } else {
+                    throw new Error('Failed to parse document response.');
+                }
+            } catch (err) {
+                $progressState.addClass('d-none');
+                $idleState.removeClass('d-none');
+                const msg = err?.responseJSON?.message || err?.message || 'Error processing document.';
+                $errorAlert.removeClass('d-none').html('<i class="bx bx-error-circle me-1"></i> ' + $('<div>').text(msg).html());
+            }
+        }
+
+        async function extractTextFromPdf(file) {
+            if (typeof pdfjsLib === 'undefined') {
+                throw new Error('PDF reader library failed to load. Please check your internet connection.');
+            }
+            setProgress(15, 'Loading PDF document...');
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            const totalPages = Math.min(pdf.numPages, 3);
+            let combinedText = '';
+
+            for (let p = 1; p <= totalPages; p++) {
+                setProgress(15 + Math.round((p / totalPages) * 25), `Extracting PDF text (page ${p}/${totalPages})...`);
+                const page = await pdf.getPage(p);
+                const textContent = await page.getTextContent();
+                let pageLines = [];
+                let currentLine = [];
+                let lastY = null;
+                textContent.items.forEach(item => {
+                    const y = item.transform ? item.transform[5] : null;
+                    if (lastY !== null && y !== null && Math.abs(y - lastY) > 4) {
+                        if (currentLine.length) {
+                            pageLines.push(currentLine.join(' ').replace(/\s+/g, ' ').trim());
+                            currentLine = [];
+                        }
+                    }
+                    if (item.str && item.str.trim() !== '') {
+                        currentLine.push(item.str);
+                    }
+                    if (item.hasEOL && currentLine.length) {
+                        pageLines.push(currentLine.join(' ').replace(/\s+/g, ' ').trim());
+                        currentLine = [];
+                        lastY = null;
+                        return;
+                    }
+                    if (y !== null) lastY = y;
+                });
+                if (currentLine.length) {
+                    pageLines.push(currentLine.join(' ').replace(/\s+/g, ' ').trim());
+                }
+                combinedText += pageLines.join('\n') + '\n';
+            }
+
+            // If PDF is scanned (very little embedded text), render pages to canvas and run OCR
+            if (combinedText.replace(/\s+/g, '').length < 40) {
+                combinedText = '';
+                for (let p = 1; p <= totalPages; p++) {
+                    setProgress(40 + Math.round(((p - 1) / totalPages) * 40), `Scanned PDF detected — running OCR (page ${p}/${totalPages})...`);
+                    const page = await pdf.getPage(p);
+                    const viewport = page.getViewport({ scale: 2.0 });
+                    const canvas = document.createElement('canvas');
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+                    const ocrText = await runOcrOnImage(canvas, `Running OCR on PDF page ${p}/${totalPages}...`);
+                    combinedText += ocrText + '\n';
+                }
+            }
+
+            return combinedText;
+        }
+
+        async function runOcrOnImage(imageSource, label) {
+            if (typeof Tesseract === 'undefined') {
+                throw new Error('OCR engine failed to load. Please check your internet connection.');
+            }
+            setProgress(25, label);
+            const result = await Tesseract.recognize(imageSource, 'eng', {
+                logger: m => {
+                    if (m.status === 'recognizing text' && typeof m.progress === 'number') {
+                        setProgress(30 + Math.round(m.progress * 50), `${label} (${Math.round(m.progress * 100)}%)`);
+                    }
+                }
+            });
+            return result?.data?.text || '';
+        }
+
+        function setFieldSafe(selector, value, allowDefaultOverwrite = false) {
+            if (value === null || value === undefined || value === '') return false;
+            const $el = $(selector);
+            if (!$el.length) return false;
+            if ($el.attr('data-user-edited') === 'true') return false;
+
+            const current = ($el.val() || '').toString().trim();
+            if (!allowDefaultOverwrite && current !== '' && current !== '0' && current !== '0.00') {
+                return false;
+            }
+            $el.val(value).addClass('is-valid');
+            return true;
+        }
+
+        function populateFormFromParsed(data) {
+            const fields = data.fields || {};
+            const masters = data.masters || {};
+            let filledCount = 0;
+
+            // Basic Info (lr_no and lr_date have auto-defaults, allow overwrite if user didn't edit)
+            if (setFieldSafe('#lr_no', fields.lr_no, true)) filledCount++;
+            if (setFieldSafe('[name="lr_date"]', fields.lr_date, true)) filledCount++;
+            if (fields.payment_type && $('[name="payment_type"]').attr('data-user-edited') !== 'true') {
+                $('[name="payment_type"]').val(fields.payment_type).addClass('is-valid');
+                filledCount++;
+            }
+            if (fields.from_city && $('[name="from_city"]').attr('data-user-edited') !== 'true') {
+                $('[name="from_city"]').val(fields.from_city).trigger('change');
+                filledCount++;
+            }
+            if (fields.to_city && $('[name="to_city"]').attr('data-user-edited') !== 'true') {
+                $('[name="to_city"]').val(fields.to_city).trigger('change');
+                filledCount++;
+            }
+
+            // Consignor Master
+            if (masters.consignor) {
+                const c = masters.consignor;
+                if ($('#consignor_name').attr('data-user-edited') !== 'true') {
+                    $('#consignor_id').val(c.id);
+                    $('#consignor_name').val(c.name).addClass('is-valid');
+                    setFieldSafe('#consignor_phone', c.phone, true);
+                    setFieldSafe('#consignor_gstin', c.gstin, true);
+                    setFieldSafe('#consignor_address', c.address, true);
+                    $('#collapse-parties').collapse('show');
+                    filledCount++;
+                }
+            }
+
+            // Consignee Master
+            if (masters.consignee) {
+                const c = masters.consignee;
+                if ($('#consignee_name').attr('data-user-edited') !== 'true') {
+                    $('#consignee_id').val(c.id);
+                    $('#consignee_name').val(c.name).addClass('is-valid');
+                    setFieldSafe('#consignee_phone', c.phone, true);
+                    setFieldSafe('#consignee_gstin', c.gstin, true);
+                    setFieldSafe('#consignee_address', c.address, true);
+                    $('#collapse-parties').collapse('show');
+                    filledCount++;
+                }
+            }
+
+            // Items & Item Masters
+            if (Array.isArray(fields.items) && fields.items.length > 0) {
+                const firstRowHasUserEdit = $('#itemsContainer .item-row:first .item-name').attr('data-user-edited') === 'true';
+                if (!firstRowHasUserEdit) {
+                    fields.items.forEach((item, idx) => {
+                        if (idx > 0) {
+                            $('#addItemRow').trigger('click');
+                        }
+                        const $row = $('#itemsContainer .item-row').eq(idx);
+                        $row.find('.item-id').val(item.item_id || '');
+                        $row.find('.item-name').val(item.item_name || '').addClass('is-valid');
+                        if (item.packaging_type) $row.find('.item-packaging').val(item.packaging_type);
+                        if (item.articles !== undefined && item.articles !== null) $row.find('.item-articles').val(item.articles);
+                        if (item.weight !== undefined && item.weight !== null) $row.find('.item-weight').val(item.weight);
+                        if (item.unit) $row.find('.item-unit').val(item.unit).trigger('change');
+                        if (item.freight_per_mt) $row.find('.item-freight').val(item.freight_per_mt);
+                        filledCount++;
+                    });
+                    $('#collapse-items').collapse('show');
+                    $('#itemsContainer .item-weight:first').trigger('input');
+                }
+            }
+
+            // Reference & Invoice
+            let refFilled = false;
+            if (setFieldSafe('[name="order_number"]', fields.order_number)) { filledCount++; refFilled = true; }
+            if (setFieldSafe('[name="delivery_number"]', fields.delivery_number)) { filledCount++; refFilled = true; }
+            if (setFieldSafe('[name="invoice_number"]', fields.invoice_number)) { filledCount++; refFilled = true; }
+            if (setFieldSafe('[name="invoice_date"]', fields.invoice_date)) { filledCount++; refFilled = true; }
+            if (setFieldSafe('[name="eway_bill_no"]', fields.eway_bill_no)) { filledCount++; refFilled = true; }
+            if (setFieldSafe('[name="generation_date"]', fields.generation_date)) { filledCount++; refFilled = true; }
+            if (setFieldSafe('[name="expiry_date"]', fields.expiry_date)) { filledCount++; refFilled = true; }
+            if (setFieldSafe('[name="e_lr_no"]', fields.e_lr_no)) { filledCount++; refFilled = true; }
+            if (refFilled) $('#collapse-reference').collapse('show');
+
+            // Other Entry
+            let otherFilled = false;
+            if (setFieldSafe('[name="po_no"]', fields.po_no)) { filledCount++; otherFilled = true; }
+            if (setFieldSafe('[name="challan_no"]', fields.challan_no)) { filledCount++; otherFilled = true; }
+            if (otherFilled) $('#collapse-other-entry').collapse('show');
+
+            // Vehicle & Driver (if matched)
+            let vehFilled = false;
+            if (fields.vehicle_id && $('#vehicle_number').attr('data-user-edited') !== 'true') {
+                $('#vehicle_id').val(fields.vehicle_id);
+                $('#vehicle_number').val(fields.vehicle_number).addClass('is-valid');
+                filledCount++; vehFilled = true;
+            }
+            if (fields.driver_id && $('#driver_name').attr('data-user-edited') !== 'true') {
+                $('#driver_id').val(fields.driver_id);
+                $('#driver_name').val(fields.driver_name).addClass('is-valid');
+                setFieldSafe('#driver_mobile', fields.driver_mobile, true);
+                filledCount++; vehFilled = true;
+            }
+            if (vehFilled) $('#collapse-vehicle').collapse('show');
+
+            // Charges
+            if (setFieldSafe('#freight_charges', fields.freight_charges)) filledCount++;
+            if (setFieldSafe('#other_charges', fields.other_charges)) filledCount++;
+            if (setFieldSafe('[name="declared_value"]', fields.declared_value)) filledCount++;
+            $('#freight_charges').trigger('input');
+
+            return { filledCount };
+        }
+
+        function showSuccessSummary(stats, masters) {
+            $progressState.addClass('d-none');
+            $idleState.removeClass('d-none');
+            $resultPanel.removeClass('d-none');
+
+            $('#ocrSummaryHeadline').text('Document Extracted & Mapped!');
+            $('#ocrSummaryDetails').text(`(${stats.filledCount} fields/sections populated. Please review before clicking Generate Bilty.)`);
+
+            const $badges = $('#ocrMasterBadges').empty();
+            if (masters?.consignor) {
+                const isExisting = masters.consignor.status === 'existing';
+                const label = isExisting
+                    ? `Consignor #${masters.consignor.id}: ${masters.consignor.name} (Matched Existing)`
+                    : `Consignor: ${masters.consignor.name} (New - will be created on Save)`;
+                $badges.append(`<span class="badge ${isExisting ? 'bg-success' : 'bg-warning text-dark'}">${$('<div>').text(label).html()}</span>`);
+            }
+            if (masters?.consignee) {
+                const isExisting = masters.consignee.status === 'existing';
+                const label = isExisting
+                    ? `Consignee #${masters.consignee.id}: ${masters.consignee.name} (Matched Existing)`
+                    : `Consignee: ${masters.consignee.name} (New - will be created on Save)`;
+                $badges.append(`<span class="badge ${isExisting ? 'bg-success' : 'bg-warning text-dark'}">${$('<div>').text(label).html()}</span>`);
+            }
+            if (Array.isArray(masters?.items)) {
+                masters.items.forEach(it => {
+                    const isExisting = it.status === 'existing';
+                    const label = isExisting
+                        ? `Item #${it.id}: ${it.name} (Matched Existing)`
+                        : `Item: ${it.name} (New - will be created on Save)`;
+                    $badges.append(`<span class="badge ${isExisting ? 'bg-success' : 'bg-warning text-dark'}">${$('<div>').text(label).html()}</span>`);
+                });
+            }
+        }
+    })();
 </script>
 @endsection

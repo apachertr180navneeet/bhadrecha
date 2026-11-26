@@ -22,6 +22,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\BultyMail;
+use App\Services\BultyDocumentParserService;
 
 class BultyController extends Controller
 {
@@ -253,6 +254,34 @@ class BultyController extends Controller
         return view('admin.transport.bulties.create', compact('branches', 'companies', 'consignors', 'consignees', 'suppliers', 'cities', 'packagings', 'units', 'nextBultyNo', 'branchId'));
     }
 
+    public function parseDocument(Request $request, BultyDocumentParserService $parser)
+    {
+        if (!auth()->user()->can('create bulties')) {
+            return response()->json(['message' => 'Unauthorized action.'], 403);
+        }
+
+        $validated = $request->validate([
+            'raw_text' => 'required|string|max:150000',
+            'company_id' => 'nullable|integer|exists:companies,id',
+            'branch_id' => 'nullable|integer|exists:branches,id',
+        ]);
+
+        $user = auth()->user();
+        $companyId = $validated['company_id'] ?? ($user->company_id ?: (session('current_company_id') !== 'all' ? session('current_company_id') : null));
+        $branchId = $validated['branch_id'] ?? ($user->branch_id ?: (session('current_branch_id') !== 'all' ? session('current_branch_id') : null));
+
+        $result = $parser->parseAndMatchMasters(
+            $validated['raw_text'],
+            $companyId ? (int) $companyId : null,
+            $branchId ? (int) $branchId : null
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => $result,
+        ]);
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -313,6 +342,34 @@ class BultyController extends Controller
         unset($validated['items']);
 
         $bulty = DB::transaction(function () use ($validated, $items, $request) {
+            $parser = app(BultyDocumentParserService::class);
+            $compId = !empty($validated['company_id']) ? (int) $validated['company_id'] : null;
+            $brId = !empty($validated['branch_id']) ? (int) $validated['branch_id'] : null;
+
+            if (empty($validated['consignor_id']) && ($request->filled('consignor_name') || $request->filled('consignor_gstin') || $request->filled('consignor_phone'))) {
+                $consignor = $parser->resolveOrCreateConsignor([
+                    'name' => $request->input('consignor_name'),
+                    'phone' => $request->input('consignor_phone'),
+                    'gstin' => $request->input('consignor_gstin'),
+                    'address' => $request->input('consignor_address'),
+                ], $compId, $brId);
+                if ($consignor) {
+                    $validated['consignor_id'] = $consignor->id;
+                }
+            }
+
+            if (empty($validated['consignee_id']) && ($request->filled('consignee_name') || $request->filled('consignee_gstin') || $request->filled('consignee_phone'))) {
+                $consignee = $parser->resolveOrCreateConsignee([
+                    'name' => $request->input('consignee_name'),
+                    'phone' => $request->input('consignee_phone'),
+                    'gstin' => $request->input('consignee_gstin'),
+                    'address' => $request->input('consignee_address'),
+                ], $compId, $brId);
+                if ($consignee) {
+                    $validated['consignee_id'] = $consignee->id;
+                }
+            }
+
             $bulty = Bulty::create($validated);
             $this->syncItems($bulty, $items);
             $this->syncBultyDetail($bulty, $request);
@@ -1052,7 +1109,7 @@ class BultyController extends Controller
                 if (!empty($item['item_id'])) {
                     $masterItem = Item::find($item['item_id']);
                 } elseif (!empty($item['item_name'])) {
-                    $masterItem = Item::where('name', $item['item_name'])->first();
+                    $masterItem = app(BultyDocumentParserService::class)->resolveOrCreateItemByName($item['item_name']);
                 }
 
                 $weight = (float) ($item['weight'] ?? 0);
