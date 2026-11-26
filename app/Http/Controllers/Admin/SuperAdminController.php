@@ -77,13 +77,9 @@ class SuperAdminController extends Controller
             ->limit(10)
             ->get();
 
-        // Transport stats (filtered by branch if specified)
-        $totalVehicles = Vehicle::withoutGlobalScopes()
-            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
-            ->count();
-        $totalDrivers  = Driver::withoutGlobalScopes()
-            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
-            ->count();
+        // Transport stats (vehicles and drivers are shared globally across branches)
+        $totalVehicles = Vehicle::withoutGlobalScopes()->count();
+        $totalDrivers  = Driver::withoutGlobalScopes()->count();
         $totalBulties  = Bulty::withoutGlobalScopes()
             ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
             ->count();
@@ -294,12 +290,8 @@ class SuperAdminController extends Controller
             ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
             ->where('status', 'active')->count();
 
-        $totalVehicles = Vehicle::withoutGlobalScopes()
-            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
-            ->count();
-        $totalDrivers  = Driver::withoutGlobalScopes()
-            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
-            ->count();
+        $totalVehicles = Vehicle::withoutGlobalScopes()->count();
+        $totalDrivers  = Driver::withoutGlobalScopes()->count();
         $totalBulties  = Bulty::withoutGlobalScopes()
             ->where('company_id', $companyId)
             ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
