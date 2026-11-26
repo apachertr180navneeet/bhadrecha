@@ -25,24 +25,6 @@
         @yield('content')
         
         <script src="{{asset('assets/admin/vendor/libs/jquery/jquery.js')}}"></script>
-        <script>
-            if (typeof $ !== 'undefined' && $.each) {
-                var _origEach = $.each;
-                $.each = function(obj, callback) {
-                    if (typeof obj === 'string') {
-                        try {
-                            obj = JSON.parse(obj);
-                        } catch (e) {
-                            return obj;
-                        }
-                    }
-                    if (!obj || (typeof obj !== 'object' && !Array.isArray(obj))) {
-                        return obj;
-                    }
-                    return _origEach.call(this, obj, callback);
-                };
-            }
-        </script>
         <script src="{{asset('assets/admin/vendor/libs/popper/popper.js')}}"></script>
         <script src="{{asset('assets/admin/vendor/js/bootstrap.js')}}"></script>
         <script src="{{asset('assets/admin/vendor/libs/perfect-scrollbar/perfect-scrollbar.js')}}"></script>

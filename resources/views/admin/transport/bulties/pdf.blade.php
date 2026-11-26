@@ -96,8 +96,8 @@
             table-layout: fixed;
         }
         .lr-table td {
-            font-size: 9px;
-            padding: 3px 4px;
+            font-size: 8.5px;
+            padding: 3.5px 5px;
             border-bottom: 1px solid #000;
         }
         .lr-table tr:last-child td {
@@ -105,12 +105,15 @@
         }
         .lr-label {
             font-weight: 700;
-            width: 44%;
+            width: 35%;
             border-right: 1px solid #000;
             white-space: nowrap;
         }
         .lr-value {
-            width: 56%;
+            width: 65%;
+            padding-left: 5px;
+            word-break: break-word;
+            overflow-wrap: break-word;
         }
         .footer-note {
             font-size: 8px;
@@ -149,16 +152,35 @@
     // Signature detection
     $sigPath = null;
     if ($company && !empty($company->digital_signature)) {
-        $cleanSig = ltrim($company->digital_signature, '/');
-        if (file_exists(public_path($cleanSig))) {
-            $sigPath = public_path($cleanSig);
-        } elseif (file_exists(public_path('uploads/' . $cleanSig))) {
-            $sigPath = public_path('uploads/' . $cleanSig);
-        } elseif (\Illuminate\Support\Str::startsWith($cleanSig, ['http://', 'https://'])) {
-            $sigPath = $cleanSig;
+        $cleanSig = ltrim($company->digital_signature, '/\\');
+        $possibleSigPaths = [
+            public_path($cleanSig),
+            public_path('uploads/' . $cleanSig),
+            base_path('public/' . $cleanSig),
+            base_path('public/uploads/' . $cleanSig),
+            'C:/laragon/www/laravel_project/bhadrecha/public/' . $cleanSig,
+        ];
+        foreach ($possibleSigPaths as $p) {
+            if (file_exists($p)) {
+                $sigPath = $p;
+                break;
+            }
         }
     }
-?>
+    $sigBase64 = null;
+    if ($sigPath && file_exists($sigPath)) {
+        $sType = pathinfo($sigPath, PATHINFO_EXTENSION);
+        $sigBase64 = 'data:image/' . ($sType === 'svg' ? 'svg+xml' : $sType) . ';base64,' . base64_encode(file_get_contents($sigPath));
+    }
+
+    // Dynamic spacer height calculation to eliminate white space under Expiry Dt
+    $lrCount = 14;
+    if (!empty($bulty->delivery_date) || !empty($bulty->bultyDetail?->delivery_date)) $lrCount++;
+    if (!empty($bulty->delivery_time) || !empty($bulty->bultyDetail?->delivery_time)) $lrCount++;
+    $items = $bulty->bultyItems ?? collect();
+    $itemCount = max(1, $items->count());
+    $spacerHeightMm = max(5, 38.0 + (($lrCount - 14) * 5.1) - (($itemCount - 1) * 5.0));
+@endphp
 
 <!-- MASTER WRAPPER TABLE -->
 <table class="bilty-wrapper">
@@ -248,7 +270,8 @@
         <td style="border-top: 1px solid #000; padding: 0; vertical-align: top;">
             <table style="width: 100%;">
                 <tr>
-                    <td style="width: 58%; padding: 0; vertical-align: top; border-right: 1px solid #000;">
+                    <!-- LEFT COLUMN (52%): ITEMS TABLE -->
+                    <td style="width: 52%; padding: 0; vertical-align: top; border-right: 1px solid #000;">
                         <table class="item-table">
                             <thead>
                                 <tr>
@@ -319,17 +342,25 @@
                             </tfoot>
                         </table>
                     </td>
-                    <td style="width: 42%; padding: 0; vertical-align: top;">
+
+                    <!-- RIGHT COLUMN (48%): LR DETAILS TABLE -->
+                    <td style="width: 48%; padding: 0; vertical-align: top;">
                         <table class="lr-table">
-                            <tr><td class="lr-label">LR. No.</td><td class="lr-value">{{ $bulty->lr_no ?? '-' }}</td></tr>
-                            <tr><td class="lr-label">Date</td><td class="lr-value">{{ $bulty->lr_date ? date('d M Y', strtotime($bulty->lr_date)) : '-' }}</td></tr>
-                            <tr><td class="lr-label">Truck No.</td><td class="lr-value">{{ $bulty->vehicle->vehicle_number ?? '-' }}</td></tr>
-                            <tr><td class="lr-label">Fleet Owner</td><td class="lr-value">{{ strtoupper($company->name ?? '-') }}</td></tr>
-                            <tr><td class="lr-label">Driver Name</td><td class="lr-value text-uppercase">{{ $bulty->driver->name ?? '-' }}</td></tr>
-                            <tr><td class="lr-label">Driver Ph. No.</td><td class="lr-value">{{ $bulty->driver->phone ? '+91-' . $bulty->driver->phone : '-' }}</td></tr>
-                            <tr><td class="lr-label">Order No.</td><td class="lr-value">{{ $bulty->order_number ?? '-' }}</td></tr>
-                            <tr><td class="lr-label">Delivery No.</td><td class="lr-value">{{ $bulty->delivery_number ?? '-' }}</td></tr>
-                            @if($bulty->delivery_date || $bulty->bultyDetail?->delivery_date)
+                            <tr><td class="lr-label">LR. No.</td><td class="lr-value">{{ $bulty->lr_no ?? ($bulty->bulty_no ?? '-') }}</td></tr>
+                            <tr><td class="lr-label">Date</td><td class="lr-value">{{ ($bulty->lr_date ?? $bulty->date) ? date('d M Y', strtotime($bulty->lr_date ?? $bulty->date)) : '-' }}</td></tr>
+                            <tr><td class="lr-label">Truck No.</td><td class="lr-value">{{ $bulty->vehicle?->vehicle_number ?? ($bulty->truck_no ?? '-') }}</td></tr>
+                            @php
+                                $fleetOwner = $bulty->vehicle?->owner_name ?: ($bulty->fleet_owner ?: ($company->name ?? 'BHADRECHA LOGISTICS'));
+                                if (strtoupper(trim($fleetOwner)) === 'BHADRECHA LOGISTIC') {
+                                    $fleetOwner = 'BHADRECHA LOGISTICS';
+                                }
+                            @endphp
+                            <tr><td class="lr-label">Fleet Owner</td><td class="lr-value" style="{{ strlen($fleetOwner) > 20 ? 'font-size: 8px;' : '' }}">{{ strtoupper($fleetOwner) }}</td></tr>
+                            <tr><td class="lr-label">Driver Name</td><td class="lr-value text-uppercase">{{ $bulty->driver?->name ?? ($bulty->driver_name ?? '-') }}</td></tr>
+                            <tr><td class="lr-label">Driver Ph. No.</td><td class="lr-value">{{ !empty($bulty->driver?->phone) ? '+91-' . $bulty->driver->phone : (!empty($bulty->driver_number) ? $bulty->driver_number : '-') }}</td></tr>
+                            <tr><td class="lr-label">Order No.</td><td class="lr-value">{{ !empty(trim($bulty->order_number ?? ($bulty->order_no ?? ''), ' :-')) ? ($bulty->order_number ?? $bulty->order_no) : '-' }}</td></tr>
+                            <tr><td class="lr-label">Delivery No.</td><td class="lr-value">{{ !empty(trim($bulty->delivery_number ?? ($bulty->delivery_no ?? ''), ' :-')) ? ($bulty->delivery_number ?? $bulty->delivery_no) : '-' }}</td></tr>
+                            @if(!empty($bulty->delivery_date) || !empty($bulty->bultyDetail?->delivery_date))
                             <tr><td class="lr-label">Delivery Dt</td><td class="lr-value">{{ date('d M Y', strtotime($bulty->delivery_date ?? $bulty->bultyDetail->delivery_date)) }}</td></tr>
                             @endif
                             @if(!empty($bulty->delivery_time) || !empty($bulty->bultyDetail?->delivery_time))
