@@ -48,7 +48,7 @@ class Bulty extends Model
         'remaining_amount' => 'decimal:2',
         'material_document_status' => 'boolean',
         'pod_document_status' => 'boolean',
-        'lr_date' => 'date',
+        'lr_date' => 'datetime',
         'delivery_date' => 'date',
         'delivered_at' => 'datetime',
         'invoice_date' => 'date',

@@ -566,7 +566,9 @@ class BlackBuckFastagService
     public function syncVehicles(array $truckNumbers, $fromTime = null, $toTime = null): array
     {
         $truckNumbers = array_values(array_filter(array_map('trim', $truckNumbers)));
-        $displayTruck = count($truckNumbers) === 1 ? $truckNumbers[0] : implode(',', array_slice($truckNumbers, 0, 5)) . (count($truckNumbers) > 5 ? '...' : '');
+        $displayTruck = count($truckNumbers) === 1
+            ? mb_substr($truckNumbers[0], 0, 50)
+            : mb_strimwidth(implode(',', $truckNumbers), 0, 50, '...');
 
         $startedAt = now();
         $fromParsed = $fromTime ? Carbon::parse($fromTime) : now()->subDays($this->config['sync_days_lookback'] ?? 3)->startOfDay();

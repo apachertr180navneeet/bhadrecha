@@ -165,10 +165,10 @@
                                 @error('lr_no') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label fw-bold">LR Date <span class="text-danger">*</span></label>
-                                <input type="date" max="9999-12-31" name="lr_date" class="form-control custom-input @error('lr_date') is-invalid @enderror" value="{{ old('lr_date', date('Y-m-d')) }}" required>
+                                <label class="form-label fw-bold">LR Date &amp; Time <span class="text-danger">*</span></label>
+                                <input type="datetime-local" max="9999-12-31T23:59" name="lr_date" class="form-control custom-input @error('lr_date') is-invalid @enderror" value="{{ old('lr_date', date('Y-m-d\TH:i')) }}" required>
                                 <div class="invalid-feedback">
-                                    @error('lr_date') {{ $message }} @else Date is required @enderror
+                                    @error('lr_date') {{ $message }} @else Date &amp; time is required @enderror
                                 </div>
                             </div>
                             <div class="col-md-4">
@@ -2504,7 +2504,10 @@
             let filledCount = 0;
 
             if (setFieldSafe('#lr_no', fields.lr_no, true)) filledCount++;
-            if (setFieldSafe('[name="lr_date"]', fields.lr_date, true)) filledCount++;
+            if (fields.lr_date) {
+                const lrDateTime = fields.lr_date.includes('T') ? fields.lr_date.slice(0, 16) : `${fields.lr_date}T{{ date('H:i') }}`;
+                if (setFieldSafe('[name="lr_date"]', lrDateTime, true)) filledCount++;
+            }
             if (fields.payment_type && $('[name="payment_type"]').attr('data-user-edited') !== 'true') {
                 $('[name="payment_type"]').val(fields.payment_type).addClass('is-valid');
                 filledCount++;

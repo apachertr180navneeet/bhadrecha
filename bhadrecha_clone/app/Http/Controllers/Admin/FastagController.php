@@ -239,12 +239,15 @@ class FastagController extends Controller
             ]);
         }
 
+        $topVehicles = $vehicleExpenses->take(10);
+
         return view('admin.fastag.reports', compact(
             'fromDate',
             'toDate',
             'dailyExpenses',
             'monthlyExpenses',
             'vehicleExpenses',
+            'topVehicles',
             'topPlazas',
             'totalDeduction',
             'totalCount',

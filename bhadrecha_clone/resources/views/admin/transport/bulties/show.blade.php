@@ -254,7 +254,7 @@
                 <div class="glass-card mb-4 p-4">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h5 class="fw-bold m-0"><i class="bx bx-map-pin text-primary me-2"></i>Route Timeline</h5>
-                        <span class="text-muted small fw-bold">{{ $bulty->lr_date ? date('D, d M Y', strtotime($bulty->lr_date)) : '-' }}</span>
+                        <span class="text-muted small fw-bold">{{ $bulty->lr_date ? (date('H:i:s', strtotime($bulty->lr_date)) !== '00:00:00' ? date('D, d M Y, h:i A', strtotime($bulty->lr_date)) : date('D, d M Y', strtotime($bulty->lr_date))) : '-' }}</span>
                     </div>
                     
                     @php

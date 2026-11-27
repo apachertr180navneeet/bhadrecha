@@ -347,7 +347,7 @@
                     <td style="width: 48%; padding: 0; vertical-align: top;">
                         <table class="lr-table">
                             <tr><td class="lr-label">LR. No.</td><td class="lr-value">{{ $bulty->lr_no ?? ($bulty->bulty_no ?? '-') }}</td></tr>
-                            <tr><td class="lr-label">Date</td><td class="lr-value">{{ ($bulty->lr_date ?? $bulty->date) ? date('d M Y', strtotime($bulty->lr_date ?? $bulty->date)) : '-' }}</td></tr>
+                            <tr><td class="lr-label">Date</td><td class="lr-value">{{ ($bulty->lr_date ?? $bulty->date) ? (date('H:i:s', strtotime($bulty->lr_date ?? $bulty->date)) !== '00:00:00' ? date('d M Y, h:i A', strtotime($bulty->lr_date ?? $bulty->date)) : date('d M Y', strtotime($bulty->lr_date ?? $bulty->date))) : '-' }}</td></tr>
                             <tr><td class="lr-label">Truck No.</td><td class="lr-value">{{ $bulty->vehicle?->vehicle_number ?? ($bulty->truck_no ?? '-') }}</td></tr>
                             @php
                                 $fleetOwner = $bulty->vehicle?->owner_name ?: ($bulty->fleet_owner ?: ($company->name ?? 'BHADRECHA LOGISTICS'));

@@ -258,7 +258,7 @@ class TripController extends Controller
             ?? $builty->bultyDetail?->delivered_at
             ?? ($builty->delivery_date ? Carbon::parse($builty->delivery_date->format('Y-m-d') . ' ' . ($builty->delivery_time ?: '23:59:59')) : null);
 
-        $startDateTime = $builty->lr_date ? Carbon::parse($builty->lr_date)->startOfDay() : null;
+        $startDateTime = $builty->lr_date ? Carbon::parse($builty->lr_date) : null;
 
         // Check if there is a next bilty for this truck to cap return journey
         $nextBuilty = $builty->vehicle_id && $builty->lr_date ? Bulty::where('vehicle_id', $builty->vehicle_id)
@@ -267,11 +267,11 @@ class TripController extends Controller
             ->orderBy('lr_date', 'asc')
             ->first() : null;
 
-        if ($nextBuilty && $nextBuilty->lr_date) {
-            $endDateTime = Carbon::parse($nextBuilty->lr_date)->startOfDay();
-        } elseif ($deliveryDateTime) {
-            $returnEnd = $deliveryDateTime->copy()->addDays(3);
-            $endDateTime = $returnEnd->gt(now()) ? now() : $returnEnd;
+        if ($deliveryDateTime) {
+            $endDateTime = Carbon::parse($deliveryDateTime);
+        } elseif ($nextBuilty && $nextBuilty->lr_date) {
+            $nextParsed = Carbon::parse($nextBuilty->lr_date);
+            $endDateTime = ($nextParsed->format('H:i:s') === '00:00:00') ? $nextParsed->endOfDay() : $nextParsed;
         } else {
             $endDateTime = now();
         }
@@ -329,7 +329,7 @@ class TripController extends Controller
             ?? $builty->bultyDetail?->delivered_at
             ?? ($builty->delivery_date ? Carbon::parse($builty->delivery_date->format('Y-m-d') . ' ' . ($builty->delivery_time ?: '23:59:59')) : null);
 
-        $startDateTime = $builty->lr_date ? Carbon::parse($builty->lr_date)->startOfDay() : null;
+        $startDateTime = $builty->lr_date ? Carbon::parse($builty->lr_date) : null;
 
         // Check if there is a next bilty for this truck to cap return journey
         $nextBuilty = $builty->vehicle_id && $builty->lr_date ? Bulty::where('vehicle_id', $builty->vehicle_id)
@@ -338,11 +338,11 @@ class TripController extends Controller
             ->orderBy('lr_date', 'asc')
             ->first() : null;
 
-        if ($nextBuilty && $nextBuilty->lr_date) {
-            $endDateTime = Carbon::parse($nextBuilty->lr_date)->startOfDay();
-        } elseif ($deliveryDateTime) {
-            $returnEnd = $deliveryDateTime->copy()->addDays(3);
-            $endDateTime = $returnEnd->gt(now()) ? now() : $returnEnd;
+        if ($deliveryDateTime) {
+            $endDateTime = Carbon::parse($deliveryDateTime);
+        } elseif ($nextBuilty && $nextBuilty->lr_date) {
+            $nextParsed = Carbon::parse($nextBuilty->lr_date);
+            $endDateTime = ($nextParsed->format('H:i:s') === '00:00:00') ? $nextParsed->endOfDay() : $nextParsed;
         } else {
             $endDateTime = now();
         }
@@ -392,33 +392,81 @@ class TripController extends Controller
     }
 
     /**
-     * Format and pair FASTag toll transactions by location:
-     * - First occurrence of a location is One Way.
-     * - Second occurrence of the SAME location is Return (merged into the same row).
+     * Format and pair FASTag toll transactions by location in ascending date order:
+     * - Transactions are always sorted ascending by transaction_date.
+     * - Detects where the return journey starts (via deliveryDateTime, or largest halt gap before first repeated plaza).
+     * - First occurrence of a location before return start is One Way; subsequent occurrence of the same location is merged as Return.
+     * - Any single-entry location occurring at or after return start is marked as Return.
      */
     protected function formatFastTagRows($transactions, $deliveryDateTime = null): array
     {
-        $rows = [];
-        $locationIndexMap = [];
+        $sortedTxns = collect($transactions)
+            ->sortBy(fn ($t) => $t->transaction_date ? $t->transaction_date->timestamp : 0)
+            ->values();
 
-        foreach ($transactions as $txn) {
+        $seenLocs = [];
+        $firstRepeatIdx = null;
+        $deliveryReturnIdx = null;
+        $locKeys = [];
+
+        foreach ($sortedTxns as $i => $txn) {
             $plazaName = $txn->toll_plaza_name;
+            $raw = is_array($txn->raw_response) ? $txn->raw_response : [];
             if (empty($plazaName) || $plazaName === 'Unknown Plaza') {
-                $raw = $txn->raw_response;
                 $plazaName = !empty($raw['entity_id']) ? "FASTag Toll ({$raw['entity_id']})" : 'FASTag Toll';
             }
-
-            $raw = is_array($txn->raw_response) ? $txn->raw_response : [];
             $plazaCode = $raw['plaza_code'] ?? null;
             $normalizedName = strtolower(trim(preg_replace('/[^a-zA-Z0-9]/', '', $plazaName)));
             $locKey = $plazaCode ? 'code_' . $plazaCode : 'name_' . $normalizedName;
+            $locKeys[$i] = ['key' => $locKey, 'name' => $plazaName];
+
+            if ($deliveryReturnIdx === null && $deliveryDateTime && $txn->transaction_date && $txn->transaction_date->gt($deliveryDateTime)) {
+                $deliveryReturnIdx = $i;
+            }
+            if ($firstRepeatIdx === null && isset($seenLocs[$locKey])) {
+                $firstRepeatIdx = $i;
+            }
+            $seenLocs[$locKey] = true;
+        }
+
+        $detectedReturnIdx = null;
+        if ($firstRepeatIdx !== null) {
+            $maxGap = -1;
+            $maxGapIdx = $firstRepeatIdx;
+            for ($i = 1; $i <= $firstRepeatIdx; $i++) {
+                $prevTs = $sortedTxns[$i - 1]->transaction_date?->timestamp;
+                $currTs = $sortedTxns[$i]->transaction_date?->timestamp;
+                if ($prevTs && $currTs) {
+                    $gap = $currTs - $prevTs;
+                    if ($gap > $maxGap) {
+                        $maxGap = $gap;
+                        $maxGapIdx = $i;
+                    }
+                }
+            }
+            // If there is a halt/unloading gap >= 3 hours before the first repeated plaza, return started right after that halt
+            $detectedReturnIdx = ($maxGap >= 10800) ? $maxGapIdx : $firstRepeatIdx;
+        }
+
+        if ($deliveryReturnIdx !== null && $detectedReturnIdx !== null) {
+            $returnStartIdx = min($deliveryReturnIdx, $detectedReturnIdx);
+        } else {
+            $returnStartIdx = $deliveryReturnIdx ?? $detectedReturnIdx;
+        }
+
+        $rows = [];
+        $locationIndexMap = [];
+
+        foreach ($sortedTxns as $i => $txn) {
+            $plazaName = $locKeys[$i]['name'];
+            $locKey = $locKeys[$i]['key'];
 
             $isAfterDelivery = $deliveryDateTime && $txn->transaction_date && $txn->transaction_date->gt($deliveryDateTime);
             $amount = (float)$txn->amount;
             $txnTime = $txn->transaction_date ? $txn->transaction_date->format('Y-m-d H:i') : '';
             $txnId = (string)($txn->transaction_id ?? '');
 
-            // Option A: If this same location has already been seen on this trip, pair into the same row as Return!
+            // If this same location has already been seen on this trip, pair into the same row as Return
             if (isset($locationIndexMap[$locKey])) {
                 $idx = $locationIndexMap[$locKey];
                 $rows[$idx]['return'] = (float)$rows[$idx]['return'] + $amount;
@@ -429,7 +477,7 @@ class TripController extends Controller
                     $rows[$idx]['transaction_id'] .= ($rows[$idx]['transaction_id'] ? ', ' : '') . $txnId;
                 }
             } else {
-                $isReturn = $isAfterDelivery;
+                $isReturn = ($returnStartIdx !== null && $i >= $returnStartIdx) || $isAfterDelivery;
                 $row = [
                     'transaction_time' => $txnTime,
                     'amount' => $amount,

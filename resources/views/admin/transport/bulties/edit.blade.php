@@ -87,10 +87,10 @@
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label fw-bold">LR Date <span class="text-danger">*</span></label>
-                                <input type="date" max="9999-12-31" name="lr_date" class="form-control custom-input @error('lr_date') is-invalid @enderror" value="{{ old('lr_date', $bulty->lr_date?->format('Y-m-d')) }}" required>
+                                <label class="form-label fw-bold">LR Date &amp; Time <span class="text-danger">*</span></label>
+                                <input type="datetime-local" max="9999-12-31T23:59" name="lr_date" class="form-control custom-input @error('lr_date') is-invalid @enderror" value="{{ old('lr_date', $bulty->lr_date?->format('Y-m-d\TH:i')) }}" required>
                                 <div class="invalid-feedback">
-                                    @error('lr_date') {{ $message }} @else Date is required @enderror
+                                    @error('lr_date') {{ $message }} @else Date &amp; time is required @enderror
                                 </div>
                             </div>
                             <div class="col-md-4">

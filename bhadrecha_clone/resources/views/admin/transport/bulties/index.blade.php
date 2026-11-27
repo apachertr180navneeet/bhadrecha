@@ -177,7 +177,7 @@
                             @endcanany
                         </td>
                         <td class="fw-semibold">{{ $bulty->lr_no }}</td>
-                        <td>{{ $bulty->lr_date ? date('d M Y', strtotime($bulty->lr_date)) : '-' }}</td>
+                        <td>{{ $bulty->lr_date ? (date('H:i:s', strtotime($bulty->lr_date)) !== '00:00:00' ? date('d M Y, h:i A', strtotime($bulty->lr_date)) : date('d M Y', strtotime($bulty->lr_date))) : '-' }}</td>
                         <td><strong>{{ $bulty->vehicle->vehicle_number ?? '-' }}</strong></td>
                         <td>{{ $bulty->company->name ?? '-' }}</td>
                         <td>{{ $bulty->branch->name ?? '-' }}</td>

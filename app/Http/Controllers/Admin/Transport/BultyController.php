@@ -1077,6 +1077,13 @@ class BultyController extends Controller
             'billed_qty' => 'nullable|numeric|min:0',
         ], $extraRules));
 
+        if (!empty($validated['lr_date'])) {
+            $lrTs = strtotime($validated['lr_date']);
+            if ($lrTs !== false) {
+                $validated['lr_date'] = date('Y-m-d H:i:s', $lrTs);
+            }
+        }
+
         if (!empty($validated['delivered_at'])) {
             $ts = strtotime($validated['delivered_at']);
             if ($ts !== false) {
