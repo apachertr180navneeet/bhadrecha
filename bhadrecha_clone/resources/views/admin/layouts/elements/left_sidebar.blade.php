@@ -196,7 +196,7 @@
 
 
 
-        @canany(['view driver salary', 'view driver advances', 'generate driver salary slips', 'view driver salary
+        <!-- @canany(['view driver salary', 'view driver advances', 'generate driver salary slips', 'view driver salary
             slips'])
             <li class="menu-divider"></li>
             <li class="menu-header small text-uppercase">
@@ -386,7 +386,7 @@
                     @endcan
                 </ul>
             </li>
-        @endcanany
+        @endcanany -->
 
         @canany(['view expenses', 'view expense categories'])
             <li class="menu-divider"></li>
@@ -775,7 +775,7 @@
             </li>
         @endcanany
 
-        @canany(['view users', 'view roles', 'view permissions'])
+        <!-- @canany(['view users', 'view roles', 'view permissions'])
             <li class="menu-divider"></li>
             <li class="menu-header small text-uppercase">
                 <span class="menu-header-text">Access Control</span>
@@ -807,9 +807,10 @@
                     <div data-i18n="Permissions">Permissions</div>
                 </a>
             </li>
-        @endcan
+        @endcan -->
 
-        <!-- Document Management Section -->
+        <!-- Document Management Section (Hidden) -->
+        {{--
         @canany(['view documents', 'upload documents', 'manage categories', 'manage folders', 'view document reports', 'view activity', 'manage document trash'])
             <li class="menu-divider"></li>
             <li class="menu-header small text-uppercase">
@@ -884,9 +885,10 @@
                 </li>
             @endcan
         @endcanany
+        --}}
 
 
-        @canany(['view activity logs', 'manage settings'])
+        <!-- @canany(['view activity logs', 'manage settings'])
             <li class="menu-divider"></li>
             <li class="menu-header small text-uppercase">
                 <span class="menu-header-text">System</span>
@@ -909,7 +911,7 @@
                     <div data-i18n="Settings">Settings</div>
                 </a>
             </li>
-        @endcan
+        @endcan -->
 
         @if(auth()->user()->isSuperAdmin())
             <li class="menu-item {{ request()->is('admin/database-backup*') ? 'active' : '' }}">
