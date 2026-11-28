@@ -801,9 +801,7 @@ class BultyController extends Controller
         $pdf = Pdf::loadView('admin.transport.bulties.pdf', compact('bulty'));
         $pdf->setPaper('A4', 'portrait');
 
-        $safeLrNo = str_replace(['/', '\\'], '-', (string) $bulty->lr_no);
-
-        return $pdf->download("Bulty-{$safeLrNo}.pdf");
+        return $pdf->download("Bulty-{$bulty->lr_no}.pdf");
     }
 
     public function printBill(Bulty $bulty)
